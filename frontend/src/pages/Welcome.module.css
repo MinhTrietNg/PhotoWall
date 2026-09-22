@@ -54,10 +54,12 @@
 .f3 {
   left: var(--pw-gutter);
   top: 176px;
+  width: 150px;
   height: var(--pw-ctl-m);
-  padding: 0 var(--pw-space-4);
+  padding: 0 var(--pw-space-3);
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--pw-space-2);
   border-radius: var(--pw-radius-full);
   background: var(--pw-green-500);

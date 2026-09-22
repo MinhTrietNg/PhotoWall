@@ -5,6 +5,7 @@
  * Guests can still get their own strip back.
  */
 import { useEffect, useState } from 'react';
+import { Screen } from '@/components/Screen';
 import { ButtonLink } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { PartnerLine } from '@/components/PartnerLine';
@@ -20,14 +21,14 @@ export function Closed() {
   useEffect(() => backend.watchStats((s) => setApprovedCount(s.approvedCount)), [backend]);
 
   return (
-    <div className="screen">
+    <Screen>
       <div className={styles.partner}>
         <PartnerLine />
       </div>
 
       <div className={styles.body}>
         <span className={styles.disc} aria-hidden="true">
-          <Icon name="eventBusy" size={32} />
+          <Icon name="eventBusy" size={48} />
         </span>
 
         <h1 className={`u ${styles.title}`}>Wall đã đóng nhận ảnh</h1>
@@ -40,7 +41,11 @@ export function Closed() {
 
       <div className="screen__cta">
         {submission?.photoId ? (
-          <ButtonLink to={`/me/${submission.photoId}`} block>
+          <ButtonLink
+            to={`/me/${submission.photoId}`}
+            block
+            iconStart={<Icon name="person" />}
+          >
             Dải ảnh của tôi
           </ButtonLink>
         ) : null}
@@ -48,6 +53,6 @@ export function Closed() {
           Về trang chủ
         </ButtonLink>
       </div>
-    </div>
+    </Screen>
   );
 }

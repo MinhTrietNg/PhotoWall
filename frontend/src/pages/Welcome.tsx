@@ -3,6 +3,7 @@
  * One screen, one promise, one button.
  */
 import { useEffect, useState } from 'react';
+import { Screen } from '@/components/Screen';
 import { ButtonLink } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { PartnerLine } from '@/components/PartnerLine';
@@ -32,7 +33,7 @@ export function Welcome() {
   }, []);
 
   return (
-    <div className="screen">
+    <Screen>
       <div className={styles.partner}>
         <PartnerLine />
       </div>
@@ -96,6 +97,6 @@ export function Welcome() {
           Dải ảnh của bạn sẽ hiện trên màn hình lớn tại gian hàng
         </p>
       </div>
-    </div>
+    </Screen>
   );
 }

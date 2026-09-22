@@ -11,6 +11,7 @@ import { CheckRow, SettingRow, Toggle } from '@/components/Controls';
 import { Field } from '@/components/Field';
 import { Icon } from '@/components/Icon';
 import { Steps } from '@/components/Steps';
+import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { track } from '@/lib/analytics';
 import { useSession } from '@/state/SessionContext';
@@ -31,7 +32,7 @@ export function EnterName() {
   }
 
   return (
-    <form className="screen" onSubmit={onSubmit}>
+    <Screen onSubmit={onSubmit}>
       <TopBar title="Bước 1 / 3" backTo="/" />
       <Steps current={1} />
 
@@ -90,6 +91,6 @@ export function EnterName() {
           Tiếp tục
         </Button>
       </div>
-    </form>
+    </Screen>
   );
 }

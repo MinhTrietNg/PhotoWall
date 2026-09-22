@@ -52,3 +52,15 @@
     padding-top: var(--pw-space-4);
   }
 }
+
+/*
+ * Shortest phones (SE-class). The design asks the capture flow not to scroll,
+ * and at 667px it otherwise does by a hair. The decorative tile is the only
+ * thing on this screen that carries no information, so it goes first — the
+ * same treatment the capture screen gives its strip-hint card.
+ */
+@media (max-height: 700px) {
+  .disc {
+    display: none;
+  }
+}
