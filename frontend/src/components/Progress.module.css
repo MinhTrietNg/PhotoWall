@@ -13,6 +13,14 @@
   font-weight: 700;
 }
 
+.what {
+  color: var(--pw-ink-2);
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
 .track {
   position: relative;
   height: 16px;
@@ -33,6 +41,7 @@
 /* Indeterminate: four blocks, 120ms apart. */
 .blocks {
   display: flex;
+  justify-content: center;
   gap: var(--pw-space-1);
   height: 16px;
 }
