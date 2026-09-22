@@ -119,8 +119,13 @@ export function ModSettings({ email }: { email: string }) {
           <div className={styles.staticRow}>
             <span className={styles.rowTitleWithTag}>Giới hạn mỗi phiên {SOON}</span>
             <span className={styles.staticValue}>
-              {LIMITS.maxSubmitsPerUser} bộ / phiên · 1 bộ / {LIMITS.submitIntervalSeconds}s — đổi trong
-              firestore.rules
+              {/*
+                The ceiling the rules enforce, not the value in effect — AppConfig
+                does not carry maxSubmitsPerUser, so the console cannot show it
+                without widening the port.
+              */}
+              Tối đa {LIMITS.maxSubmitsPerUserCeiling} bộ / phiên · 1 bộ /{' '}
+              {LIMITS.submitIntervalSeconds}s — đổi trong firestore.rules
             </span>
           </div>
           <SettingRow
