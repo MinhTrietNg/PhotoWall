@@ -1,0 +1,115 @@
+.page {
+  min-height: 100dvh;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: var(--pw-space-6) var(--pw-space-8) var(--pw-space-8);
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-5);
+}
+
+.header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--pw-space-5);
+  flex-wrap: wrap;
+}
+
+.brand {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
+}
+
+.logoTile {
+  width: 44px;
+  height: 44px;
+  flex-shrink: 0;
+  border-radius: var(--pw-radius-3);
+  background: var(--pw-ink);
+  color: #fff;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.title {
+  margin: 0;
+  font: var(--pw-type-h2);
+}
+
+.sub {
+  margin: 0;
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+.pills {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  flex-wrap: wrap;
+}
+
+.uploadsPill {
+  border: none;
+  cursor: pointer;
+  font: var(--pw-type-caption);
+}
+.uploadsOpen {
+  background: var(--pw-green-100);
+  color: var(--pw-green-700);
+}
+.uploadsClosed {
+  background: var(--pw-red-100);
+  color: var(--pw-red-700);
+}
+
+.tabsRow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: var(--pw-space-3);
+}
+
+.sort {
+  height: 40px;
+  padding: 0 var(--pw-space-3);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-surface);
+  font: var(--pw-type-body-s);
+  font-weight: 600;
+}
+
+.helper {
+  margin: calc(-1 * var(--pw-space-2)) 0 0;
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+.bulkBar {
+  position: sticky;
+  bottom: var(--pw-space-5);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pw-space-3);
+  padding: var(--pw-space-3) var(--pw-space-5);
+  background: var(--pw-ink);
+  color: #fff;
+  border-radius: var(--pw-radius-5);
+  box-shadow: var(--pw-shadow-2);
+}
+
+.bulkLabel {
+  font: var(--pw-type-body);
+  font-weight: 700;
+}
+
+.bulkActions {
+  display: flex;
+  gap: var(--pw-space-2);
+}

@@ -64,6 +64,51 @@ export interface SubmitInput {
 
 export type Unsubscribe = () => void;
 
+// ------------------------------------------------------------ moderators
+
+export interface ModeratorProfile {
+  email: string;
+}
+
+/**
+ * `rejected` (never made the wall) and `removed` (taken down after approval)
+ * are one tab in the console — "Đã gỡ". Claude-Plan.md §20.5 #2.
+ */
+export type ModTab = 'pending' | 'approved' | 'removed';
+
+/** Thrown by approve/reject/remove when another moderator already handled the photo. */
+export class ReviewConflict extends Error {
+  constructor(readonly photoId: string) {
+    super(photoId);
+    this.name = 'ReviewConflict';
+  }
+}
+
+export interface ModeratorApi {
+  /** The signed-in Google user, or null. Fires once immediately, then on change. */
+  watchAuthState(cb: (user: ModeratorProfile | null) => void): Unsubscribe;
+  signIn(): Promise<void>;
+  signOut(): Promise<void>;
+  /** Whether the signed-in user is on the moderators allowlist. */
+  isModerator(): Promise<boolean>;
+
+  /** Photos for one queue tab. `pending` is oldest-submitted first; the others newest-reviewed first. */
+  watchTab(tab: ModTab, cb: (photos: Photo[]) => void, max?: number): Unsubscribe;
+
+  approve(photoId: string): Promise<void>;
+  /** `pending -> rejected`. */
+  reject(photoId: string): Promise<void>;
+  /** `approved -> removed`. */
+  remove(photoId: string): Promise<void>;
+
+  /** Download URL for a photo the caller may read (any status, moderators can read all). */
+  photoUrl(photoId: string): Promise<string>;
+
+  watchConfig(cb: (config: AppConfig | null) => void): Unsubscribe;
+  setUploadsOpen(open: boolean): Promise<void>;
+  setEventName(name: string): Promise<void>;
+}
+
 export interface GuestApi {
   /**
    * Anonymous sign-in. MUST only be called when the guest presses Send, never on

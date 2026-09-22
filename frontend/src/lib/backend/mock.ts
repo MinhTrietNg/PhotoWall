@@ -9,10 +9,14 @@
  * Selected with VITE_BACKEND=mock (the default in development).
  */
 import {
+  ReviewConflict,
   SubmitFailure,
   type AppConfig,
   type GuestApi,
+  type ModeratorApi,
+  type ModTab,
   type Photo,
+  type PhotoStatus,
   type SubmitInput,
   type Unsubscribe,
 } from './types';
@@ -35,6 +39,7 @@ interface Store {
   approvedCount: number;
   lastSubmitAtMs: number;
   submitCount: number;
+  moderatorEmail: string | null;
 }
 
 const store: Store = {
@@ -46,6 +51,7 @@ const store: Store = {
   approvedCount: 128,
   lastSubmitAtMs: 0,
   submitCount: 0,
+  moderatorEmail: null,
 };
 
 type Listener = () => void;
@@ -182,4 +188,148 @@ export function createMockBackend(): GuestApi {
 export function mockSetUploadsOpen(open: boolean) {
   store.config.uploadsOpen = open;
   emit();
+}
+
+// ------------------------------------------------------------ moderators
+
+const MODERATOR_ALLOWLIST = new Set([
+  'lan@gdgoc.dev',
+  'huy@gdgoc.dev',
+  'mai@aws-sc.vn',
+  'duc@doanhoi.sgu',
+]);
+
+/** Sample queue content so M01/M02 are demoable with no emulator — DESIGN-D21. */
+function seedModerationDemo() {
+  if (store.photos.length > 0) return;
+  const now = Date.now();
+  const demo: Array<[string, string, PhotoStatus, string, number]> = [
+    ['mock-131', 'Đức Huy', 'pending', 'f03-partners', 1],
+    ['mock-130', 'Minh Triết', 'pending', 'f01-gdgoc', 4],
+    ['mock-129', 'Lan Anh', 'pending', 'f02-aws', 6],
+    ['mock-128', 'Hải Đăng', 'approved', 'f01-gdgoc', 20],
+    ['mock-127', 'Thu Hà', 'approved', 'f03-partners', 40],
+    ['mock-126', 'Quang Huy', 'removed', 'f02-aws', 90],
+    ['mock-125', 'Bảo Ngọc', 'rejected', 'f01-gdgoc', 120],
+  ];
+  for (const [id, displayName, status, frameVariant, minutesAgo] of demo) {
+    const createdAtMs = now - minutesAgo * 60_000;
+    store.photos.push({
+      id,
+      ownerUid: `mock-guest-${id}`,
+      displayName,
+      frameVariant,
+      status,
+      storagePath: `photos/${id}/strip.jpg`,
+      createdAtMs,
+      submittedAtMs: createdAtMs + 2_000,
+      reviewedAtMs: status === 'pending' ? undefined : createdAtMs + 90_000,
+      reviewedBy: status === 'pending' ? undefined : 'lan@gdgoc.dev',
+    });
+  }
+}
+
+function requireReviewable(photoId: string, from: PhotoStatus): Photo {
+  const photo = store.photos.find((p) => p.id === photoId);
+  if (!photo || photo.status !== from) throw new ReviewConflict(photoId);
+  return photo;
+}
+
+function tabStatuses(tab: ModTab): PhotoStatus[] {
+  return tab === 'pending' ? ['pending'] : tab === 'approved' ? ['approved'] : ['rejected', 'removed'];
+}
+
+export function createMockModeratorBackend(): ModeratorApi {
+  seedModerationDemo();
+
+  return {
+    watchAuthState(cb) {
+      return subscribe(() => cb(store.moderatorEmail ? { email: store.moderatorEmail } : null));
+    },
+
+    async signIn() {
+      await wait(300);
+      // ?mockFail=denied reproduces the M00 "not on the allowlist" error with no real Google account.
+      const denied = new URLSearchParams(location.search).get('mockFail') === 'denied';
+      store.moderatorEmail = denied ? 'khach@gmail.com' : 'lan@gdgoc.dev';
+      emit();
+    },
+
+    async signOut() {
+      store.moderatorEmail = null;
+      emit();
+    },
+
+    async isModerator() {
+      return store.moderatorEmail !== null && MODERATOR_ALLOWLIST.has(store.moderatorEmail);
+    },
+
+    watchTab(tab, cb, max = 200) {
+      const statuses = tabStatuses(tab);
+      return subscribe(() => {
+        const rows = store.photos
+          .filter((p) => statuses.includes(p.status))
+          .sort((a, b) =>
+            tab === 'pending'
+              ? (a.submittedAtMs ?? a.createdAtMs) - (b.submittedAtMs ?? b.createdAtMs)
+              : (b.reviewedAtMs ?? 0) - (a.reviewedAtMs ?? 0),
+          )
+          .slice(0, max);
+        cb(rows);
+      });
+    },
+
+    async approve(photoId) {
+      await wait(200);
+      const photo = requireReviewable(photoId, 'pending');
+      photo.status = 'approved';
+      photo.reviewedAtMs = Date.now();
+      photo.reviewedBy = store.moderatorEmail ?? undefined;
+      store.approvedCount++;
+      emit();
+    },
+
+    async reject(photoId) {
+      await wait(200);
+      const photo = requireReviewable(photoId, 'pending');
+      photo.status = 'rejected';
+      photo.reviewedAtMs = Date.now();
+      photo.reviewedBy = store.moderatorEmail ?? undefined;
+      emit();
+    },
+
+    async remove(photoId) {
+      await wait(200);
+      const photo = requireReviewable(photoId, 'approved');
+      photo.status = 'removed';
+      photo.reviewedAtMs = Date.now();
+      photo.reviewedBy = store.moderatorEmail ?? undefined;
+      store.approvedCount--;
+      emit();
+    },
+
+    async photoUrl(photoId) {
+      const cached = store.urls.get(photoId);
+      if (cached) return cached;
+      const blob = store.blobs.get(photoId);
+      if (!blob) throw new Error('not found');
+      const url = URL.createObjectURL(blob);
+      store.urls.set(photoId, url);
+      return url;
+    },
+
+    watchConfig(cb) {
+      return subscribe(() => cb({ ...store.config }));
+    },
+
+    async setUploadsOpen(open) {
+      store.config = { ...store.config, uploadsOpen: open };
+      emit();
+    },
+
+    async setEventName(eventName) {
+      store.config = { ...store.config, eventName };
+      emit();
+    },
+  };
 }

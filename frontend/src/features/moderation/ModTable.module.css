@@ -1,0 +1,179 @@
+.table {
+  --mod-grid: 44px 96px minmax(0, 1fr) 170px 330px 220px;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-5);
+  background: var(--pw-surface);
+  overflow: hidden;
+}
+
+.head,
+.row {
+  display: grid;
+  grid-template-columns: var(--mod-grid);
+  align-items: center;
+  gap: var(--pw-space-4);
+  padding: 10px var(--pw-space-5);
+}
+
+.head {
+  background: var(--pw-surface-2);
+}
+
+.row {
+  border-top: 2px solid var(--pw-line);
+}
+
+.rowSelected {
+  background: var(--pw-blue-100);
+}
+
+.row:hover {
+  background: var(--pw-surface-2);
+}
+.rowSelected:hover {
+  background: var(--pw-blue-100);
+}
+
+.rowCursor {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: -3px;
+}
+
+.checkboxCell {
+  display: flex;
+  justify-content: center;
+}
+
+.checkbox {
+  appearance: none;
+  width: 24px;
+  height: 24px;
+  flex-shrink: 0;
+  margin: 0;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-2);
+  background: var(--pw-surface);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+}
+.checkbox:checked {
+  background: var(--pw-blue-700);
+  border-color: var(--pw-blue-700);
+}
+.checkbox:checked::after {
+  content: '';
+  width: 12px;
+  height: 7px;
+  border-left: 2px solid #fff;
+  border-bottom: 2px solid #fff;
+  transform: rotate(-45deg) translateY(-1px);
+}
+.checkbox:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+.thumb {
+  width: 44px;
+  border-radius: var(--pw-radius-2);
+  border: var(--pw-outline);
+  display: block;
+  aspect-ratio: var(--pw-strip-ratio);
+  object-fit: cover;
+  background: var(--pw-surface-2);
+}
+
+.thumbFallback {
+  width: 44px;
+  aspect-ratio: var(--pw-strip-ratio);
+  border-radius: var(--pw-radius-2);
+  border: var(--pw-outline);
+  background: var(--pw-surface-2);
+  color: var(--pw-ink-3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.who {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+}
+
+.name {
+  font: var(--pw-type-body);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.meta {
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.time {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.clock {
+  font: var(--pw-type-body);
+  font-weight: 600;
+}
+
+.waiting {
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+.waitingOverdue {
+  color: var(--pw-red-700);
+  font-weight: 700;
+}
+
+.statusCell {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+}
+
+.actions {
+  display: flex;
+  gap: var(--pw-space-2);
+}
+
+.pillPending {
+  background: var(--pw-yellow-100);
+  color: var(--pw-yellow-700);
+  border-color: var(--pw-yellow-100);
+}
+.pillApproved {
+  background: var(--pw-green-100);
+  color: var(--pw-green-700);
+  border-color: var(--pw-green-100);
+}
+.pillGone {
+  background: var(--pw-surface-2);
+  color: var(--pw-ink-2);
+  border-color: var(--pw-line);
+}
+.reviewer {
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.empty {
+  padding: var(--pw-space-9) var(--pw-space-5);
+}

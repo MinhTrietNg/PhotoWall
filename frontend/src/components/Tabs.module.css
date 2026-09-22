@@ -1,0 +1,59 @@
+.list {
+  display: flex;
+  gap: var(--pw-space-2);
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.tab {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  height: 40px;
+  padding: 0 var(--pw-space-4);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-body);
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color var(--pw-dur-2) var(--pw-ease-decel);
+}
+
+.tab:hover:not(.selected) {
+  background: var(--pw-surface-2);
+}
+
+.selected {
+  background: var(--pw-ink);
+  border-color: var(--pw-ink);
+  color: #fff;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 20px;
+  min-width: 20px;
+  padding: 0 var(--pw-space-2);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface-2);
+  color: var(--pw-ink-2);
+  font: var(--pw-type-label);
+  font-weight: 800;
+}
+
+.selected .badge {
+  background: rgba(255, 255, 255, 0.16);
+  color: #fff;
+}
+
+.badge.pending {
+  color: var(--pw-yellow-700);
+}
+.selected .badge.pending {
+  color: var(--pw-yellow-500);
+}

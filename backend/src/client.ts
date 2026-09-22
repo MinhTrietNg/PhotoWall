@@ -227,6 +227,26 @@ export function watchPending(b: Backend, cb: (photos: Photo[]) => void): Unsubsc
   return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
 }
 
+/**
+ * Photos in any of `statuses`, most recently reviewed first — the moderation
+ * console's "Đã duyệt" (`['approved']`) and "Đã gỡ" (`['rejected','removed']`) tabs.
+ * Reuses the status+reviewedAt index already declared for watchApproved.
+ */
+export function watchByStatus(
+  b: Backend,
+  statuses: PhotoDoc['status'][],
+  cb: (photos: Photo[]) => void,
+  max = 200,
+): Unsubscribe {
+  const q = query(
+    collection(b.db, 'photos'),
+    where('status', 'in', statuses),
+    orderBy('reviewedAt', 'desc'),
+    limit(max),
+  );
+  return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
+}
+
 /** Thrown when another moderator already handled the photo. */
 export class AlreadyReviewedError extends Error {}
 
@@ -277,4 +297,8 @@ export async function remove(b: Backend, photoId: string) {
 
 export async function setUploadsOpen(b: Backend, open: boolean) {
   await updateDoc(doc(b.db, paths.config), { uploadsOpen: open });
+}
+
+export async function setEventName(b: Backend, eventName: string) {
+  await updateDoc(doc(b.db, paths.config), { eventName });
 }

@@ -10,14 +10,24 @@
  *    the write sequence the security rules accept.
  *  - App Check blocks localhost: use the emulator, or register a debug token.
  */
+import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as authSignOut } from 'firebase/auth';
 import {
+  AlreadyReviewedError,
   SubmitError,
+  approve as clientApprove,
   ensureGuest as clientEnsureGuest,
+  isModerator as clientIsModerator,
   photoUrl as clientPhotoUrl,
+  reject as clientReject,
+  remove as clientRemove,
   resumeSubmission as clientResumeSubmission,
+  setEventName as clientSetEventName,
+  setUploadsOpen as clientSetUploadsOpen,
   submitPhoto as clientSubmitPhoto,
+  watchByStatus as clientWatchByStatus,
   watchConfig as clientWatchConfig,
   watchMyPhotos as clientWatchMyPhotos,
+  watchPending as clientWatchPending,
   watchStats as clientWatchStats,
   type Backend,
   type Photo as ClientPhoto,
@@ -25,8 +35,11 @@ import {
 import { initBackend } from '@backend/init';
 
 import {
+  ReviewConflict,
   SubmitFailure,
   type GuestApi,
+  type ModeratorApi,
+  type ModTab,
   type Photo,
   type SubmitErrorCode,
   type SubmitInput,
@@ -107,5 +120,68 @@ export function createFirebaseBackend(): GuestApi {
     watchStats: (cb) => clientWatchStats(backend, cb),
 
     photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
+  };
+}
+
+// ------------------------------------------------------------ moderators
+
+export function createFirebaseModeratorBackend(): ModeratorApi {
+  const backend: Backend = initBackend({
+    emulators: import.meta.env.DEV && import.meta.env.VITE_EMULATORS === '1',
+  });
+
+  return {
+    watchAuthState(cb) {
+      return onAuthStateChanged(backend.auth, (user) => cb(user?.email ? { email: user.email } : null));
+    },
+
+    async signIn() {
+      await signInWithPopup(backend.auth, new GoogleAuthProvider());
+    },
+
+    signOut: () => authSignOut(backend.auth),
+
+    isModerator: () => clientIsModerator(backend),
+
+    watchTab(tab: ModTab, cb, max = 200) {
+      if (tab === 'pending') return clientWatchPending(backend, (photos) => cb(photos.map(toPhoto)));
+      const statuses = tab === 'approved' ? (['approved'] as const) : (['rejected', 'removed'] as const);
+      return clientWatchByStatus(backend, [...statuses], (photos) => cb(photos.map(toPhoto)), max);
+    },
+
+    async approve(photoId) {
+      try {
+        await clientApprove(backend, photoId);
+      } catch (e) {
+        if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
+        throw e;
+      }
+    },
+
+    async reject(photoId) {
+      try {
+        await clientReject(backend, photoId);
+      } catch (e) {
+        if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
+        throw e;
+      }
+    },
+
+    async remove(photoId) {
+      try {
+        await clientRemove(backend, photoId);
+      } catch (e) {
+        if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
+        throw e;
+      }
+    },
+
+    photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
+
+    watchConfig: (cb) => clientWatchConfig(backend, cb),
+
+    setUploadsOpen: (open) => clientSetUploadsOpen(backend, open),
+
+    setEventName: (name) => clientSetEventName(backend, name),
   };
 }
