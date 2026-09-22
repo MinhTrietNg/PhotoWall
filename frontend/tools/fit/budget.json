@@ -1,0 +1,19 @@
+{
+  "note": "Số pixel mỗi màn được phép tràn ra ngoài viewport. Không có tên trong danh sách nghĩa là ngân sách 0: màn phải vừa khít. Mỗi mục phải kèm một câu 'why'; check sẽ đỏ nếu để trống. Nới ngân sách là lựa chọn cuối, sau khi đã thử co phần không mang thông tin.",
+  "allowed": {
+    "360x500": {
+      "S02 Nhập tên": {
+        "overflow": 18,
+        "why": "360x500 thấp hơn mọi điện thoại thật — SE trong Safari đã là 553. Ở sàn này ô nhập, khối đồng ý và nút Tiếp tục cuộn trong lòng màn; giấu bớt chữ để vừa khít sẽ đổi một màn hình không tồn tại lấy một màn hình có thật."
+      },
+      "S08b Đã nhận, đang duyệt": {
+        "overflow": 31,
+        "why": "Dải màu đã hạ tới sàn 176px, phần dư còn lại là hai nút CTA. Cho cuộn trong lòng màn còn hơn giấu nút Tải dải ảnh về."
+      },
+      "S08 Thành công": {
+        "overflow": 31,
+        "why": "Cùng lý do với S08b: dải màu đã chạm sàn, phần dư là hai nút CTA."
+      }
+    }
+  }
+}
