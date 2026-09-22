@@ -8,8 +8,9 @@ import { useMemo, useState } from 'react';
 import { Link, Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
-import { Icon } from '@/components/Icon';
+import { Icon, PaletteGlyph } from '@/components/Icon';
 import { Steps } from '@/components/Steps';
+import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
 import { findFrame } from '@/features/frames/frameRegistry';
@@ -34,12 +35,13 @@ export function Review() {
   if (!isSessionComplete(session)) return <Navigate to="/camera/1" replace />;
 
   return (
-    <div className="screen">
+    <Screen>
       <TopBar
         title="Xem lại"
         backTo="/frame"
         right={
-          <Link to="/name" className="pill pill--lg" aria-label="Sửa tên">
+          <Link to="/name" className={`pill pill--lg ${styles.namePill}`} aria-label="Sửa tên">
+            <Icon name="person" size={16} />
             <span className={styles.nameText}>{session.displayName}</span>
             <Icon name="edit" size={16} />
           </Link>
@@ -73,25 +75,29 @@ export function Review() {
             ))}
           </div>
 
-          <span className="lbl">Khung</span>
+          <span className={`lbl ${styles.frameLabel}`}>Khung</span>
           <Link to="/frame" className={`pill ${styles.frameChip}`}>
+            <PaletteGlyph size={16} />
             <span className={styles.frameChipText}>
               {frame ? `${frame.label} · ${frame.title.split(' · ')[0]}` : '—'}
             </span>
             <Icon name="chevronRight" size={16} />
           </Link>
+
+          <p className={styles.note}>
+            <Icon name="visibility" size={16} />
+            <span>Ảnh lên màn hình lớn đúng như bản xem trước. Gửi xong vẫn gỡ được.</span>
+          </p>
         </div>
       </div>
 
-      <p className={styles.note}>
-        Ảnh lên màn hình lớn đúng như bản xem trước. Gửi xong vẫn gỡ được.
-      </p>
-
-      <div className={`screen__cta ${styles.actions}`}>
+      <div className={`screen__cta screen__cta--row ${styles.actions}`}>
         <Button variant="secondary" onClick={() => setConfirmReset(true)}>
           Chụp lại hết
         </Button>
-        <Button onClick={() => navigate('/upload')}>Gửi lên Wall</Button>
+        <Button iconEnd={<Icon name="arrowForward" />} onClick={() => navigate('/upload')}>
+          Gửi lên Wall
+        </Button>
       </div>
 
       <Dialog
@@ -106,6 +112,6 @@ export function Review() {
           navigate('/camera/1');
         }}
       />
-    </div>
+    </Screen>
   );
 }

@@ -1,5 +1,9 @@
+.namePill {
+  min-width: 0;
+}
+
 .nameText {
-  max-width: 11ch;
+  max-width: 9ch;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -68,7 +72,7 @@
   font-size: 11px;
   font-weight: 800;
   color: #fff;
-  text-shadow: 0 1px 2px rgba(28, 27, 51, 0.6);
+  text-shadow: 0 0 2px var(--pw-ink);
 }
 
 .tileAction {
@@ -86,6 +90,10 @@
   color: var(--pw-ink);
 }
 
+.frameLabel {
+  margin-top: var(--pw-space-1);
+}
+
 .frameChip {
   height: 36px;
   justify-content: space-between;
@@ -100,19 +108,21 @@
   white-space: nowrap;
 }
 
+/* Sits under the frame chip inside the right-hand column, not full width. */
 .note {
-  margin: 0;
-  padding: var(--pw-space-4) var(--pw-gutter) 0;
-  font: var(--pw-type-body-s);
+  margin: 6px 0 0;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pw-space-1);
+  font: var(--pw-type-caption);
+  font-weight: 400;
+  line-height: 1.45;
   color: var(--pw-ink-2);
 }
 
 .actions {
-  flex-direction: row;
-  padding-top: var(--pw-space-4);
-}
-
-.actions > * {
-  flex: 1;
-  min-width: 0;
+  /* 44 / 56 here; S04 splits 42 / 58. */
+  --pw-cta-split: 44%;
+  --pw-cta-pad-top: var(--pw-space-4);
+  --pw-cta-pad-bottom: calc(var(--pw-space-6) + env(safe-area-inset-bottom, 0px));
 }

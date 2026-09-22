@@ -12,6 +12,7 @@ import { Button } from '@/components/Button';
 import { Icon } from '@/components/Icon';
 import { StateBlock } from '@/components/StateBlock';
 import { Steps } from '@/components/Steps';
+import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { FrameOption } from '@/features/frames/FrameOption';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
@@ -43,7 +44,7 @@ export function FrameSelect() {
 
   if (error) {
     return (
-      <div className="screen">
+      <Screen>
         <TopBar title="Chọn khung" backTo={`/camera/${SHOT_COUNT}`} />
         <StateBlock
           tone="error"
@@ -55,12 +56,12 @@ export function FrameSelect() {
             </Button>
           }
         />
-      </div>
+      </Screen>
     );
   }
 
   return (
-    <div className="screen">
+    <Screen>
       <TopBar
         title="Chọn khung"
         backTo={`/camera/${SHOT_COUNT}`}
@@ -89,7 +90,7 @@ export function FrameSelect() {
         </div>
 
         <div className={styles.optionCol} role="group" aria-label="Khung có sẵn">
-          <span className="lbl">Khung có sẵn · {frames.length}</span>
+          <span className={`lbl ${styles.optionLabel}`}>Khung có sẵn · {frames.length}</span>
           {frames.map((frame) => (
             <FrameOption
               key={frame.id}
@@ -114,6 +115,6 @@ export function FrameSelect() {
           Dùng khung này
         </Button>
       </div>
-    </div>
+    </Screen>
   );
 }

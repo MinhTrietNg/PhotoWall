@@ -59,6 +59,10 @@
   min-width: 0;
 }
 
+.optionLabel {
+  margin-bottom: 2px;
+}
+
 /* The preview is the tallest thing on the screen; on short devices let the
    option column scroll instead of pushing the CTA off. */
 @media (max-height: 740px) {
