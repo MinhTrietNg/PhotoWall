@@ -1,8 +1,17 @@
+/*
+ * This screen is all text, so the only thing that can give is the air between
+ * its blocks. Both gaps are tied to the viewport instead of stepping at a
+ * breakpoint: a step means a screen fits at 693 and scrolls at 745, which is
+ * exactly what happened before.
+ *
+ * 725 is the height at which the fixed content alone fills the viewport, so
+ * below it the air is gone and above it grows back to the artboard's 40/24.
+ */
 .body {
-  padding: var(--pw-space-8) var(--pw-gutter) 0;
+  padding: clamp(12px, calc(100dvh - 725px), var(--pw-space-8)) var(--pw-gutter) 0;
   display: flex;
   flex-direction: column;
-  gap: var(--pw-space-6);
+  gap: clamp(var(--pw-space-3), calc(100dvh - 745px), var(--pw-space-6));
 }
 
 .intro {
@@ -36,31 +45,38 @@
 }
 
 .consent {
-  padding: var(--pw-space-6) var(--pw-gutter) 0;
+  padding: clamp(var(--pw-space-3), calc(100dvh - 745px), var(--pw-space-6)) var(--pw-gutter) 0;
   display: flex;
   flex-direction: column;
   gap: var(--pw-space-3);
 }
 
-/* Short viewports: the intro gap is the first thing that can give. */
-@media (max-height: 720px) {
-  .body {
-    padding-top: var(--pw-space-6);
-    gap: var(--pw-space-4);
-  }
-  .consent {
-    padding-top: var(--pw-space-4);
-  }
-}
-
 /*
- * Shortest phones (SE-class). The design asks the capture flow not to scroll,
- * and at 667px it otherwise does by a hair. The decorative tile is the only
- * thing on this screen that carries no information, so it goes first — the
- * same treatment the capture screen gives its strip-hint card.
+ * Shortest phones. The design asks the capture flow not to scroll, and this
+ * screen is the one with the most text, so it needs two steps.
+ *
+ * First the decorative tile — the only thing here that carries no information.
  */
 @media (max-height: 700px) {
   .disc {
     display: none;
+  }
+  /* The two consent cards are already bordered; they do not need 12 between. */
+  .consent {
+    gap: var(--pw-space-2);
+  }
+}
+
+/*
+ * Then the subtitle. The label, the placeholder and the helper line below the
+ * field already say what the name is for, so this sentence is the last thing
+ * on the screen that can go without losing meaning.
+ */
+@media (max-height: 620px) {
+  .sub {
+    display: none;
+  }
+  .title {
+    font: var(--pw-type-h2);
   }
 }
