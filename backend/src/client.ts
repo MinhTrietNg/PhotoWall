@@ -11,7 +11,7 @@ import {
   type FirebaseStorage,
 } from 'firebase/storage';
 import {
-  LIMITS, paths, type AppConfig, type FrameVariant, type PhotoDoc, type PublicStats, type UserDoc,
+  FRAME_ID_PATTERN, LIMITS, paths, type AppConfig, type FrameVariant, type PhotoDoc, type PublicStats, type UserDoc,
 } from './schema';
 
 export interface Backend {
@@ -86,6 +86,7 @@ export async function submitPhoto(b: Backend, input: SubmitInput): Promise<strin
   if (
     displayName.length < 1 || displayName.length > LIMITS.displayNameMaxLength
     || input.image.type !== 'image/jpeg' || input.image.size >= LIMITS.maxUploadBytes
+    || !FRAME_ID_PATTERN.test(input.frameVariant)
   ) {
     throw new SubmitError('invalid-input');
   }

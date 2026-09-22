@@ -6,8 +6,9 @@ import type { Timestamp } from 'firebase/firestore';
 export const PHOTO_STATUSES = ['uploading', 'pending', 'approved', 'rejected', 'removed'] as const;
 export type PhotoStatus = (typeof PHOTO_STATUSES)[number];
 
-export const FRAME_VARIANTS = ['light', 'dark'] as const;
-export type FrameVariant = (typeof FRAME_VARIANTS)[number];
+/** Frame ids from frontend/public/frames/frames.json, e.g. "f01-gdgoc". */
+export const FRAME_ID_PATTERN = /^f[0-9]{2}-[a-z0-9-]{1,30}$/;
+export type FrameVariant = string;
 
 export const LIMITS = {
   submitIntervalSeconds: 60,

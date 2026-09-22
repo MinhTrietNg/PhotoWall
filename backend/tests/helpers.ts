@@ -43,7 +43,7 @@ export function photoFields(uid: string, photoId: string) {
   return {
     ownerUid: uid,
     displayName: 'Khả',
-    frameVariant: 'light',
+    frameVariant: 'f01-gdgoc',
     status: 'uploading',
     storagePath: paths.photoObject(photoId),
     createdAt: serverTimestamp(),
@@ -73,7 +73,7 @@ export function storedPhoto(uid: string, photoId: string, status: string) {
   return {
     ownerUid: uid,
     displayName: 'Khả',
-    frameVariant: 'light',
+    frameVariant: 'f01-gdgoc',
     status,
     storagePath: paths.photoObject(photoId),
     createdAt: secondsAgo(120),

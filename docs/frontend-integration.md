@@ -129,14 +129,12 @@ await approve(backend, id);   // hoặc reject(backend, id)
 
 ## 6. Deploy
 
+Web chạy tại **<https://photowall-gdgocsgu.web.app>**. Mã QR trên big screen trỏ về địa chỉ này.
+
 `firebase.json` ở gốc repo phục vụ thư mục **`frontend/dist`**. Build frontend ra đúng thư mục đó rồi chạy ở gốc repo:
 
 ```
 npx firebase deploy --only hosting --project prod
 ```
 
-Muốn có bản xem thử không ảnh hưởng bản chính (link riêng, tự hết hạn):
-
-```
-npx firebase hosting:channel:deploy review --project prod
-```
+Chỉ domain `photowall-gdgocsgu.web.app` (và `localhost` khi dev) được Auth, App Check và CORS cho phép. Link preview channel (`photowall-gdgocsgu--xxx.web.app`) sẽ **không** đăng nhập Google được và bị App Check chặn, nên hãy test trên domain chính.

@@ -79,14 +79,14 @@ step('big screen and moderators connected');
 // Phone 1: submit, then get rate-limited
 const phone1 = device('phone1');
 await ensureGuest(phone1);
-const p1 = await submitPhoto(phone1, { image: strip(), displayName: 'Khả', frameVariant: 'light' });
+const p1 = await submitPhoto(phone1, { image: strip(), displayName: 'Khả', frameVariant: 'f01-gdgoc' });
 await waitFor('p1 in pending queue', () => pending.includes(p1));
 await expectSubmitError(
-  submitPhoto(phone1, { image: strip(), displayName: 'Khả', frameVariant: 'light' }),
+  submitPhoto(phone1, { image: strip(), displayName: 'Khả', frameVariant: 'f01-gdgoc' }),
   'rate-limited',
 );
 await expectSubmitError(
-  submitPhoto(phone1, { image: new Blob([new Uint8Array(10)], { type: 'image/png' }), displayName: 'x', frameVariant: 'light' }),
+  submitPhoto(phone1, { image: new Blob([new Uint8Array(10)], { type: 'image/png' }), displayName: 'x', frameVariant: 'f01-gdgoc' }),
   'invalid-input',
 );
 step('phone submits; second submit within 60s is rate-limited');
@@ -105,7 +105,7 @@ step(`approve → big screen pop in ${latency} ms, counter = 1, image downloadab
 // Phone 2: rejected → object deleted, never shown
 const phone2 = device('phone2');
 await ensureGuest(phone2);
-const p2 = await submitPhoto(phone2, { image: strip(), displayName: 'Bình', frameVariant: 'dark' });
+const p2 = await submitPhoto(phone2, { image: strip(), displayName: 'Bình', frameVariant: 'f02-aws' });
 await waitFor('p2 pending', () => pending.includes(p2));
 await reject(mod1, p2);
 await assert.rejects(photoUrl(phone2, p2));
@@ -115,7 +115,7 @@ step('reject → strip deleted, never reaches big screen');
 // Phone 3: two moderators race; exactly one wins
 const phone3 = device('phone3');
 await ensureGuest(phone3);
-const p3 = await submitPhoto(phone3, { image: strip(), displayName: 'Chi', frameVariant: 'light' });
+const p3 = await submitPhoto(phone3, { image: strip(), displayName: 'Chi', frameVariant: 'f01-gdgoc' });
 await waitFor('p3 pending', () => pending.includes(p3));
 const race = await Promise.allSettled([approve(mod1, p3), approve(mod2, p3)]);
 assert.equal(race.filter((r) => r.status === 'fulfilled').length, 1);
@@ -135,7 +135,7 @@ await setUploadsOpen(mod1, false);
 const phone4 = device('phone4');
 await ensureGuest(phone4);
 await expectSubmitError(
-  submitPhoto(phone4, { image: strip(), displayName: 'Dũng', frameVariant: 'light' }),
+  submitPhoto(phone4, { image: strip(), displayName: 'Dũng', frameVariant: 'f01-gdgoc' }),
   'uploads-closed',
 );
 step('uploadsOpen = false → submissions refused');
