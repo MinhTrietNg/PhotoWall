@@ -16,6 +16,7 @@
  */
 import { useMemo, type CSSProperties } from 'react';
 import { useBlobUrls, type BlobLike } from '@/lib/useBlobUrls';
+import { useMeasuredWidth } from '@/lib/useMeasuredWidth';
 import { STRIP_ASPECT, slotRadiusAt, slotToPercent, type FrameTemplate } from '@/types/frame';
 import { overlayUrl } from './frameRegistry';
 import styles from './PhotoWallFrame.module.css';
@@ -26,8 +27,13 @@ export interface PhotoWallFrameProps {
   frame: FrameTemplate;
   /** Up to four entries: a Blob, an already-resolved URL, or null for empty. */
   photos?: readonly SlotPhoto[];
-  /** Rendered width in px. Height follows from the 1080:3400 ratio. */
-  width: number;
+  /**
+   * Rendered width in px, or 'fit' to take the height of the parent and let
+   * the ratio decide the width. 'fit' is what keeps the strip screens off a
+   * hand-maintained height budget: the flex column hands the strip whatever is
+   * left, and the strip never pushes the screen into a scroll.
+   */
+  width: number | 'fit';
   /** Empty slots show their number — the "empty" state on DESIGN-D02. */
   showSlotNumbers?: boolean;
   className?: string;
@@ -46,20 +52,27 @@ export function PhotoWallFrame({
     [photos],
   );
   const urls = useBlobUrls(slots);
-  const radius = slotRadiusAt(frame.r, width);
+
+  // Under 'fit' the width is only known after layout, so it is measured rather
+  // than passed. The fixed case seeds it so the first paint already has the
+  // right corner radius instead of a frame of square corners.
+  const [ref, measured] = useMeasuredWidth<HTMLDivElement>();
+  const rendered = typeof width === 'number' ? width : measured;
+
+  const radius = slotRadiusAt(frame.r, rendered);
   // The design draws the empty-slot number at 10px on a 40px-wide strip.
-  const numberSize = Math.min(32, Math.max(6, Math.round(width * 0.25)));
+  const numberSize = Math.min(32, Math.max(6, Math.round(rendered * 0.25)));
+
+  const box: CSSProperties =
+    typeof width === 'number'
+      ? { width, aspectRatio: STRIP_ASPECT }
+      : { height: '100%', width: 'auto', maxWidth: '100%', aspectRatio: STRIP_ASPECT };
 
   return (
     <div
+      ref={ref}
       className={[styles.frame, className].filter(Boolean).join(' ')}
-      style={
-        {
-          width,
-          aspectRatio: STRIP_ASPECT,
-          '--pw-slot-number-size': `${numberSize}px`,
-        } as CSSProperties
-      }
+      style={{ ...box, '--pw-slot-number-size': `${numberSize}px` } as CSSProperties}
       data-variant={frame.id}
     >
       {frame.slots.map((slot, i) => {
