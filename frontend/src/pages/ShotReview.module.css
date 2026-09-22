@@ -1,3 +1,14 @@
+.namePill {
+  min-width: 0;
+}
+
+.nameText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* Same box as the viewfinder it replaces, so the shot lands where it was framed. */
 .previewWrap {
   padding: var(--pw-space-4) var(--pw-space-4) 0;
   flex-shrink: 0;
@@ -21,18 +32,19 @@
   object-fit: cover;
 }
 
+/* Top-left, plain white pill — it is a caption, not a call to action. */
 .badge {
   position: absolute;
   top: var(--pw-space-3);
-  left: 50%;
-  transform: translateX(-50%);
-  background: var(--pw-yellow-500);
+  left: var(--pw-space-3);
 }
 
 .copy {
-  padding: var(--pw-space-6) var(--pw-gutter) 0;
+  padding: var(--pw-space-4) var(--pw-gutter) 0;
   display: flex;
   flex-direction: column;
+  align-items: center;
+  text-align: center;
   gap: var(--pw-space-2);
 }
 
@@ -46,14 +58,4 @@
   margin: 0;
   font: var(--pw-type-body);
   color: var(--pw-on-dark-2);
-}
-
-/* Two bottom buttons are always L and always side by side, gap 12. */
-.actions {
-  flex-direction: row;
-}
-
-.actions > * {
-  flex: 1;
-  min-width: 0;
 }

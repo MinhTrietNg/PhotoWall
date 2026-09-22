@@ -8,6 +8,8 @@
 import { useEffect, useMemo, useState } from 'react';
 import { Navigate, useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
+import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { ShotTray } from '@/features/capture/ShotTray';
 import { clearPendingShot, takePendingShot } from '@/features/capture/pendingShot';
@@ -66,20 +68,31 @@ export function ShotReview() {
   }
 
   return (
-    <div className="screen screen--dark">
+    <Screen tone="dark">
       <TopBar
         tone="dark"
         title={`Ảnh ${slot} / ${SHOT_COUNT}`}
         backTo={`/camera/${slot}`}
-        right={session.displayName ? <span className="pill pill--on-ink">{session.displayName}</span> : undefined}
+        right={
+          session.displayName ? (
+            <span className={`pill pill--lg pill--on-ink ${styles.namePill}`}>
+              <Icon name="person" size={16} />
+              <span className={styles.nameText}>{session.displayName}</span>
+            </span>
+          ) : undefined
+        }
       />
 
-      <ShotTray shots={session.shots} current={slot} />
+      {/* `preview` is what makes the current cell show this shot, blue-bordered. */}
+      <ShotTray shots={session.shots} current={slot} preview={pending.blob} />
 
       <div className={styles.previewWrap}>
         <div className={styles.preview}>
           {url ? <img src={url} alt="Ảnh vừa chụp" className={styles.photo} /> : null}
-          <span className={`pill ${styles.badge}`}>Vừa chụp</span>
+          <span className={`pill ${styles.badge}`}>
+            <Icon name="check" size={16} />
+            Vừa chụp
+          </span>
         </div>
       </div>
 
@@ -90,14 +103,15 @@ export function ShotReview() {
         </p>
       </div>
 
-      <div className={`screen__cta ${styles.actions}`}>
-        <Button variant="secondary" onClick={() => navigate(`/camera/${slot}`)}>
+      {/* 42 / 58, not half and half — "Dùng ảnh này" has to stay the bigger target. */}
+      <div className="screen__cta screen__cta--row">
+        <Button variant="secondary" iconStart={<Icon name="refresh" />} onClick={() => navigate(`/camera/${slot}`)}>
           Chụp lại
         </Button>
-        <Button variant="success" onClick={accept}>
+        <Button variant="success" iconEnd={<Icon name="arrowForward" />} onClick={accept}>
           Dùng ảnh này
         </Button>
       </div>
-    </div>
+    </Screen>
   );
 }
