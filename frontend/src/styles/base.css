@@ -317,40 +317,36 @@ a:hover {
 /* --------------------------------------------------------- screen shell */
 
 /*
- * Every guest screen is one non-scrolling column. The CTA block is pushed to the
- * bottom with margin-top:auto, so it pins regardless of how tall the content is.
+ * Every guest screen is one column that fills the viewport exactly and does
+ * not scroll. The CTA block is pushed to the bottom with margin-top:auto, so
+ * it pins regardless of how tall the content above it is.
+ *
+ * The height is DEFINITE, not a minimum, and that is the load-bearing detail.
+ * With `min-height` the container grows to fit its content, so there is never
+ * negative free space and `flex-shrink` never fires — a strip or a colour band
+ * 40px too tall just makes the page longer instead of taking 40px less. With a
+ * definite height the column distributes the shortfall and the screen holds.
+ *
+ * `overflow-y: auto` is then a real safety net rather than dead CSS: on a
+ * viewport shorter than any phone the content scrolls inside the screen, so
+ * the CTA stays reachable and the page itself never bounces. `100vh` is the
+ * fallback for engines without `dvh`.
  */
 .screen {
   position: relative;
   display: flex;
   flex-direction: column;
-  min-height: 100dvh;
-  /*
-   * The design requires the capture flow not to scroll, and the sizing rules in
-   * each screen achieve that. overflow-y stays `auto` as a safety net: if a
-   * device is shorter than anything we tested, the CTA must still be reachable
-   * rather than clipped away.
-   */
+  height: 100vh;
+  height: 100dvh;
   overflow-x: hidden;
   overflow-y: auto;
+  overscroll-behavior: contain;
   background: var(--pw-bg);
 }
 
 .screen--dark {
   background: var(--pw-ink);
   color: #fff;
-}
-
-/* /me is the one screen the design expects to scroll on short devices. */
-.screen--scroll {
-  overflow-y: auto;
-}
-
-/* Reduce the chance of ever needing that safety net on short viewports. */
-@media (max-height: 700px) {
-  .screen__cta {
-    gap: var(--pw-space-2);
-  }
 }
 
 .screen__cta {
@@ -373,6 +369,33 @@ a:hover {
    */
   padding: var(--pw-cta-pad-top, var(--pw-space-6)) var(--pw-gutter)
     var(--pw-cta-pad-bottom, var(--pw-cta-bottom));
+}
+
+/*
+ * Two tiers of compaction, both measured rather than guessed.
+ *
+ * The first trims only the bottom inset: a 640px viewport (a small Android in
+ * Chrome) misses by single digits on the longest screens, and 8px of padding
+ * is a cheaper thing to spend than any piece of content.
+ */
+@media (max-height: 700px) {
+  .screen__cta {
+    --pw-cta-pad-bottom: calc(var(--pw-space-6) + env(safe-area-inset-bottom, 0px));
+  }
+}
+
+/*
+ * The second is for an SE-class viewport in Safari, about 553px tall, which
+ * the fixed content of the text-heavy screens fills on its own. Here the
+ * shared chrome gives up its air first, before any screen hides its own
+ * content.
+ */
+@media (max-height: 620px) {
+  .screen__cta {
+    --pw-cta-pad-top: var(--pw-space-3);
+    --pw-cta-pad-bottom: calc(var(--pw-space-5) + env(safe-area-inset-bottom, 0px));
+    gap: var(--pw-space-2);
+  }
 }
 
 /*

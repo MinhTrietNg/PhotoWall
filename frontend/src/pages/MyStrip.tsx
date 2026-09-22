@@ -82,7 +82,7 @@ export function MyStrip() {
   const canShare = local ? canShareStrip(local.blob, displayName) : false;
 
   return (
-    <Screen tone="dark" scroll>
+    <Screen tone="dark">
       <header className={styles.header}>
         <IconButtonLink to="/" label="Đóng" tone="on-ink">
           <Icon name="close" />

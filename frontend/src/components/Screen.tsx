@@ -21,26 +21,16 @@ const TONE_TOKEN: Record<ScreenTone, ScreenThemeToken> = {
 export interface ScreenProps {
   /** Drives both the page background and the browser chrome. */
   tone?: ScreenTone;
-  /**
-   * The design lets the capture flow run without scrolling; /me is the one
-   * screen expected to scroll on short devices.
-   */
-  scroll?: boolean;
   /** Renders a <form> instead of a <div>. */
   onSubmit?: FormEventHandler<HTMLFormElement>;
   className?: string;
   children: ReactNode;
 }
 
-export function Screen({ tone = 'light', scroll, onSubmit, className, children }: ScreenProps) {
+export function Screen({ tone = 'light', onSubmit, className, children }: ScreenProps) {
   useScreenTheme(TONE_TOKEN[tone]);
 
-  const classes = [
-    'screen',
-    tone === 'dark' && 'screen--dark',
-    scroll && 'screen--scroll',
-    className,
-  ]
+  const classes = ['screen', tone === 'dark' && 'screen--dark', className]
     .filter(Boolean)
     .join(' ');
 
