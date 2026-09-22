@@ -28,6 +28,14 @@ describe('submitting a photo', () => {
     await assertSucceeds(submitBatch(db(guest(env, 'bob')), 'bob', 'p2', { displayName: 'Bảo Anh' }).commit());
   });
 
+  it('accepts every frame id the frontend ships', async () => {
+    for (const [i, frame] of ['f01-gdgoc', 'f02-aws', 'f03-partners'].entries()) {
+      await seed(env);
+      const uid = `guest-${i}`;
+      await assertSucceeds(submitBatch(db(guest(env, uid)), uid, `p${i}`, { frameVariant: frame }).commit());
+    }
+  });
+
   it('rejects when uploads are closed', async () => {
     await seed(env, { uploadsOpen: false });
     await assertFails(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
@@ -64,7 +72,7 @@ describe('submitting a photo', () => {
     const batch = submitBatch(d, 'alice', 'p1');
     const lone = writeBatch(d);
     lone.set(doc(d, paths.photo('p2')), {
-      ownerUid: 'alice', displayName: 'x', frameVariant: 'light', status: 'uploading',
+      ownerUid: 'alice', displayName: 'x', frameVariant: 'f01-gdgoc', status: 'uploading',
       storagePath: paths.photoObject('p2'), createdAt: serverTimestamp(),
     });
     await assertSucceeds(batch.commit());
@@ -76,7 +84,7 @@ describe('submitting a photo', () => {
     const d = db(guest(env, 'alice'));
     const batch = submitBatch(d, 'alice', 'p1');
     batch.set(doc(d, paths.photo('p2')), {
-      ownerUid: 'alice', displayName: 'x', frameVariant: 'light', status: 'uploading',
+      ownerUid: 'alice', displayName: 'x', frameVariant: 'f01-gdgoc', status: 'uploading',
       storagePath: paths.photoObject('p2'), createdAt: serverTimestamp(),
     });
     await assertFails(batch.commit());
@@ -110,6 +118,8 @@ describe('submitting a photo', () => {
     await assertFails(submitBatch(d, 'alice', 'p1', { displayName: '' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { displayName: 'x'.repeat(41) }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: 'neon' }).commit());
+    await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: '' }).commit());
+    await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: 'F01-GDGOC' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { storagePath: 'photos/other/strip.jpg' }).commit());
   });
 

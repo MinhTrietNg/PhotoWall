@@ -75,7 +75,7 @@ async function phone(i: number) {
   await ensureGuest(b);
   const t0 = performance.now();
   try {
-    const id = await submitPhoto(b, { image: strip(), displayName: `Load ${i}`, frameVariant: i % 2 ? 'light' : 'dark' });
+    const id = await submitPhoto(b, { image: strip(), displayName: `Load ${i}`, frameVariant: i % 2 ? 'f01-gdgoc' : 'f02-aws' });
     record('submit (batch + upload + pending)', performance.now() - t0);
     count('submit ok');
     await new Promise<void>((resolve) => {

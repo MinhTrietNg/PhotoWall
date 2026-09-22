@@ -1,5 +1,5 @@
 rules_version = '2';
-// Constants mirror backend/src/schema.ts (LIMITS, FRAME_VARIANTS) — keep in sync.
+// Constants mirror backend/src/schema.ts (LIMITS, FRAME_ID_PATTERN) — keep in sync.
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -77,7 +77,8 @@ service cloud.firestore {
           && d.displayName is string
           && d.displayName.size() >= 1
           && d.displayName.size() <= 40
-          && d.frameVariant in ['light', 'dark']
+          && d.frameVariant is string
+          && d.frameVariant.matches('^f[0-9]{2}-[a-z0-9-]{1,30}$')
           && d.storagePath == 'photos/' + photoId + '/strip.jpg'
           && d.createdAt == request.time
           // The ledger must be written in this same batch and point at this photo,
