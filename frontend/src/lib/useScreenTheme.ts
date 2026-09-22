@@ -25,7 +25,7 @@ import { useEffect } from 'react';
 
 export type ScreenThemeToken = `--pw-${string}`;
 
-export const DEFAULT_SCREEN_THEME: ScreenThemeToken = '--pw-bg';
+const DEFAULT_SCREEN_THEME: ScreenThemeToken = '--pw-bg';
 
 /** Cream — the value of --pw-bg, used only if the token cannot be resolved. */
 const FALLBACK = '#faf7f2';

@@ -196,12 +196,6 @@ export function createMockBackend(): GuestApi {
   };
 }
 
-/** Dev helper: flip the uploads switch from the console to exercise E03. */
-export function mockSetUploadsOpen(open: boolean) {
-  store.config.uploadsOpen = open;
-  emit();
-}
-
 // ------------------------------------------------------------ moderators
 
 const MODERATOR_ALLOWLIST = new Set([

@@ -7,7 +7,7 @@
  */
 import { CANVAS_H, CANVAS_W, type FrameRegistry, type FrameTemplate } from '@/types/frame';
 
-export const FRAMES_BASE = '/frames';
+const FRAMES_BASE = '/frames';
 const REGISTRY_URL = `${FRAMES_BASE}/frames.json`;
 
 export class FrameRegistryError extends Error {}

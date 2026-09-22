@@ -5,7 +5,7 @@
 import { Icon } from './Icon';
 import styles from './Steps.module.css';
 
-export const GUEST_STEPS = ['1 · Tên', '2 · Chụp', '3 · Gửi'] as const;
+const GUEST_STEPS = ['1 · Tên', '2 · Chụp', '3 · Gửi'] as const;
 
 export function Steps({ current }: { current: 1 | 2 | 3 }) {
   return (

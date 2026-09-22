@@ -58,8 +58,3 @@ export function slotToPercent([x, y, w, h]: SlotRect): SlotPercent {
 export function slotRadiusAt(r: number, renderedWidth: number): number {
   return (r * renderedWidth) / CANVAS_W;
 }
-
-/** Strip height for a given rendered width, keeping invariant I1. */
-export function stripHeightFor(width: number): number {
-  return (width * CANVAS_H) / CANVAS_W;
-}

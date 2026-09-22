@@ -11,11 +11,11 @@
 import { CANVAS_H, CANVAS_W, type FrameTemplate, type SlotRect } from '@/types/frame';
 import { overlayUrl } from './frameRegistry';
 
-export const JPEG_QUALITY = 0.82;
-export const JPEG_QUALITY_FALLBACK = 0.75;
-export const TARGET_BYTES = 600 * 1024;
+const JPEG_QUALITY = 0.82;
+const JPEG_QUALITY_FALLBACK = 0.75;
+const TARGET_BYTES = 600 * 1024;
 /** storage.rules requires strictly less than 2 MB. */
-export const MAX_BYTES = 2 * 1024 * 1024;
+const MAX_BYTES = 2 * 1024 * 1024;
 
 export class ComposeError extends Error {}
 
