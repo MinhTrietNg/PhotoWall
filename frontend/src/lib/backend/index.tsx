@@ -9,10 +9,13 @@ const BackendContext = createContext<GuestApi | null>(null);
 
 let pending: Promise<GuestApi> | null = null;
 
-/** mock by default in dev; firebase when VITE_BACKEND=firebase. */
+/** Firebase in production builds; mock by default in dev unless VITE_BACKEND=firebase. */
 function loadBackend(): Promise<GuestApi> {
   pending ??= (async () => {
-    if (import.meta.env.VITE_BACKEND === 'firebase') {
+    const useFirebase =
+      import.meta.env.VITE_BACKEND === 'firebase' ||
+      (import.meta.env.PROD && import.meta.env.VITE_BACKEND !== 'mock');
+    if (useFirebase) {
       const { createFirebaseBackend } = await import('./firebase');
       return createFirebaseBackend();
     }

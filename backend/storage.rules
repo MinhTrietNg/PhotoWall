@@ -14,6 +14,11 @@ service firebase.storage {
         && firestore.exists(/databases/(default)/documents/moderators/$(request.auth.token.email));
     }
 
+    function retention() {
+      return duration.value(
+        firestore.get(/databases/(default)/documents/config/app).data.get('removedRetentionHours', 24), 'h');
+    }
+
     match /photos/{photoId}/strip.jpg {
       function canUpload(photo) {
         return request.auth != null
@@ -28,10 +33,21 @@ service firebase.storage {
           || (request.auth != null && photo.ownerUid == request.auth.uid);
       }
 
+      // Removed/rejected strips are kept for the retention window so moderators can
+      // restore them; a guest's own removal is final and deletes at once.
+      function canDelete(photo) {
+        return (isModerator()
+            && photo.status in ['rejected', 'removed']
+            && request.time >= photo.reviewedAt + retention())
+          || (request.auth != null
+            && photo.ownerUid == request.auth.uid
+            && photo.status == 'removed'
+            && photo.reviewedBy == 'owner');
+      }
+
       allow create, update: if canUpload(photoDoc(photoId));
       allow read: if canRead(photoDoc(photoId)) || isModerator();
-      // Moderators delete the object on reject/remove so leaked download URLs die.
-      allow delete: if isModerator();
+      allow delete: if canDelete(photoDoc(photoId));
     }
   }
 }
