@@ -21,7 +21,10 @@ export interface Photo {
   createdAtMs: number;
   submittedAtMs?: number;
   reviewedAtMs?: number;
+  /** Moderator email, or 'owner' when the guest removed it themselves. */
   reviewedBy?: string;
+  /** "Khoảnh khắc #N", set when the photo is first approved. */
+  momentNo?: number;
 }
 
 export interface AppConfig {
@@ -96,4 +99,10 @@ export interface GuestApi {
 
   /** Download URL for a photo the caller may read. Cached. */
   photoUrl(photoId: string): Promise<string>;
+
+  /**
+   * S09 "Gỡ dải ảnh của tôi". Final: off the big screen and deleted, not restorable.
+   * Only while the photo is pending or approved.
+   */
+  removeMyPhoto(photoId: string): Promise<void>;
 }

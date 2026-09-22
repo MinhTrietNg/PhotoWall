@@ -1,12 +1,17 @@
-import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
+import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import {
   collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction,
-  serverTimestamp, setDoc, updateDoc, where, writeBatch, type Firestore,
+  serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch, type Firestore,
 } from 'firebase/firestore';
+import {
+  AlreadyReviewedError, approve, deleteModerator, purgeExpired, reject, remove, removeMyPhoto,
+  restore, saveModerator, updateConfig, type Backend,
+} from '../src/client';
 import { paths } from '../src/schema';
 import {
-  createEnv, guest, MOD_EMAIL, moderator, secondsAgo, seed, storedPhoto, submitBatch,
+  createEnv, guest, guestBackend, hoursAgo, MOD2_EMAIL, MOD_EMAIL, modBackend, moderator,
+  reviewedPhoto, secondsAgo, seed, storedPhoto, submitBatch,
 } from './helpers';
 
 let env: RulesTestEnvironment;
@@ -26,6 +31,14 @@ describe('submitting a photo', () => {
     await seed(env);
     await assertSucceeds(submitBatch(db(guest(env, 'alice')), 'alice', 'p1', { displayName: 'Bảo Anh' }).commit());
     await assertSucceeds(submitBatch(db(guest(env, 'bob')), 'bob', 'p2', { displayName: 'Bảo Anh' }).commit());
+  });
+
+  it('accepts every frame id the frontend ships', async () => {
+    for (const [i, frame] of ['f01-gdgoc', 'f02-aws', 'f03-partners'].entries()) {
+      await seed(env);
+      const uid = `guest-${i}`;
+      await assertSucceeds(submitBatch(db(guest(env, uid)), uid, `p${i}`, { frameVariant: frame }).commit());
+    }
   });
 
   it('rejects when uploads are closed', async () => {
@@ -51,11 +64,26 @@ describe('submitting a photo', () => {
     await assertSucceeds(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
   });
 
-  it('rejects the 21st submission', async () => {
+  it('rejects the 4th submission by default (maxSubmitsPerUser = 3)', async () => {
     await seed(env, {
-      docs: { [paths.user('alice')]: { lastSubmitAt: secondsAgo(61), lastPhotoId: 'p0', submitCount: 20 } },
+      docs: { [paths.user('alice')]: { lastSubmitAt: secondsAgo(61), lastPhotoId: 'p0', submitCount: 3 } },
     });
     await assertFails(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
+  });
+
+  it('follows maxSubmitsPerUser from config', async () => {
+    await seed(env, {
+      config: { maxSubmitsPerUser: 5 },
+      docs: { [paths.user('alice')]: { lastSubmitAt: secondsAgo(61), lastPhotoId: 'p0', submitCount: 3 } },
+    });
+    await assertSucceeds(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
+  });
+
+  it('refuses submissions after closesAt, accepts before', async () => {
+    await seed(env, { config: { closesAt: secondsAgo(1) } });
+    await assertFails(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
+    await seed(env, { config: { closesAt: secondsAgo(-3600) } });
+    await assertSucceeds(submitBatch(db(guest(env, 'bob')), 'bob', 'p2').commit());
   });
 
   it('rejects a photo written without the ledger', async () => {
@@ -64,7 +92,7 @@ describe('submitting a photo', () => {
     const batch = submitBatch(d, 'alice', 'p1');
     const lone = writeBatch(d);
     lone.set(doc(d, paths.photo('p2')), {
-      ownerUid: 'alice', displayName: 'x', frameVariant: 'light', status: 'uploading',
+      ownerUid: 'alice', displayName: 'x', frameVariant: 'f01-gdgoc', status: 'uploading',
       storagePath: paths.photoObject('p2'), createdAt: serverTimestamp(),
     });
     await assertSucceeds(batch.commit());
@@ -76,7 +104,7 @@ describe('submitting a photo', () => {
     const d = db(guest(env, 'alice'));
     const batch = submitBatch(d, 'alice', 'p1');
     batch.set(doc(d, paths.photo('p2')), {
-      ownerUid: 'alice', displayName: 'x', frameVariant: 'light', status: 'uploading',
+      ownerUid: 'alice', displayName: 'x', frameVariant: 'f01-gdgoc', status: 'uploading',
       storagePath: paths.photoObject('p2'), createdAt: serverTimestamp(),
     });
     await assertFails(batch.commit());
@@ -110,6 +138,8 @@ describe('submitting a photo', () => {
     await assertFails(submitBatch(d, 'alice', 'p1', { displayName: '' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { displayName: 'x'.repeat(41) }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: 'neon' }).commit());
+    await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: '' }).commit());
+    await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: 'F01-GDGOC' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { storagePath: 'photos/other/strip.jpg' }).commit());
   });
 
@@ -125,71 +155,271 @@ describe('submitting a photo', () => {
   });
 });
 
+
+async function readAs<T = Record<string, unknown>>(path: string): Promise<T> {
+  let data: unknown;
+  await env.withSecurityRulesDisabled(async (ctx) => {
+    data = (await getDoc(doc(db(ctx), path))).data();
+  });
+  return data as T;
+}
+
 describe('moderation', () => {
   beforeEach(async () => {
-    await seed(env, { docs: { [paths.photo('p1')]: storedPhoto('alice', 'p1', 'pending') } });
+    await seed(env, {
+      docs: {
+        [paths.photo('p1')]: storedPhoto('alice', 'p1', 'pending'),
+        [paths.photo('p2')]: storedPhoto('bob', 'p2', 'pending'),
+      },
+    });
   });
 
-  const review = (d: Firestore, status: string, email = MOD_EMAIL) =>
+  const rawReview = (d: Firestore, status: string, email = MOD_EMAIL) =>
     updateDoc(doc(d, paths.photo('p1')), { status, reviewedAt: serverTimestamp(), reviewedBy: email });
 
-  it('lets a moderator approve and bump the counter in one batch', async () => {
-    const d = db(moderator(env));
-    const batch = writeBatch(d);
-    batch.update(doc(d, paths.photo('p1')), { status: 'approved', reviewedAt: serverTimestamp(), reviewedBy: MOD_EMAIL });
-    batch.set(doc(d, paths.stats), { approvedCount: increment(1) }, { merge: true });
-    await assertSucceeds(batch.commit());
+  it('approve assigns increasing moment numbers and counts the wall', async () => {
+    const m = modBackend(env);
+    await assertSucceeds(approve(m, 'p1'));
+    await assertSucceeds(approve(m, 'p2'));
+    expect((await readAs(paths.photo('p1'))).momentNo).toBe(1);
+    expect((await readAs(paths.photo('p2'))).momentNo).toBe(2);
+    expect(await readAs(paths.stats)).toMatchObject({ approvedCount: 2, momentSeq: 2 });
   });
 
-  it('lets a moderator reject', async () => {
-    await assertSucceeds(review(db(moderator(env)), 'rejected'));
+  it('refuses an approval that skips the counter or fakes the moment number', async () => {
+    const d = db(moderator(env));
+    await assertFails(rawReview(d, 'approved'));
+    const batch = writeBatch(d);
+    batch.update(doc(d, paths.photo('p1')), {
+      status: 'approved', reviewedAt: serverTimestamp(), reviewedBy: MOD_EMAIL, momentNo: 7,
+    });
+    batch.set(doc(d, paths.stats), { approvedCount: increment(1), momentSeq: 1 }, { merge: true });
+    await assertFails(batch.commit());
+  });
+
+  it('plain moderators (not only admins) can review', async () => {
+    await assertSucceeds(approve(modBackend(env, MOD2_EMAIL), 'p1'));
+  });
+
+  it('reject stores an allowed reason and refuses others', async () => {
+    const d = db(moderator(env));
+    await assertFails(updateDoc(doc(d, paths.photo('p1')), {
+      status: 'rejected', reviewedAt: serverTimestamp(), reviewedBy: MOD_EMAIL, reviewReason: 'ugly',
+    }));
+    await assertSucceeds(reject(modBackend(env), 'p1', 'inappropriate'));
+    expect((await readAs(paths.photo('p1'))).reviewReason).toBe('inappropriate');
   });
 
   it('forbids guests and non-allowlisted Google accounts from reviewing', async () => {
-    await assertFails(review(db(guest(env, 'alice')), 'approved', 'alice'));
-    await assertFails(review(db(moderator(env, 'stranger@example.com')), 'approved', 'stranger@example.com'));
+    await assertFails(rawReview(db(guest(env, 'alice')), 'rejected', 'alice'));
+    await assertFails(rawReview(db(moderator(env, 'stranger@example.com')), 'rejected', 'stranger@example.com'));
     const unverified = env.authenticatedContext('u', { email: MOD_EMAIL, email_verified: false });
-    await assertFails(review(db(unverified), 'approved'));
+    await assertFails(rawReview(db(unverified), 'rejected'));
   });
 
   it('forbids spoofing reviewedBy', async () => {
-    await assertFails(review(db(moderator(env)), 'approved', 'someone@else.com'));
+    await assertFails(rawReview(db(moderator(env)), 'rejected', 'someone@else.com'));
   });
 
-  it('lets only one of two concurrent moderators win', async () => {
-    const first = db(moderator(env));
-    await assertSucceeds(review(first, 'approved'));
-    await assertFails(review(db(moderator(env)), 'rejected'));
+  it('lets only one of two moderators act on the same photo', async () => {
+    await approve(modBackend(env), 'p1');
+    await expect(reject(modBackend(env, MOD2_EMAIL), 'p1')).rejects.toBeInstanceOf(AlreadyReviewedError);
   });
 
-  it('approve inside a transaction fails once the photo is no longer pending', async () => {
-    await assertSucceeds(review(db(moderator(env)), 'rejected'));
-    const d = db(moderator(env));
-    await assertFails(runTransaction(d, async (tx) => {
-      const ref = doc(d, paths.photo('p1'));
-      await tx.get(ref);
-      tx.update(ref, { status: 'approved', reviewedAt: serverTimestamp(), reviewedBy: MOD_EMAIL });
-    }));
+  it('remove takes a photo off the wall but keeps its moment number', async () => {
+    const m = modBackend(env);
+    await approve(m, 'p1');
+    await assertSucceeds(remove(m, 'p1', 'duplicate'));
+    expect(await readAs(paths.photo('p1'))).toMatchObject({ status: 'removed', momentNo: 1, reviewReason: 'duplicate' });
+    expect(await readAs(paths.stats)).toMatchObject({ approvedCount: 0, momentSeq: 1 });
   });
 
-  it('allows approved → removed but not rejected → approved', async () => {
-    const d = db(moderator(env));
-    await assertSucceeds(review(d, 'approved'));
-    await assertSucceeds(review(d, 'removed'));
-    await assertFails(review(d, 'approved'));
-  });
-
-  it('only allows the counter to move by exactly one', async () => {
-    const d = db(moderator(env));
-    await assertSucceeds(setDoc(doc(d, paths.stats), { approvedCount: increment(1) }, { merge: true }));
-    await assertFails(setDoc(doc(d, paths.stats), { approvedCount: increment(5) }, { merge: true }));
-    await assertSucceeds(setDoc(doc(d, paths.stats), { approvedCount: increment(-1) }, { merge: true }));
+  it('only allows the counter to move by one, and only for moderators', async () => {
+    await assertFails(setDoc(doc(db(moderator(env)), paths.stats), { approvedCount: increment(5) }, { merge: true }));
     await assertFails(setDoc(doc(db(guest(env, 'alice')), paths.stats), { approvedCount: increment(1) }, { merge: true }));
   });
+});
 
-  it('lets moderators toggle uploadsOpen, not guests', async () => {
-    await assertSucceeds(setDoc(doc(db(moderator(env)), paths.config), { uploadsOpen: false, eventName: 'SGU Day' }));
-    await assertFails(setDoc(doc(db(guest(env, 'alice')), paths.config), { uploadsOpen: true, eventName: 'SGU Day' }));
+describe('restore and purge', () => {
+  it('restores a removed photo within the window, keeping its number', async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'removed', 3600, { momentNo: 4, reviewReason: 'duplicate' }),
+        [paths.stats]: { approvedCount: 0, momentSeq: 4 },
+      },
+    });
+    await assertSucceeds(restore(modBackend(env, MOD2_EMAIL), 'p1'));
+    const p = await readAs(paths.photo('p1'));
+    expect(p).toMatchObject({ status: 'approved', momentNo: 4 });
+    expect(p).not.toHaveProperty('reviewReason');
+    expect(await readAs(paths.stats)).toMatchObject({ approvedCount: 1, momentSeq: 4 });
+  });
+
+  it('restoring a rejected photo gives it the next number', async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'rejected', 60, { reviewReason: 'duplicate' }),
+        [paths.stats]: { approvedCount: 2, momentSeq: 5 },
+      },
+    });
+    await assertSucceeds(restore(modBackend(env), 'p1'));
+    expect((await readAs(paths.photo('p1'))).momentNo).toBe(6);
+  });
+
+  it('refuses to restore after the window, after a purge, or after a guest removal', async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('old')]: reviewedPhoto('alice', 'old', 'removed', 25 * 3600, { momentNo: 1 }),
+        [paths.photo('gone')]: reviewedPhoto('alice', 'gone', 'rejected', 60, { purgedAt: secondsAgo(1) }),
+        [paths.photo('mine')]: reviewedPhoto('alice', 'mine', 'removed', 60, {
+          reviewedBy: 'owner', purgedAt: secondsAgo(1), momentNo: 2,
+        }),
+        [paths.stats]: { approvedCount: 0, momentSeq: 2 },
+      },
+    });
+    const m = modBackend(env);
+    for (const id of ['old', 'gone', 'mine']) await assertFails(restore(m, id));
+  });
+
+  it('follows removedRetentionHours from config', async () => {
+    await seed(env, {
+      config: { removedRetentionHours: 48 },
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'removed', 25 * 3600, { momentNo: 1 }),
+        [paths.stats]: { approvedCount: 0, momentSeq: 1 },
+      },
+    });
+    await assertSucceeds(restore(modBackend(env), 'p1'));
+  });
+
+  it('purges only photos past the retention window', async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('old')]: reviewedPhoto('alice', 'old', 'rejected', 25 * 3600),
+        [paths.photo('new')]: reviewedPhoto('alice', 'new', 'rejected', 60),
+      },
+    });
+    expect(await purgeExpired(modBackend(env))).toBe(1);
+    expect(await readAs(paths.photo('old'))).toHaveProperty('purgedAt');
+    expect(await readAs(paths.photo('new'))).not.toHaveProperty('purgedAt');
+    await assertFails(updateDoc(doc(db(moderator(env)), paths.photo('new')), { purgedAt: serverTimestamp() }));
+  });
+});
+
+describe('guest removes their own strip (S09)', () => {
+  it('removes a pending strip', async () => {
+    await seed(env, { docs: { [paths.photo('p1')]: storedPhoto('alice', 'p1', 'pending') } });
+    await assertSucceeds(removeMyPhoto(guestBackend(env, 'alice'), 'p1'));
+    expect(await readAs(paths.photo('p1'))).toMatchObject({ status: 'removed', reviewedBy: 'owner' });
+  });
+
+  it('removes an approved strip and decrements the counter', async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 60, { momentNo: 1 }),
+        [paths.stats]: { approvedCount: 3, momentSeq: 3 },
+      },
+    });
+    await assertSucceeds(removeMyPhoto(guestBackend(env, 'alice'), 'p1'));
+    expect(await readAs(paths.stats)).toMatchObject({ approvedCount: 2, momentSeq: 3, lastOwnerRemoval: 'p1' });
+  });
+
+  it("cannot remove someone else's strip", async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 60, { momentNo: 1 }),
+        [paths.stats]: { approvedCount: 1, momentSeq: 1 },
+      },
+    });
+    const d = db(guest(env, 'bob'));
+    const batch = writeBatch(d);
+    batch.update(doc(d, paths.photo('p1')), {
+      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: 'owner', purgedAt: serverTimestamp(),
+    });
+    batch.set(doc(d, paths.stats), { approvedCount: increment(-1), lastOwnerRemoval: 'p1' }, { merge: true });
+    await assertFails(batch.commit());
+  });
+
+  it('cannot touch the counter without removing a strip, nor remove without the counter', async () => {
+    await seed(env, {
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 60, { momentNo: 1 }),
+        [paths.stats]: { approvedCount: 3, momentSeq: 3 },
+      },
+    });
+    const d = db(guest(env, 'alice'));
+    await assertFails(setDoc(doc(d, paths.stats), { approvedCount: increment(-1), lastOwnerRemoval: 'p1' }, { merge: true }));
+    await assertFails(updateDoc(doc(d, paths.photo('p1')), {
+      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: 'owner', purgedAt: serverTimestamp(),
+    }));
+  });
+});
+
+describe('settings (config/app)', () => {
+  beforeEach(async () => { await seed(env); });
+
+  it('an admin can change every setting; uploadsChangedAt is stamped on flip', async () => {
+    await assertSucceeds(updateConfig(modBackend(env), {
+      uploadsOpen: false,
+      eventName: 'SGU Day 2026',
+      closesAt: Timestamp.fromMillis(Date.now() + 3_600_000),
+      maxSubmitsPerUser: 5,
+      allowGallery: false,
+      removedRetentionHours: 12,
+      marqueePxPerSec: 40,
+      showNames: false,
+      arrivalCard: true,
+      qrUrl: 'https://photowall-gdgocsgu.web.app/?utm_source=qr',
+      frames: [{ id: 'f02-aws', enabled: true }, { id: 'f01-gdgoc', enabled: false }],
+    }));
+    expect(await readAs(paths.config)).toHaveProperty('uploadsChangedAt');
+  });
+
+  it('plain moderators and guests cannot change settings', async () => {
+    await assertFails(updateConfig(modBackend(env, MOD2_EMAIL), { eventName: 'x' }));
+    await assertFails(setDoc(doc(db(guest(env, 'alice')), paths.config), { uploadsOpen: true, eventName: 'x' }));
+  });
+
+  it('refuses invalid settings', async () => {
+    const a = modBackend(env);
+    await assertFails(updateConfig(a, { maxSubmitsPerUser: 50 }));
+    await assertFails(updateConfig(a, { qrUrl: 'http://insecure.example' }));
+    await assertFails(updateConfig(a, { autoApprove: true } as never));
+  });
+
+  it('refuses flipping uploadsOpen without the server stamp', async () => {
+    await assertFails(updateDoc(doc(db(moderator(env)), paths.config), { uploadsOpen: false }));
+  });
+});
+
+describe('moderators allowlist', () => {
+  beforeEach(async () => { await seed(env); });
+  const admin = (): Backend => modBackend(env);
+
+  it('any moderator can list it; guests cannot', async () => {
+    await assertSucceeds(getDocs(collection(db(moderator(env, MOD2_EMAIL)), 'moderators')));
+    await assertFails(getDocs(collection(db(guest(env, 'alice')), 'moderators')));
+  });
+
+  it('an admin adds and removes moderators', async () => {
+    await assertSucceeds(saveModerator(admin(), 'New.Person@Gmail.com', { role: 'moderator', name: 'Mai', org: 'AWS SC' }));
+    expect(await readAs('moderators/new.person@gmail.com')).toMatchObject({ role: 'moderator', name: 'Mai' });
+    await assertSucceeds(deleteModerator(admin(), 'new.person@gmail.com'));
+  });
+
+  it('plain moderators cannot manage the list', async () => {
+    await assertFails(saveModerator(modBackend(env, MOD2_EMAIL), 'x@example.com', { role: 'admin' }));
+    await assertFails(deleteModerator(modBackend(env, MOD2_EMAIL), MOD_EMAIL));
+  });
+
+  it('refuses uppercase ids and unknown roles', async () => {
+    await assertFails(setDoc(doc(db(moderator(env)), 'moderators/Bad@Example.com'), { role: 'moderator' }));
+    await assertFails(saveModerator(admin(), 'x@example.com', { role: 'owner' as never }));
+  });
+
+  it('an admin cannot demote or delete themselves', async () => {
+    await assertFails(saveModerator(admin(), MOD_EMAIL, { role: 'moderator' }));
+    await assertFails(deleteModerator(admin(), MOD_EMAIL));
   });
 });
 
@@ -197,7 +427,7 @@ describe('reading', () => {
   beforeEach(async () => {
     await seed(env, {
       docs: {
-        [paths.photo('p1')]: { ...storedPhoto('alice', 'p1', 'approved'), reviewedAt: secondsAgo(10), reviewedBy: MOD_EMAIL },
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 10),
         [paths.photo('p2')]: storedPhoto('alice', 'p2', 'pending'),
       },
     });
@@ -211,18 +441,19 @@ describe('reading', () => {
     await assertFails(getDocs(collection(d, 'photos')));
   });
 
-  it('a guest cannot read someone else\'s pending photo, the owner can', async () => {
+  it("a guest cannot read someone else's pending photo, the owner can", async () => {
     await assertFails(getDoc(doc(db(guest(env, 'bob')), paths.photo('p2'))));
     await assertSucceeds(getDoc(doc(db(guest(env, 'alice')), paths.photo('p2'))));
     await assertSucceeds(getDocs(query(collection(db(guest(env, 'alice')), 'photos'), where('ownerUid', '==', 'alice'))));
   });
 
-  it('moderators can list the pending queue', async () => {
-    const d = db(moderator(env));
+  it('moderators can list every tab', async () => {
+    const d = db(moderator(env, MOD2_EMAIL));
     await assertSucceeds(getDocs(query(collection(d, 'photos'), where('status', '==', 'pending'), orderBy('submittedAt'))));
+    await assertSucceeds(getDocs(query(collection(d, 'photos'), where('status', 'in', ['rejected', 'removed']), orderBy('reviewedAt', 'desc'))));
   });
 
-  it('users cannot read other users\' ledgers', async () => {
+  it("users cannot read other users' ledgers", async () => {
     await assertFails(getDoc(doc(db(guest(env, 'bob')), paths.user('alice'))));
   });
 });

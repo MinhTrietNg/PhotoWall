@@ -1,5 +1,7 @@
 rules_version = '2';
-// Constants mirror backend/src/schema.ts (LIMITS, FRAME_VARIANTS) — keep in sync.
+// Constants mirror backend/src/schema.ts — keep in sync:
+//   FRAME_ID_PATTERN, REVIEW_REASONS, OWNER_REVIEWER ('owner'), MODERATOR_ROLES,
+//   LIMITS, CONFIG_DEFAULTS (maxSubmitsPerUser 3, removedRetentionHours 24).
 service cloud.firestore {
   match /databases/{database}/documents {
 
@@ -7,45 +9,159 @@ service cloud.firestore {
       return request.auth != null;
     }
 
+    function configPath() {
+      return /databases/$(database)/documents/config/app;
+    }
+
+    function statsPath() {
+      return /databases/$(database)/documents/stats/public;
+    }
+
+    function myModeratorPath() {
+      return /databases/$(database)/documents/moderators/$(request.auth.token.email);
+    }
+
     function isModerator() {
       return signedIn()
         && request.auth.token.get('email_verified', false) == true
-        && exists(/databases/$(database)/documents/moderators/$(request.auth.token.email));
+        && exists(myModeratorPath());
     }
 
-    function uploadsOpen() {
-      return get(/databases/$(database)/documents/config/app).data.uploadsOpen == true;
+    function isAdmin() {
+      return isModerator() && get(myModeratorPath()).data.get('role', 'moderator') == 'admin';
     }
+
+    function config() {
+      return get(configPath()).data;
+    }
+
+    function uploadsAllowed() {
+      let c = config();
+      return c.uploadsOpen == true
+        && (c.get('closesAt', null) == null || request.time < c.closesAt);
+    }
+
+    function retention() {
+      return duration.value(config().get('removedRetentionHours', 24), 'h');
+    }
+
+    // Stats as they were before this request; a missing doc counts as zero.
+    function statsBefore() {
+      return exists(statsPath()) ? get(statsPath()).data : {'approvedCount': 0, 'momentSeq': 0};
+    }
+
+    function statsAfter() {
+      return getAfter(statsPath()).data;
+    }
+
+    function approvedCountMoved(delta) {
+      return statsAfter().approvedCount == statsBefore().get('approvedCount', 0) + delta;
+    }
+
+    // ------------------------------------------------------------ config (M02)
 
     match /config/app {
+      function validConfig() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['uploadsOpen', 'eventName', 'uploadsChangedAt', 'closesAt',
+            'maxSubmitsPerUser', 'allowGallery', 'removedRetentionHours', 'marqueePxPerSec',
+            'showNames', 'arrivalCard', 'qrUrl', 'frames', 'displayReloadAt'])
+          && d.uploadsOpen is bool
+          && d.eventName is string && d.eventName.size() <= 120
+          && (d.get('closesAt', null) == null || d.closesAt is timestamp)
+          && (!('maxSubmitsPerUser' in d)
+              || (d.maxSubmitsPerUser is int && d.maxSubmitsPerUser >= 1 && d.maxSubmitsPerUser <= 20))
+          && (!('allowGallery' in d) || d.allowGallery is bool)
+          && (!('showNames' in d) || d.showNames is bool)
+          && (!('arrivalCard' in d) || d.arrivalCard is bool)
+          && (!('removedRetentionHours' in d)
+              || (d.removedRetentionHours is int && d.removedRetentionHours >= 1 && d.removedRetentionHours <= 168))
+          && (d.get('marqueePxPerSec', null) == null
+              || (d.marqueePxPerSec is number && d.marqueePxPerSec >= 5 && d.marqueePxPerSec <= 400))
+          && (!('qrUrl' in d) || (d.qrUrl is string && d.qrUrl.size() <= 300 && d.qrUrl.matches('^https://.+')))
+          && (!('frames' in d) || (d.frames is list && d.frames.size() <= 20))
+          && (d.get('displayReloadAt', null) == null || d.displayReloadAt is timestamp);
+      }
+
+      // "Đã đóng lúc 17:30": the server stamps the time whenever uploadsOpen flips.
+      function uploadsStamped() {
+        let d = request.resource.data;
+        return (resource != null && d.uploadsOpen == resource.data.uploadsOpen)
+          ? d.get('uploadsChangedAt', null) == resource.data.get('uploadsChangedAt', null)
+          : d.get('uploadsChangedAt', null) == request.time;
+      }
+
       allow read: if true;
-      allow write: if isModerator()
-        && request.resource.data.keys().hasOnly(['uploadsOpen', 'eventName'])
-        && request.resource.data.uploadsOpen is bool
-        && request.resource.data.eventName is string;
+      allow create, update: if isAdmin() && validConfig() && uploadsStamped();
     }
 
-    // Allowlist is managed from the console only. A moderator may read their own
-    // entry so the moderation UI can check access.
+    // ------------------------------------------------------------ moderators
+
+    // Doc id = lowercase Google email. role 'admin' may change settings and this list.
     match /moderators/{email} {
-      allow read: if signedIn() && request.auth.token.get('email', '') == email;
-      allow write: if false;
+      function isSelf() {
+        return request.auth.token.get('email', '') == email;
+      }
+
+      function validModerator() {
+        let d = request.resource.data;
+        return d.keys().hasOnly(['role', 'name', 'org', 'note'])
+          && d.role in ['admin', 'moderator']
+          && (!('name' in d) || (d.name is string && d.name.size() <= 80))
+          && (!('org' in d) || (d.org is string && d.org.size() <= 80))
+          && (!('note' in d) || (d.note is string && d.note.size() <= 200))
+          && email == email.lower()
+          && email.matches('^[^@ ]+@[^@ ]+$');
+      }
+
+      allow read: if isModerator() || (signedIn() && isSelf());
+      // An admin cannot demote or delete themselves, so the last admin cannot lock everyone out.
+      allow create, update: if isAdmin() && validModerator()
+        && !(isSelf() && request.resource.data.role != 'admin');
+      allow delete: if isAdmin() && !isSelf();
     }
 
-    // Counter for the big screen. Written by moderators via increment(±1)
-    // alongside the photo status change.
+    // ------------------------------------------------------------ stats
+
+    // approvedCount = strips on the wall; momentSeq = every approval ever ("Khoảnh khắc #N").
     match /stats/public {
+      function keysOk() {
+        return request.resource.data.keys().hasOnly(['approvedCount', 'momentSeq', 'lastOwnerRemoval']);
+      }
+
+      function moderatorWrite() {
+        let d = request.resource.data;
+        let b = resource == null ? {'approvedCount': 0, 'momentSeq': 0} : resource.data;
+        let dc = d.approvedCount - b.get('approvedCount', 0);
+        let ds = d.get('momentSeq', 0) - b.get('momentSeq', 0);
+        return isModerator() && keysOk()
+          && d.approvedCount is int && d.approvedCount >= 0
+          && dc >= -1 && dc <= 1
+          && ds >= 0 && ds <= 1
+          && d.get('lastOwnerRemoval', null) == b.get('lastOwnerRemoval', null);
+      }
+
+      // A guest removing their own approved strip decrements the counter, naming the
+      // photo; the photo must really go approved -> removed in this same request.
+      function ownerRemoval() {
+        let d = request.resource.data;
+        let before = get(/databases/$(database)/documents/photos/$(d.lastOwnerRemoval)).data;
+        let after = getAfter(/databases/$(database)/documents/photos/$(d.lastOwnerRemoval)).data;
+        return signedIn() && resource != null && keysOk()
+          && d.diff(resource.data).affectedKeys().hasOnly(['approvedCount', 'lastOwnerRemoval'])
+          && d.approvedCount == resource.data.approvedCount - 1
+          && before.ownerUid == request.auth.uid
+          && before.status == 'approved'
+          && after.status == 'removed';
+      }
+
       allow read: if true;
-      allow create: if isModerator()
-        && request.resource.data.keys().hasOnly(['approvedCount'])
-        && request.resource.data.approvedCount == 1;
-      allow update: if isModerator()
-        && request.resource.data.keys().hasOnly(['approvedCount'])
-        && (request.resource.data.approvedCount == resource.data.approvedCount + 1
-            || request.resource.data.approvedCount == resource.data.approvedCount - 1);
+      allow create, update: if moderatorWrite() || ownerRemoval();
     }
 
-    // Rate-limit ledger. Written in the same batch as a new photo:
+    // ------------------------------------------------------------ rate-limit ledger
+
+    // Written in the same batch as a new photo:
     //   set(users/{uid}, {lastSubmitAt: serverTimestamp(), lastPhotoId, submitCount: increment(1)}, {merge: true})
     match /users/{uid} {
       function validLedger() {
@@ -63,9 +179,11 @@ service cloud.firestore {
       allow update: if signedIn() && validLedger()
         && request.time > resource.data.lastSubmitAt + duration.value(60, 's')
         && request.resource.data.submitCount == resource.data.submitCount + 1
-        && request.resource.data.submitCount <= 20;
+        && request.resource.data.submitCount <= config().get('maxSubmitsPerUser', 3);
       allow delete: if false;
     }
+
+    // ------------------------------------------------------------ photos
 
     match /photos/{photoId} {
       function validNewPhoto() {
@@ -77,7 +195,8 @@ service cloud.firestore {
           && d.displayName is string
           && d.displayName.size() >= 1
           && d.displayName.size() <= 40
-          && d.frameVariant in ['light', 'dark']
+          && d.frameVariant is string
+          && d.frameVariant.matches('^f[0-9]{2}-[a-z0-9-]{1,30}$')
           && d.storagePath == 'photos/' + photoId + '/strip.jpg'
           && d.createdAt == request.time
           // The ledger must be written in this same batch and point at this photo,
@@ -98,22 +217,82 @@ service cloud.firestore {
           && changes().hasOnly(['status', 'submittedAt']);
       }
 
+      // S09 "Gỡ dải ảnh của tôi": final — the strip is deleted right after.
+      function ownerRemoves() {
+        let from = resource.data.status;
+        let d = request.resource.data;
+        return resource.data.ownerUid == request.auth.uid
+          && from in ['pending', 'approved']
+          && d.status == 'removed'
+          && d.reviewedAt == request.time
+          && d.reviewedBy == 'owner'
+          && d.purgedAt == request.time
+          && changes().hasOnly(['status', 'reviewedAt', 'reviewedBy', 'purgedAt'])
+          && (from == 'pending' || (approvedCountMoved(-1) && statsAfter().lastOwnerRemoval == photoId));
+      }
+
+      function reasonOk() {
+        let d = request.resource.data;
+        return !('reviewReason' in d) || d.reviewReason in ['inappropriate', 'duplicate', 'guest-request'];
+      }
+
+      function takesNextMoment() {
+        let n = statsBefore().get('momentSeq', 0) + 1;
+        return request.resource.data.momentNo == n && statsAfter().momentSeq == n;
+      }
+
+      function keepsMoment() {
+        return request.resource.data.momentNo == resource.data.momentNo
+          && statsAfter().get('momentSeq', 0) == statsBefore().get('momentSeq', 0);
+      }
+
+      function restorable() {
+        return !('purgedAt' in resource.data)
+          && resource.data.reviewedBy != 'owner'
+          && request.time < resource.data.reviewedAt + retention();
+      }
+
       function moderatorReviews() {
         let from = resource.data.status;
         let to = request.resource.data.status;
+        let d = request.resource.data;
         return isModerator()
-          && ((from == 'pending' && to in ['approved', 'rejected'])
-              || (from == 'approved' && to == 'removed'))
-          && request.resource.data.reviewedAt == request.time
-          && request.resource.data.reviewedBy == request.auth.token.email
-          && changes().hasOnly(['status', 'reviewedAt', 'reviewedBy']);
+          && d.reviewedAt == request.time
+          && d.reviewedBy == request.auth.token.email
+          && changes().hasOnly(['status', 'reviewedAt', 'reviewedBy', 'momentNo', 'reviewReason'])
+          && (
+            // Duyệt
+            (from == 'pending' && to == 'approved' && !('reviewReason' in d)
+              && takesNextMoment() && approvedCountMoved(1))
+            // Gỡ (chờ duyệt) — kept for the retention window, then purged
+            || (from == 'pending' && to == 'rejected' && reasonOk() && !('momentNo' in d))
+            // Gỡ khỏi Wall
+            || (from == 'approved' && to == 'removed' && reasonOk()
+              && d.get('momentNo', null) == resource.data.get('momentNo', null)
+              && approvedCountMoved(-1))
+            // Khôi phục
+            || (from in ['rejected', 'removed'] && to == 'approved' && restorable()
+              && !('reviewReason' in d) && approvedCountMoved(1)
+              && (('momentNo' in resource.data) ? keepsMoment() : takesNextMoment()))
+          );
+      }
+
+      // After the strip is deleted (retention expired), mark the photo so it is not restored.
+      function moderatorPurges() {
+        return isModerator()
+          && resource.data.status in ['rejected', 'removed']
+          && !('purgedAt' in resource.data)
+          && request.resource.data.purgedAt == request.time
+          && changes().hasOnly(['purgedAt'])
+          && request.time >= resource.data.reviewedAt + retention();
       }
 
       allow read: if resource.data.status == 'approved'
         || (signedIn() && resource.data.ownerUid == request.auth.uid)
         || isModerator();
-      allow create: if signedIn() && uploadsOpen() && validNewPhoto();
-      allow update: if signedIn() && (ownerSubmits() || moderatorReviews());
+      allow create: if signedIn() && uploadsAllowed() && validNewPhoto();
+      allow update: if signedIn()
+        && (ownerSubmits() || ownerRemoves() || moderatorReviews() || moderatorPurges());
       allow delete: if false;
     }
   }

@@ -69,6 +69,7 @@ export function MyStrip() {
   if (!id) return <Navigate to="/" replace />;
 
   const gone = photo?.status === 'removed' || photo?.status === 'rejected';
+  const removedByMe = photo?.reviewedBy === 'owner';
   const displayName = local?.displayName ?? photo?.displayName ?? session.displayName;
 
   return (
@@ -79,7 +80,11 @@ export function MyStrip() {
         <StateBlock
           tone="error"
           title="Dải ảnh đã được gỡ"
-          body="Ban tổ chức đã gỡ dải ảnh này khỏi màn hình lớn. Bạn vẫn có thể chụp một bộ mới."
+          body={
+            removedByMe
+              ? 'Bạn đã gỡ dải ảnh này khỏi màn hình lớn. Bạn vẫn có thể chụp một bộ mới.'
+              : 'Ban tổ chức đã gỡ dải ảnh này khỏi màn hình lớn. Bạn vẫn có thể chụp một bộ mới.'
+          }
           action={
             <ButtonLink to="/" block>
               Chụp bộ khác
@@ -145,7 +150,11 @@ export function MyStrip() {
         body="Ảnh sẽ biến mất khỏi màn hình lớn ngay và không khôi phục được."
         confirmLabel="Gỡ dải ảnh"
         onCancel={() => setConfirmRemove(false)}
-        onConfirm={() => setConfirmRemove(false)}
+        onConfirm={() => {
+          setConfirmRemove(false);
+          // watchMyPhotos flips the screen to the "đã gỡ" state once it lands.
+          backend.removeMyPhoto(id).catch(() => undefined);
+        }}
       />
     </div>
   );

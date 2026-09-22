@@ -14,6 +14,7 @@ import {
   SubmitError,
   ensureGuest as clientEnsureGuest,
   photoUrl as clientPhotoUrl,
+  removeMyPhoto as clientRemoveMyPhoto,
   resumeSubmission as clientResumeSubmission,
   submitPhoto as clientSubmitPhoto,
   watchConfig as clientWatchConfig,
@@ -49,6 +50,7 @@ function toPhoto(p: ClientPhoto): Photo {
     submittedAtMs: ms(p.submittedAt),
     reviewedAtMs: ms(p.reviewedAt),
     reviewedBy: p.reviewedBy,
+    momentNo: p.momentNo,
   };
 }
 
@@ -82,9 +84,7 @@ export function createFirebaseBackend(): GuestApi {
         return await clientSubmitPhoto(backend, {
           image: input.image,
           displayName: input.displayName,
-          // frameVariant carries the real frame id. Requires P0.4 (FRAME_VARIANTS +
-          // firestore.rules widened to the frame ids) — Claude-Plan.md §20.5 #1.
-          frameVariant: input.frameVariant as never,
+          frameVariant: input.frameVariant,
         });
       } catch (e) {
         throw asFailure(e);
@@ -107,5 +107,7 @@ export function createFirebaseBackend(): GuestApi {
     watchStats: (cb) => clientWatchStats(backend, cb),
 
     photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
+
+    removeMyPhoto: (photoId) => clientRemoveMyPhoto(backend, photoId),
   };
 }

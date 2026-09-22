@@ -3,7 +3,9 @@
 // security rules and App Check.
 export const firebaseConfig = {
   apiKey: 'AIzaSyDlv1dTUCssKYR-PF5IXTUK7C7ch0y9Ylo',
-  authDomain: 'photowall-gdgoc-2026.firebaseapp.com',
+  // The app's own domain, so Google sign-in stays first-party (Safari blocks
+  // cross-domain auth storage).
+  authDomain: 'photowall-gdgocsgu.web.app',
   projectId: 'photowall-gdgoc-2026',
   storageBucket: 'photowall-gdgoc-2026.firebasestorage.app',
   messagingSenderId: '796758665431',

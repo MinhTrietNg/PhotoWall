@@ -26,7 +26,7 @@ export function Done() {
 
   const submission = getSubmission();
   const [status, setStatus] = useState<PhotoStatus>('pending');
-  const [approvedCount, setApprovedCount] = useState<number | null>(null);
+  const [momentNo, setMomentNo] = useState<number | null>(null);
 
   const photos = useMemo(() => session.shots.map((s) => s?.blob ?? null), [session.shots]);
   const frame = registry ? findFrame(registry, submission?.frameId ?? null) : undefined;
@@ -35,11 +35,12 @@ export function Done() {
     if (!submission?.photoId) return;
     return backend.watchMyPhotos((list) => {
       const mine = list.find((p) => p.id === submission.photoId);
-      if (mine) setStatus(mine.status);
+      if (mine) {
+        setStatus(mine.status);
+        setMomentNo(mine.momentNo ?? null);
+      }
     });
   }, [backend, submission?.photoId]);
-
-  useEffect(() => backend.watchStats((s) => setApprovedCount(s.approvedCount)), [backend]);
 
   if (!submission) return <Navigate to="/" replace />;
 
@@ -89,8 +90,8 @@ export function Done() {
         </p>
 
         {approved ? (
-          approvedCount !== null ? (
-            <span className="pill">Khoảnh khắc thứ {approvedCount}</span>
+          momentNo !== null ? (
+            <span className="pill">Khoảnh khắc thứ {momentNo}</span>
           ) : null
         ) : (
           <span className={`pill ${styles.pendingPill}`}>Đang chờ ban tổ chức duyệt</span>

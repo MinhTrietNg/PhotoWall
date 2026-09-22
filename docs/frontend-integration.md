@@ -75,21 +75,23 @@ try {
 | `e.code` | Nghĩa | Nên hiển thị |
 |---|---|---|
 | `invalid-input` | Tên rỗng hoặc dài hơn 40 ký tự, ảnh không phải JPEG, hoặc ảnh quá lớn | Lỗi ở phía frontend, kiểm tra lại bước xuất ảnh |
-| `uploads-closed` | Ban tổ chức đang tạm dừng nhận ảnh | "Hiện chưa nhận ảnh, bạn quay lại sau nhé" |
+| `uploads-closed` | Ban tổ chức đang tạm dừng nhận ảnh, hoặc đã qua giờ `closesAt` | "Hiện chưa nhận ảnh, bạn quay lại sau nhé" |
 | `rate-limited` | Chưa đủ 60 giây kể từ lần gửi trước. `e.retryAfterSeconds` là số giây còn phải chờ | "Chờ {n} giây nữa để gửi tiếp" |
-| `quota-exceeded` | Đã gửi 20 ảnh | "Bạn đã gửi đủ số ảnh" |
+| `quota-exceeded` | Đã gửi đủ `maxSubmitsPerUser` dải ảnh (mặc định 3) | "Bạn đã gửi đủ số ảnh" |
 | `upload-failed` | Mạng rớt giữa chừng. Ảnh đã được giữ chỗ, **đừng gọi lại `submitPhoto`**, vì lần gửi mới sẽ bị giới hạn 60 giây | Nút "Thử lại" gọi `resumeSubmission(backend, e.photoId!, image)` |
 | `unknown` | Lỗi khác | "Có lỗi, thử lại sau" |
 
 Tên người dùng (`displayName`) được `trim()`, phải dài **1–40 ký tự**.
 
-### Trạng thái ảnh của mình và tải ảnh về
+### Trạng thái ảnh của mình, tải về, tự gỡ
 
 ```ts
 const stop = watchMyPhotos(backend, (photos) => { /* photos[i].status */ });
 ```
 
-`status`: `uploading` → `pending` (chờ duyệt) → `approved` hoặc `rejected`. Nếu ban tổ chức gỡ ảnh sau khi duyệt thì thành `removed`.
+`status`: `uploading` → `pending` (chờ duyệt) → `approved` hoặc `rejected`. Nếu ban tổ chức gỡ ảnh sau khi duyệt thì thành `removed`. Khi đã duyệt, `photo.momentNo` là số "Khoảnh khắc #N" của ảnh.
+
+**Tự gỡ ảnh (S09):** `removeMyPhoto(backend, id)` khi ảnh đang `pending` hoặc `approved`. Ảnh biến khỏi big screen và bị **xoá hẳn**, không khôi phục được; sau đó `photo.reviewedBy === 'owner'`.
 
 **Tải ảnh về máy:** ngay sau khi gửi, dùng luôn blob `image` đang có trong bộ nhớ (`URL.createObjectURL(image)` kèm `<a download>`), không cần tải lại từ server. Muốn tải lại sau khi đã tải lại trang thì dùng `photoUrl(backend, id)`.
 
@@ -109,25 +111,89 @@ watchStats(backend, ({ approvedCount }) => { /* bộ đếm */ });
 - Big screen **không cần đăng nhập** và **không cần polling**. Listener tự nhận ảnh mới trong khoảng một giây.
 - Big screen dùng ảnh đầy đủ: `photoUrl(backend, id)`.
 
-## 5. Màn người duyệt
+## 5. Màn người duyệt (`/admin`)
+
+### Đăng nhập và vai trò
 
 ```ts
 import { GoogleAuthProvider, signInWithPopup } from 'firebase/auth';
-import { isModerator, watchPending, approve, reject, remove, setUploadsOpen, watchConfig, AlreadyReviewedError } from '../backend/src/client';
+import { getMyRole } from '../backend/src/client';
 
 await signInWithPopup(backend.auth, new GoogleAuthProvider());
-if (!(await isModerator(backend))) { /* "Tài khoản này chưa được cấp quyền duyệt" */ }
-
-watchPending(backend, (photos) => { /* hàng chờ, cũ nhất trước */ });
-await approve(backend, id);   // hoặc reject(backend, id)
+const role = await getMyRole(backend);   // 'admin' | 'moderator' | null
+if (!role) { /* M00: "… chưa có quyền kiểm duyệt" */ }
 ```
 
-- **Nhiều người duyệt cùng lúc:** nếu người khác đã xử lý ảnh đó trước, hàm ném `AlreadyReviewedError`. Chỉ cần bỏ qua, vì ảnh sẽ tự biến khỏi hàng chờ.
-- **Gỡ ảnh đã duyệt:** `remove(backend, id)`. Ảnh biến khỏi big screen và bộ đếm giảm 1.
-- **Công tắc nhận ảnh:** `watchConfig` để hiển thị trạng thái, `setUploadsOpen(backend, true/false)` để bật/tắt. **Tắt khi không có ai trực duyệt.**
-- Danh sách người duyệt do Khả quản lý trên Firebase console (`moderators/{email}`).
+| Vai trò | Được làm |
+|---|---|
+| `moderator` | Duyệt, gỡ, khôi phục ảnh |
+| `admin` | Như `moderator`, **cộng thêm**: đổi mọi cài đặt (M02, kể cả công tắc "Đang nhận ảnh") và thêm/xoá người duyệt |
+
+### Ba tab kiểm duyệt (M01)
+
+```ts
+import { watchPending, watchByStatus, approve, reject, remove, restore, purgeExpired, AlreadyReviewedError } from '../backend/src/client';
+
+watchPending(backend, cb);                               // "Chờ duyệt", cũ nhất trước
+watchByStatus(backend, ['approved'], cb);                // "Đã duyệt"
+watchByStatus(backend, ['rejected', 'removed'], cb);     // "Đã gỡ"
+
+await approve(backend, id);                  // Duyệt — gán "Khoảnh khắc #N" (photo.momentNo)
+await reject(backend, id, 'inappropriate');  // Gỡ ở tab Chờ duyệt
+await remove(backend, id, 'duplicate');      // Gỡ ở tab Đã duyệt — biến khỏi big screen ngay
+await restore(backend, id);                  // Khôi phục ở tab Đã gỡ
+
+purgeExpired(backend);  // gọi một lần khi mở trang admin: xoá hẳn ảnh đã gỡ quá hạn giữ
+```
+
+- **Lý do gỡ** (hộp thoại gỡ ảnh): `'inappropriate'` = Không phù hợp, `'duplicate'` = Trùng / lỗi ảnh, `'guest-request'` = Người gửi yêu cầu. Lý do được lưu ở `photo.reviewReason`, khách không thấy.
+- **Khôi phục** chỉ được trong `removedRetentionHours` giờ kể từ lúc gỡ (mặc định 24). Quá hạn, hoặc ảnh do **khách tự gỡ** (`photo.reviewedBy === 'owner'`), thì `restore` bị từ chối. Nên ẩn nút Khôi phục trong hai trường hợp đó.
+- **Nhiều người cùng thao tác:** nếu người khác đã xử lý ảnh trước, hàm ném `AlreadyReviewedError`. Bỏ qua là được, danh sách tự cập nhật.
+- Cột meta của mỗi dòng: `photo.momentNo`, `photo.frameVariant`, `photo.ownerUid`, `photo.reviewedBy`, `photo.reviewedAt`.
+
+### Cài đặt sự kiện (M02, chỉ admin)
+
+```ts
+import { watchConfig, updateConfig, requestDisplayReload } from '../backend/src/client';
+
+watchConfig(backend, (c) => { /* c đã được điền sẵn giá trị mặc định */ });
+await updateConfig(backend, { uploadsOpen: false, maxSubmitsPerUser: 3 });
+await requestDisplayReload(backend);   // "Làm mới màn lớn"
+```
+
+| Field | Ô trên M02 | Mặc định | Ai áp dụng |
+|---|---|---|---|
+| `uploadsOpen` | Đang nhận ảnh | | rules |
+| `uploadsChangedAt` | "Đã đóng lúc 17:30" (E03) — server tự ghi, không sửa tay | | tự động |
+| `closesAt` | Tự động đóng lúc | không có | rules |
+| `maxSubmitsPerUser` | Giới hạn mỗi phiên (1–20) | 3 | rules |
+| `allowGallery` | Cho phép chọn ảnh từ thư viện | true | FE |
+| `removedRetentionHours` | Giữ ảnh đã gỡ (1–168 giờ) | 24 | rules |
+| `marqueePxPerSec` | Tốc độ trượt (5–400), `null` = 70 giây/vòng | null | FE |
+| `showNames` | Hiện tên người gửi | true | FE |
+| `arrivalCard` | Card "Vừa lên Wall" | true | FE |
+| `qrUrl` | Link trong mã QR (phải là `https://`) | trang chủ | FE |
+| `frames` | Trạng thái khung: `[{ id, enabled }]`, thứ tự = thứ tự trên màn Chọn khung | `[]` = tất cả khung, theo `frames.json` | FE |
+| `displayReloadAt` | Làm mới màn lớn — big screen reload khi giá trị đổi | | FE |
+
+"Ai áp dụng" = **rules** nghĩa là backend chặn thật; **FE** nghĩa là giao diện phải tự đọc và làm theo.
+Không có: SafeSearch, tự động duyệt, tải ZIP, timelapse, xuất CSV, lịch xoá dữ liệu (cần server).
+
+### Người kiểm duyệt (M02, chỉ admin)
+
+```ts
+import { watchModerators, saveModerator, deleteModerator } from '../backend/src/client';
+
+watchModerators(backend, (list) => { /* [{ email, role, name?, org? }] */ });
+await saveModerator(backend, 'mai@gmail.com', { role: 'moderator', name: 'Mai Lê', org: 'AWS SC' });
+await deleteModerator(backend, 'mai@gmail.com');
+```
+
+Email phải là **tài khoản Google** mà người đó dùng để đăng nhập. Admin không tự hạ quyền hay tự xoá mình được.
 
 ## 6. Deploy
+
+Web chạy tại **<https://photowall-gdgocsgu.web.app>**. Mã QR trên big screen trỏ về địa chỉ này.
 
 `firebase.json` ở gốc repo phục vụ thư mục **`frontend/dist`**. Build frontend ra đúng thư mục đó rồi chạy ở gốc repo:
 
@@ -135,8 +201,4 @@ await approve(backend, id);   // hoặc reject(backend, id)
 npx firebase deploy --only hosting --project prod
 ```
 
-Muốn có bản xem thử không ảnh hưởng bản chính (link riêng, tự hết hạn):
-
-```
-npx firebase hosting:channel:deploy review --project prod
-```
+Chỉ domain `photowall-gdgocsgu.web.app` (và `localhost` khi dev) được Auth, App Check và CORS cho phép. Link preview channel (`photowall-gdgocsgu--xxx.web.app`) sẽ **không** đăng nhập Google được và bị App Check chặn, nên hãy test trên domain chính.
