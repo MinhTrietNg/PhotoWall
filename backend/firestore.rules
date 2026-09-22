@@ -1,0 +1,120 @@
+rules_version = '2';
+// Constants mirror backend/src/schema.ts (LIMITS, FRAME_VARIANTS) — keep in sync.
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isModerator() {
+      return signedIn()
+        && request.auth.token.get('email_verified', false) == true
+        && exists(/databases/$(database)/documents/moderators/$(request.auth.token.email));
+    }
+
+    function uploadsOpen() {
+      return get(/databases/$(database)/documents/config/app).data.uploadsOpen == true;
+    }
+
+    match /config/app {
+      allow read: if true;
+      allow write: if isModerator()
+        && request.resource.data.keys().hasOnly(['uploadsOpen', 'eventName'])
+        && request.resource.data.uploadsOpen is bool
+        && request.resource.data.eventName is string;
+    }
+
+    // Allowlist is managed from the console only. A moderator may read their own
+    // entry so the moderation UI can check access.
+    match /moderators/{email} {
+      allow read: if signedIn() && request.auth.token.get('email', '') == email;
+      allow write: if false;
+    }
+
+    // Counter for the big screen. Written by moderators via increment(±1)
+    // alongside the photo status change.
+    match /stats/public {
+      allow read: if true;
+      allow create: if isModerator()
+        && request.resource.data.keys().hasOnly(['approvedCount'])
+        && request.resource.data.approvedCount == 1;
+      allow update: if isModerator()
+        && request.resource.data.keys().hasOnly(['approvedCount'])
+        && (request.resource.data.approvedCount == resource.data.approvedCount + 1
+            || request.resource.data.approvedCount == resource.data.approvedCount - 1);
+    }
+
+    // Rate-limit ledger. Written in the same batch as a new photo:
+    //   set(users/{uid}, {lastSubmitAt: serverTimestamp(), lastPhotoId, submitCount: increment(1)}, {merge: true})
+    match /users/{uid} {
+      function validLedger() {
+        let d = request.resource.data;
+        return request.auth.uid == uid
+          && d.keys().hasOnly(['lastSubmitAt', 'lastPhotoId', 'submitCount'])
+          && d.lastSubmitAt == request.time
+          && d.lastPhotoId is string
+          && existsAfter(/databases/$(database)/documents/photos/$(d.lastPhotoId));
+      }
+
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow create: if signedIn() && validLedger()
+        && request.resource.data.submitCount == 1;
+      allow update: if signedIn() && validLedger()
+        && request.time > resource.data.lastSubmitAt + duration.value(60, 's')
+        && request.resource.data.submitCount == resource.data.submitCount + 1
+        && request.resource.data.submitCount <= 20;
+      allow delete: if false;
+    }
+
+    match /photos/{photoId} {
+      function validNewPhoto() {
+        let d = request.resource.data;
+        let ledger = getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+        return d.keys().hasOnly(['ownerUid', 'displayName', 'frameVariant', 'status', 'storagePath', 'createdAt'])
+          && d.ownerUid == request.auth.uid
+          && d.status == 'uploading'
+          && d.displayName is string
+          && d.displayName.size() >= 1
+          && d.displayName.size() <= 40
+          && d.frameVariant in ['light', 'dark']
+          && d.storagePath == 'photos/' + photoId + '/strip.jpg'
+          && d.createdAt == request.time
+          // The ledger must be written in this same batch and point at this photo,
+          // so one batch can create at most one photo.
+          && ledger.lastSubmitAt == request.time
+          && ledger.lastPhotoId == photoId;
+      }
+
+      function changes() {
+        return request.resource.data.diff(resource.data).affectedKeys();
+      }
+
+      function ownerSubmits() {
+        return resource.data.ownerUid == request.auth.uid
+          && resource.data.status == 'uploading'
+          && request.resource.data.status == 'pending'
+          && request.resource.data.submittedAt == request.time
+          && changes().hasOnly(['status', 'submittedAt']);
+      }
+
+      function moderatorReviews() {
+        let from = resource.data.status;
+        let to = request.resource.data.status;
+        return isModerator()
+          && ((from == 'pending' && to in ['approved', 'rejected'])
+              || (from == 'approved' && to == 'removed'))
+          && request.resource.data.reviewedAt == request.time
+          && request.resource.data.reviewedBy == request.auth.token.email
+          && changes().hasOnly(['status', 'reviewedAt', 'reviewedBy']);
+      }
+
+      allow read: if resource.data.status == 'approved'
+        || (signedIn() && resource.data.ownerUid == request.auth.uid)
+        || isModerator();
+      allow create: if signedIn() && uploadsOpen() && validNewPhoto();
+      allow update: if signedIn() && (ownerSubmits() || moderatorReviews());
+      allow delete: if false;
+    }
+  }
+}
