@@ -2,7 +2,7 @@ import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import { deleteObject, getBytes, ref, uploadBytes, type FirebaseStorage } from 'firebase/storage';
 import { LIMITS, paths } from '../src/schema';
-import { createEnv, guest, moderator, seed, storedPhoto } from './helpers';
+import { createEnv, guest, moderator, reviewedPhoto, seed, storedPhoto } from './helpers';
 
 let env: RulesTestEnvironment;
 const st = (ctx: { storage(): unknown }) => ctx.storage() as FirebaseStorage;
@@ -79,10 +79,28 @@ describe('reading and deleting', () => {
     await assertSucceeds(getBytes(ref(st(moderator(env)), paths.photoObject('p1'))));
   });
 
-  it('only moderators can delete', async () => {
-    await seedPhoto('rejected');
+  it('moderators delete a removed strip only after the retention window', async () => {
+    await seed(env, { docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'rejected', 60) } });
     await seedObject();
+    await assertFails(deleteObject(ref(st(moderator(env)), paths.photoObject('p1'))));
     await assertFails(deleteObject(ref(st(guest(env, 'alice')), paths.photoObject('p1'))));
+
+    await seed(env, { docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'rejected', 25 * 3600) } });
     await assertSucceeds(deleteObject(ref(st(moderator(env)), paths.photoObject('p1'))));
+  });
+
+  it('moderators never delete a strip that is on the wall', async () => {
+    await seed(env, { docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 25 * 3600) } });
+    await seedObject();
+    await assertFails(deleteObject(ref(st(moderator(env)), paths.photoObject('p1'))));
+  });
+
+  it('a guest deletes their own strip right after removing it', async () => {
+    await seed(env, {
+      docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'removed', 1, { reviewedBy: 'owner' }) },
+    });
+    await seedObject();
+    await assertFails(deleteObject(ref(st(guest(env, 'bob')), paths.photoObject('p1'))));
+    await assertSucceeds(deleteObject(ref(st(guest(env, 'alice')), paths.photoObject('p1'))));
   });
 });

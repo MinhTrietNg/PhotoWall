@@ -19,7 +19,7 @@ import {
 
 // Mirrors backend/src/schema.ts LIMITS.
 const SUBMIT_INTERVAL_SECONDS = 60;
-const MAX_SUBMITS_PER_USER = 20;
+const MAX_SUBMITS_PER_USER = 3; // config.maxSubmitsPerUser default
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
 const DISPLAY_NAME_MAX = 40;
 
@@ -150,6 +150,7 @@ export function createMockBackend(): GuestApi {
         p.reviewedAtMs = Date.now();
         p.reviewedBy = 'mock-moderator@gdgoc.dev';
         store.approvedCount++;
+        p.momentNo = store.approvedCount;
         emit();
       }, MOCK_REVIEW_MS);
     },
@@ -164,6 +165,17 @@ export function createMockBackend(): GuestApi {
 
     watchStats(cb) {
       return subscribe(() => cb({ approvedCount: store.approvedCount }));
+    },
+
+    async removeMyPhoto(photoId) {
+      await wait(300);
+      const p = store.photos.find((x) => x.id === photoId && x.ownerUid === store.uid);
+      if (!p || (p.status !== 'pending' && p.status !== 'approved')) throw new Error('not removable');
+      if (p.status === 'approved') store.approvedCount--;
+      p.status = 'removed';
+      p.reviewedBy = 'owner';
+      p.reviewedAtMs = Date.now();
+      emit();
     },
 
     async photoUrl(photoId) {

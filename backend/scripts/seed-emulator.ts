@@ -1,4 +1,4 @@
-// Seeds the local emulator with config and the moderator allowlist.
+// Seeds the local emulator with config and the moderator allowlist (all seeded as admin).
 //   npm run seed -- mod1@gmail.com mod2@gmail.com
 // (emulators must be running: `npm run emulators`)
 import { pathToFileURL } from 'node:url';
@@ -22,7 +22,7 @@ export async function seedEmulator(moderatorEmails: string[], opts: { clear?: bo
     const db = ctx.firestore() as unknown as Firestore;
     const config: AppConfig = { uploadsOpen: true, eventName: 'SGU Day 2026' };
     await setDoc(doc(db, paths.config), config);
-    for (const email of moderatorEmails) await setDoc(doc(db, paths.moderator(email)), {});
+    for (const email of moderatorEmails) await setDoc(doc(db, paths.moderator(email)), { role: 'admin' });
   });
   await env.cleanup();
 }
