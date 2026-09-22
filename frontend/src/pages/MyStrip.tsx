@@ -27,8 +27,6 @@ import { useBackend, type Photo } from '@/lib/backend';
 import { useSession } from '@/state/SessionContext';
 import styles from './MyStrip.module.css';
 
-const STRIP_WIDTH = 186;
-
 const STATUS_LABEL: Record<Photo['status'], string> = {
   uploading: 'Đang gửi',
   pending: 'Chờ duyệt',
@@ -111,20 +109,21 @@ export function MyStrip() {
       ) : (
         <>
           <div className={styles.body}>
-            <div className={styles.strip}>
-              {frame ? (
-                // Prefer the local shots; after a reload fall back to the stored JPEG.
-                local || !remoteUrl ? (
-                  <PhotoWallFrame frame={frame} width={STRIP_WIDTH} photos={shots} />
-                ) : (
-                  <img
-                    src={remoteUrl}
-                    alt={`Dải ảnh của ${displayName}`}
-                    className={styles.remote}
-                    style={{ width: STRIP_WIDTH }}
-                  />
-                )
-              ) : null}
+            <div className={styles.stripCell}>
+              <div className={styles.strip}>
+                {frame ? (
+                  // Prefer the local shots; after a reload fall back to the stored JPEG.
+                  local || !remoteUrl ? (
+                    <PhotoWallFrame frame={frame} width="fit" photos={shots} />
+                  ) : (
+                    <img
+                      src={remoteUrl}
+                      alt={`Dải ảnh của ${displayName}`}
+                      className={styles.remote}
+                    />
+                  )
+                ) : null}
+              </div>
             </div>
 
             <div className={styles.meta}>

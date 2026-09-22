@@ -23,8 +23,6 @@ import { useSession } from '@/state/SessionContext';
 import { SHOT_COUNT, shotCount } from '@/types/session';
 import styles from './FrameSelect.module.css';
 
-const PREVIEW_WIDTH = 150;
-
 export function FrameSelect() {
   const navigate = useNavigate();
   const { session, selectFrame } = useSession();
@@ -80,10 +78,10 @@ export function FrameSelect() {
             {selected ? (
               // key forces a remount per variant so the crossfade actually runs.
               <div key={selected.id} className={styles.fade}>
-                <PhotoWallFrame frame={selected} width={PREVIEW_WIDTH} photos={photos} />
+                <PhotoWallFrame frame={selected} width="fit" photos={photos} />
               </div>
             ) : (
-              <div className={styles.previewSkeleton} style={{ width: PREVIEW_WIDTH }} />
+              <div className={styles.previewSkeleton} />
             )}
           </div>
           <p className={styles.caption}>Xem trước đúng là ảnh sẽ tải về. Bấm thẻ để đổi khung.</p>

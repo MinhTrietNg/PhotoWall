@@ -20,8 +20,6 @@ import { useSession } from '@/state/SessionContext';
 import { SHOT_COUNT, isSessionComplete } from '@/types/session';
 import styles from './Review.module.css';
 
-const STRIP_WIDTH = 168;
-
 export function Review() {
   const navigate = useNavigate();
   const { session, clearShots } = useSession();
@@ -51,7 +49,7 @@ export function Review() {
 
       <div className={styles.main}>
         <div className={styles.stripCard}>
-          {frame ? <PhotoWallFrame frame={frame} width={STRIP_WIDTH} photos={photos} /> : null}
+          {frame ? <PhotoWallFrame frame={frame} width="fit" photos={photos} /> : null}
         </div>
 
         <div className={styles.side}>

@@ -18,7 +18,7 @@
 }
 
 .body {
-  flex-grow: 1;
+  flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -28,8 +28,24 @@
   min-height: 0;
 }
 
+/*
+ * Height-capped cell. The strip takes the height it is given and derives its
+ * width from the 1080:3400 ratio. This is the biggest strip in the product, so
+ * without the cell it is the one thing guaranteed to push the screen into a
+ * scroll. The cap is the design's size — 186px wide is 586px tall.
+ */
+.stripCell {
+  flex: 1 1 0;
+  min-height: 0;
+  max-height: 586px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 /* Blue drop shadow, not the usual ink one — this is the trophy shot. */
 .strip {
+  height: 100%;
   display: inline-flex;
   border: 2px solid #fff;
   border-radius: var(--pw-radius-3);
@@ -41,6 +57,8 @@
 
 .remote {
   display: block;
+  height: 100%;
+  width: auto;
   aspect-ratio: 1080 / 3400;
   object-fit: cover;
 }
