@@ -1,20 +1,26 @@
 /**
  * S09 Dải ảnh của tôi — DESIGN-D14, route "/me/:id".
  *
- * The largest on-phone rendering of the strip (186px) and the only screen where
- * a guest can destroy something — which is why the design makes it the quietest
- * control on the page, a red text button rather than a filled one.
+ * The largest on-phone rendering of the strip (186px, lifted on a blue shadow)
+ * and the only screen where a guest can destroy something — which is why the
+ * design makes that the quietest control on the page, a red text button under
+ * everything else rather than a filled one.
+ *
+ * The header is not the shared TopBar: the artboard has a close button and a
+ * green status pill, and no centred title.
  */
 import { useEffect, useMemo, useState } from 'react';
+import { Screen } from '@/components/Screen';
 import { Navigate, useParams } from 'react-router-dom';
 import { Button, ButtonLink } from '@/components/Button';
 import { Dialog } from '@/components/Dialog';
+import { Icon } from '@/components/Icon';
+import { IconButton, IconButtonLink } from '@/components/IconButton';
 import { StateBlock } from '@/components/StateBlock';
-import { TopBar } from '@/components/TopBar';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
 import { findFrame } from '@/features/frames/frameRegistry';
 import { useFrames } from '@/features/frames/useFrames';
-import { downloadStrip } from '@/features/submit/download';
+import { canShareStrip, downloadStrip, shareStrip } from '@/features/submit/download';
 import { getSubmission } from '@/features/submit/submission';
 import { GUEST_SELF_REMOVE_ENABLED } from '@/config';
 import { useBackend, type Photo } from '@/lib/backend';
@@ -64,17 +70,28 @@ export function MyStrip() {
   }, [backend, id, local]);
 
   const shots = useMemo(() => session.shots.map((s) => s?.blob ?? null), [session.shots]);
-  const frame = registry ? findFrame(registry, local?.frameId ?? photo?.frameVariant ?? null) : undefined;
+  const frame = registry
+    ? findFrame(registry, local?.frameId ?? photo?.frameVariant ?? null)
+    : undefined;
 
   if (!id) return <Navigate to="/" replace />;
 
   const gone = photo?.status === 'removed' || photo?.status === 'rejected';
   const removedByMe = photo?.reviewedBy === 'owner';
   const displayName = local?.displayName ?? photo?.displayName ?? session.displayName;
+  const canShare = local ? canShareStrip(local.blob, displayName) : false;
 
   return (
-    <div className="screen screen--dark screen--scroll">
-      <TopBar tone="dark" title="Dải ảnh của bạn" backTo="/" />
+    <Screen tone="dark" scroll>
+      <header className={styles.header}>
+        <IconButtonLink to="/" label="Đóng" tone="on-ink">
+          <Icon name="close" />
+        </IconButtonLink>
+        <span className={`pill pill--lg ${styles.statusPill} ${gone ? styles.statusGone : ''}`}>
+          <Icon name={gone ? 'warning' : 'check'} size={16} />
+          {gone ? 'Đã gỡ khỏi Wall' : 'Dải ảnh của bạn'}
+        </span>
+      </header>
 
       {gone ? (
         <StateBlock
@@ -93,7 +110,7 @@ export function MyStrip() {
         />
       ) : (
         <>
-          <div className={styles.stripWrap}>
+          <div className={styles.body}>
             <div className={styles.strip}>
               {frame ? (
                 // Prefer the local shots; after a reload fall back to the stored JPEG.
@@ -109,23 +126,25 @@ export function MyStrip() {
                 )
               ) : null}
             </div>
+
+            <div className={styles.meta}>
+              <span className={`u ${styles.name}`}>{displayName}</span>
+              <span className={styles.time}>
+                {photo
+                  ? `${new Date(photo.createdAtMs).toLocaleTimeString('vi-VN', {
+                      hour: '2-digit',
+                      minute: '2-digit',
+                    })} · ${STATUS_LABEL[photo.status]}`
+                  : 'Đang tải…'}
+              </span>
+            </div>
           </div>
 
-          <div className={styles.meta}>
-            <span className={`u ${styles.name}`}>{displayName}</span>
-            <span className={styles.time}>
-              {photo
-                ? `${new Date(photo.createdAtMs).toLocaleTimeString('vi-VN', {
-                    hour: '2-digit',
-                    minute: '2-digit',
-                  })} · ${STATUS_LABEL[photo.status]}`
-                : 'Đang tải…'}
-            </span>
-          </div>
-
-          <div className="screen__cta">
+          {/* Download is the main action; share rides beside it as an icon. */}
+          <div className={styles.actions}>
             <Button
-              block
+              className={styles.download}
+              iconStart={<Icon name="download" />}
               disabled={!local && !remoteUrl}
               onClick={() => {
                 if (local) downloadStrip(local.blob, displayName);
@@ -134,13 +153,30 @@ export function MyStrip() {
             >
               Tải dải ảnh về
             </Button>
-
-            {GUEST_SELF_REMOVE_ENABLED ? (
-              <Button variant="text" dangerText block onClick={() => setConfirmRemove(true)}>
-                Gỡ dải ảnh của tôi
-              </Button>
+            {canShare && local ? (
+              <IconButton
+                label="Chia sẻ"
+                tone="on-ink"
+                size="l"
+                onClick={() => void shareStrip(local.blob, displayName).catch(() => undefined)}
+              >
+                <Icon name="share" />
+              </IconButton>
             ) : null}
           </div>
+
+          {GUEST_SELF_REMOVE_ENABLED ? (
+            <div className={styles.removeRow}>
+              <Button
+                variant="text"
+                iconStart={<Icon name="delete" />}
+                className={styles.remove}
+                onClick={() => setConfirmRemove(true)}
+              >
+                Gỡ dải ảnh của tôi
+              </Button>
+            </div>
+          ) : null}
         </>
       )}
 
@@ -156,6 +192,6 @@ export function MyStrip() {
           backend.removeMyPhoto(id).catch(() => undefined);
         }}
       />
-    </div>
+    </Screen>
   );
 }
