@@ -1,0 +1,29 @@
+{
+  "indexes": [
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "reviewedAt", "order": "DESCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "status", "order": "ASCENDING" },
+        { "fieldPath": "submittedAt", "order": "ASCENDING" }
+      ]
+    },
+    {
+      "collectionGroup": "photos",
+      "queryScope": "COLLECTION",
+      "fields": [
+        { "fieldPath": "ownerUid", "order": "ASCENDING" },
+        { "fieldPath": "createdAt", "order": "DESCENDING" }
+      ]
+    }
+  ],
+  "fieldOverrides": []
+}

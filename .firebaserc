@@ -1,0 +1,6 @@
+{
+  "projects": {
+    "default": "demo-photowall",
+    "prod": "photowall-gdgoc-2026"
+  }
+}

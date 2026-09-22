@@ -1,0 +1,37 @@
+rules_version = '2';
+// Uploads are gated on the Firestore photo doc, which is itself rate-limited by
+// firestore.rules. Constants mirror backend/src/schema.ts (LIMITS) — keep in sync.
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    function photoDoc(photoId) {
+      return firestore.get(/databases/(default)/documents/photos/$(photoId)).data;
+    }
+
+    function isModerator() {
+      return request.auth != null
+        && request.auth.token.get('email_verified', false) == true
+        && firestore.exists(/databases/(default)/documents/moderators/$(request.auth.token.email));
+    }
+
+    match /photos/{photoId}/strip.jpg {
+      function canUpload(photo) {
+        return request.auth != null
+          && photo.ownerUid == request.auth.uid
+          && photo.status == 'uploading'
+          && request.resource.size < 2 * 1024 * 1024
+          && request.resource.contentType == 'image/jpeg';
+      }
+
+      function canRead(photo) {
+        return photo.status == 'approved'
+          || (request.auth != null && photo.ownerUid == request.auth.uid);
+      }
+
+      allow create, update: if canUpload(photoDoc(photoId));
+      allow read: if canRead(photoDoc(photoId)) || isModerator();
+      // Moderators delete the object on reject/remove so leaked download URLs die.
+      allow delete: if isModerator();
+    }
+  }
+}

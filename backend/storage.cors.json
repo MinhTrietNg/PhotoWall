@@ -1,0 +1,11 @@
+[
+  {
+    "origin": [
+      "https://photowall-gdgoc-2026.web.app",
+      "https://photowall-gdgoc-2026.firebaseapp.com",
+      "http://localhost:5173"
+    ],
+    "method": ["GET"],
+    "maxAgeSeconds": 3600
+  }
+]
