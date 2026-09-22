@@ -1,43 +1,61 @@
-.body {
-  padding: var(--pw-space-10) var(--pw-gutter) 0;
-  display: flex;
-  flex-direction: column;
-  align-items: flex-start;
-  gap: var(--pw-space-4);
-}
-
-.cardWrap {
-  position: relative;
-  align-self: center;
-  margin-bottom: var(--pw-space-2);
-}
-
-.card {
+/*
+ * Full-bleed colour band. 330 when approved, 300 while waiting — the extra
+ * 30px is where the confetti lives. It never scrolls away; the copy below it
+ * does the shrinking on short devices.
+ */
+.band {
   position: relative;
   display: flex;
   align-items: center;
-  gap: var(--pw-space-3);
-  padding: var(--pw-space-3);
-  border-radius: var(--pw-radius-5);
-  box-shadow: var(--pw-shadow-2);
+  justify-content: center;
+  border-bottom: var(--pw-outline);
+  overflow: hidden;
+  overflow: clip;
+  flex-shrink: 0;
+}
+
+.bandOk {
+  height: 330px;
+  background: var(--pw-green-500);
+}
+
+.bandWait {
+  height: 300px;
+  background: var(--pw-yellow-500);
+}
+
+.close {
+  position: absolute;
+  right: var(--pw-space-4);
+  top: var(--pw-space-4);
+  z-index: 2;
+}
+
+/* Solid ink disc, no white ring — it sits on a saturated band. */
+.closeBtn {
+  background: var(--pw-ink);
+  border-color: var(--pw-ink);
+  color: #fff;
+}
+
+.tilt {
+  position: relative;
+  transform: rotate(-4deg);
   animation: drop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
-.cardMeta {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pw-space-1);
-  padding-right: var(--pw-space-5);
+.tiltWait {
+  opacity: 0.92;
 }
 
-.cardName {
-  font: var(--pw-type-body);
-  font-weight: 700;
-}
-
-.cardTime {
-  font: var(--pw-type-caption);
-  color: var(--pw-ink-2);
+.strip {
+  display: inline-flex;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  box-shadow: var(--pw-shadow-2);
+  background: var(--pw-surface);
 }
 
 .disc {
@@ -60,9 +78,26 @@
   animation: pop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 200ms both;
 }
 
+/* ----------------------------------------------------------------- copy */
+
+.copy {
+  padding: var(--pw-space-6) var(--pw-gutter) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--pw-space-3);
+}
+
 .title {
   margin: 0;
   font: var(--pw-type-h1);
+  line-height: 1.1;
+}
+
+/* Two short words fit tighter than four. */
+.titleOk {
+  line-height: 1.05;
 }
 
 .text {
@@ -71,9 +106,26 @@
   color: var(--pw-ink-2);
 }
 
-.pendingPill {
+.text b {
+  color: var(--pw-ink);
+}
+
+.statusPill {
+  margin-top: var(--pw-space-1);
+  font: var(--pw-type-body-s);
+  font-weight: 600;
+  white-space: normal;
+}
+
+.statusOk {
+  background: var(--pw-green-100);
+  border-color: var(--pw-green-700);
+  color: var(--pw-green-700);
+}
+
+.statusWait {
   background: var(--pw-yellow-100);
-  border-color: var(--pw-ink);
+  border-color: var(--pw-yellow-700);
   color: var(--pw-yellow-700);
 }
 
@@ -84,28 +136,28 @@
   flex-wrap: wrap;
 }
 
+/* ------------------------------------------------------------- confetti */
+
 /* Fires once. Never loops. */
 .confetti {
   position: absolute;
-  inset: -24px;
+  inset: 0;
   pointer-events: none;
 }
 
 .confetti span {
   position: absolute;
-  width: 14px;
-  height: 14px;
-  border: 2px solid var(--pw-ink);
+  border: var(--pw-outline);
   animation: burst 600ms var(--pw-ease-decel) both;
 }
 
 @keyframes drop {
   from {
-    transform: translateY(-18px) scale(0.94);
+    transform: rotate(-4deg) translateY(-18px) scale(0.94);
     opacity: 0;
   }
   to {
-    transform: translateY(0) scale(1);
+    transform: rotate(-4deg) translateY(0) scale(1);
     opacity: 1;
   }
 }
@@ -130,13 +182,29 @@
     opacity: 1;
   }
   to {
-    transform: scale(1);
     opacity: 1;
+  }
+}
+
+/* Short devices: the band is the only thing with slack. */
+@media (max-height: 760px) {
+  .bandOk {
+    height: 270px;
+  }
+  .bandWait {
+    height: 250px;
+  }
+  .copy {
+    padding-top: var(--pw-space-4);
+    gap: var(--pw-space-2);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
   .confetti {
     display: none;
+  }
+  .tilt {
+    animation: none;
   }
 }
