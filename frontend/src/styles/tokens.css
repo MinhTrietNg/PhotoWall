@@ -40,8 +40,12 @@
   --pw-on-dark-2: #c9c6da;
   --pw-on-dark-3: #b8b5d1;
 
+  /* The countdown dims the viewfinder less than a modal dims a screen. */
   --pw-scrim: rgba(28, 27, 51, 0.55);
+  --pw-scrim-soft: rgba(28, 27, 51, 0.35);
   --pw-partner-aws: #3bb0ff;
+  /* Red-700 fails contrast on ink; this is the tint the design uses there. */
+  --pw-red-on-dark: #f28b82;
 
   /* ---------- type ---------- */
   --pw-font-display: 'Unbounded', sans-serif;
@@ -110,4 +114,16 @@
   --pw-gutter: var(--pw-space-5); /* 20 on mobile */
   --pw-cta-bottom: calc(var(--pw-space-7) + env(safe-area-inset-bottom, 0px));
   --pw-strip-ratio: 1080 / 3400;
+}
+
+/*
+ * Every screen is drawn at 390 and has to hold at 360 (Galaxy A) and 430
+ * (iPhone Pro Max) — the Motion · Responsive board. At 360 a 20px gutter leaves
+ * 320px of content, four short of the 324px shot tray, so the narrow step
+ * drops the gutter rather than letting fixed-size rows collide.
+ */
+@media (max-width: 374px) {
+  :root {
+    --pw-gutter: var(--pw-space-4);
+  }
 }

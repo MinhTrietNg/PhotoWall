@@ -18,8 +18,20 @@ body {
   padding: 0;
 }
 
-body {
+/*
+ * <html> owns the canvas: the safe areas, the overscroll rubber-band, and what
+ * Safari samples for its toolbars. useScreenTheme repaints it per screen.
+ *
+ * <body> stays transparent so it never covers that up. The one exception is
+ * tablet and desktop below, where the design asks for a cream ground with a
+ * pattern either side of the 430px column — there body SHOULD paint over.
+ */
+html {
   background: var(--pw-bg);
+}
+
+body {
+  background: transparent;
   color: var(--pw-ink);
   font: var(--pw-type-body);
   -webkit-font-smoothing: antialiased;
@@ -96,7 +108,7 @@ a:hover {
 .btn--s {
   height: var(--pw-ctl-s);
   padding: 0 var(--pw-space-4);
-  gap: var(--pw-space-1);
+  gap: 6px;
   font: var(--pw-type-body-s);
   font-weight: 600;
 }
@@ -225,7 +237,7 @@ a:hover {
 .pill {
   display: inline-flex;
   align-items: center;
-  gap: var(--pw-space-1);
+  gap: 6px;
   height: 28px;
   padding: 0 var(--pw-space-3);
   border: var(--pw-outline);
@@ -239,7 +251,6 @@ a:hover {
 
 .pill--lg {
   height: 32px;
-  gap: var(--pw-space-2);
 }
 
 .pill--on-ink {
@@ -348,7 +359,40 @@ a:hover {
   flex-direction: column;
   gap: var(--pw-space-3);
   flex-shrink: 0;
-  padding: 0 var(--pw-gutter) var(--pw-cta-bottom);
+  /*
+   * Driven by custom properties, not overridden by page modules. A module
+   * setting `padding-bottom` would lose to this shorthand or beat it purely on
+   * stylesheet order, which is not something a page should have to reason about.
+   *
+   * The top value is a MINIMUM gap, not a design measurement. On the 844px
+   * artboards `margin-top: auto` leaves ~100px above the CTA, so the artboards
+   * never needed one — but auto collapses to zero the moment the content is as
+   * tall as the viewport, and then the last card sits flush against the button.
+   * On a tall screen this padding is invisible: the buttons stay pinned to the
+   * bottom either way, only the transparent top edge of the block moves.
+   */
+  padding: var(--pw-cta-pad-top, var(--pw-space-6)) var(--pw-gutter)
+    var(--pw-cta-pad-bottom, var(--pw-cta-bottom));
+}
+
+/*
+ * Two buttons side by side. The design never splits them 50/50: the secondary
+ * gets a fixed share (42% on S04, 44% on S06) and the primary takes the rest,
+ * so the primary keeps reading as the main action at every width.
+ */
+.screen__cta--row {
+  flex-direction: row;
+  align-items: stretch;
+}
+
+.screen__cta--row > .btn {
+  flex: 1 1 0;
+  min-width: 0;
+  padding: 0 var(--pw-space-4);
+}
+
+.screen__cta--row > .btn:first-child {
+  flex: 0 0 var(--pw-cta-split, 42%);
 }
 
 /* On tablet and desktop the whole flow stays a 430px column on the cream ground. */
