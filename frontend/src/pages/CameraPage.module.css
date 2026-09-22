@@ -27,20 +27,27 @@
 
 /* 16, not the 20 gutter — the viewport is the widest element on the screen. */
 .viewportWrap {
+  flex: 1 1 0;
+  min-height: 0;
+  container-type: size;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   padding: var(--pw-space-4) var(--pw-space-4) 0;
-  flex-shrink: 0;
 }
 
 /*
- * The design's own sizing rule, kept verbatim so the tray plus three controls
- * always fit and the screen never scrolls:
- *   viewport 4:3 = min(100vw - 32, (100dvh - 420) * 4/3)
+ * The viewfinder takes whatever height the fixed rows leave and derives its
+ * width from the 4:3 ratio. Container size units mean there is no height
+ * budget to keep in step with the layout — add a row above and the box simply
+ * gets smaller. The first declaration is the design's own formula, kept as a
+ * fallback for engines without container size queries (Safari < 16).
  */
 .viewport {
   position: relative;
-  width: min(100%, calc((100dvh - 420px) * 4 / 3));
+  width: min(100%, calc((100dvh - 547px) * 4 / 3));
+  width: min(100cqw, calc(100cqh * 4 / 3));
   aspect-ratio: 4 / 3;
-  margin: 0 auto;
   border-radius: var(--pw-radius-5);
   border: 2px solid #fff;
   background: var(--pw-ink-800);
@@ -281,7 +288,6 @@
 /* ------------------------------------------------------------- controls */
 
 .controls {
-  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;
