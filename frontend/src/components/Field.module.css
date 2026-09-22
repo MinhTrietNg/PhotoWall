@@ -1,0 +1,38 @@
+.field {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+}
+
+.label {
+  font: var(--pw-type-body);
+  font-weight: 700;
+}
+
+.helperRow {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: var(--pw-space-2);
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+.helper,
+.error {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-1);
+  min-width: 0;
+}
+
+.error {
+  color: var(--pw-red-700);
+  font-weight: 600;
+}
+
+.counter {
+  font-weight: 600;
+  flex-shrink: 0;
+  font-variant-numeric: tabular-nums;
+}

@@ -9,7 +9,11 @@
   "hosting": {
     "public": "frontend/dist",
     "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
-    "rewrites": [{ "source": "**", "destination": "/index.html" }]
+    "rewrites": [
+      { "source": "/display/**", "destination": "/display/index.html" },
+      { "source": "/admin/**", "destination": "/admin/index.html" },
+      { "source": "**", "destination": "/index.html" }
+    ]
   },
   "emulators": {
     "auth": { "port": 9099 },

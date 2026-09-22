@@ -1,0 +1,17 @@
+.line {
+  margin: 0;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.02em;
+  color: var(--pw-ink);
+  white-space: nowrap;
+}
+
+.sep {
+  color: var(--pw-ink-2);
+  font-weight: 500;
+  margin-right: var(--pw-space-2);
+}

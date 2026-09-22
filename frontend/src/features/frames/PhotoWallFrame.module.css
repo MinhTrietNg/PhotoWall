@@ -1,0 +1,46 @@
+.frame {
+  position: relative;
+  flex-shrink: 0;
+  overflow: hidden;
+  overflow: clip;
+  background: transparent;
+}
+
+.slot {
+  position: absolute;
+  overflow: hidden;
+  overflow: clip;
+  background: var(--pw-surface-2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.photo {
+  width: 100%;
+  height: 100%;
+  /* cover + centre crop. Never stretch — invariant against distortion. */
+  object-fit: cover;
+  object-position: center;
+  display: block;
+}
+
+.number {
+  font-weight: 800;
+  line-height: 1;
+  opacity: 0.35;
+  color: var(--pw-ink-2);
+  /* Set inline from the rendered width so 18px thumbs and 186px strips both read. */
+  font-size: var(--pw-slot-number-size, 10px);
+}
+
+.overlay {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  display: block;
+  pointer-events: none;
+  user-select: none;
+}

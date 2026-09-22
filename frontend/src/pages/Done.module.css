@@ -1,0 +1,142 @@
+.body {
+  padding: var(--pw-space-10) var(--pw-gutter) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pw-space-4);
+}
+
+.cardWrap {
+  position: relative;
+  align-self: center;
+  margin-bottom: var(--pw-space-2);
+}
+
+.card {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
+  padding: var(--pw-space-3);
+  border-radius: var(--pw-radius-5);
+  box-shadow: var(--pw-shadow-2);
+  animation: drop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
+}
+
+.cardMeta {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-1);
+  padding-right: var(--pw-space-5);
+}
+
+.cardName {
+  font: var(--pw-type-body);
+  font-weight: 700;
+}
+
+.cardTime {
+  font: var(--pw-type-caption);
+  color: var(--pw-ink-2);
+}
+
+.disc {
+  position: absolute;
+  right: -22px;
+  bottom: -14px;
+  width: var(--pw-ctl-l);
+  height: var(--pw-ctl-l);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pw-surface);
+  border: var(--pw-outline);
+  color: var(--pw-ink);
+}
+
+.discOk {
+  color: var(--pw-green-700);
+  animation: pop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.3) 200ms both;
+}
+
+.title {
+  margin: 0;
+  font: var(--pw-type-h1);
+}
+
+.text {
+  margin: 0;
+  font: var(--pw-type-body);
+  color: var(--pw-ink-2);
+}
+
+.pendingPill {
+  background: var(--pw-yellow-100);
+  border-color: var(--pw-ink);
+  color: var(--pw-yellow-700);
+}
+
+.textActions {
+  display: flex;
+  justify-content: center;
+  gap: var(--pw-space-2);
+  flex-wrap: wrap;
+}
+
+/* Fires once. Never loops. */
+.confetti {
+  position: absolute;
+  inset: -24px;
+  pointer-events: none;
+}
+
+.confetti span {
+  position: absolute;
+  width: 14px;
+  height: 14px;
+  border: 2px solid var(--pw-ink);
+  animation: burst 600ms var(--pw-ease-decel) both;
+}
+
+@keyframes drop {
+  from {
+    transform: translateY(-18px) scale(0.94);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.4);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes burst {
+  from {
+    transform: scale(0);
+    opacity: 0;
+  }
+  60% {
+    opacity: 1;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .confetti {
+    display: none;
+  }
+}

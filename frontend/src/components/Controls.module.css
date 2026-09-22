@@ -1,0 +1,123 @@
+/* The real input stays in the a11y tree but out of sight. */
+.srOnly {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* --------------------------------------------------------------- toggle */
+
+.track {
+  position: relative;
+  width: 48px;
+  height: 28px;
+  flex-shrink: 0;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-line);
+  transition: background-color var(--pw-dur-2) var(--pw-ease-std);
+}
+
+.trackOn {
+  background: var(--pw-green-700);
+}
+
+.knob {
+  position: absolute;
+  top: 2px;
+  left: 2px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: #fff;
+  transition: transform var(--pw-dur-2) var(--pw-ease-std);
+}
+
+.trackOn .knob {
+  transform: translateX(20px);
+}
+
+.srOnly:focus-visible + .track {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------ checkbox */
+
+.box {
+  width: 24px;
+  height: 24px;
+  margin-top: 1px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-2);
+  background: var(--pw-surface);
+  color: #fff;
+}
+
+.boxOn {
+  background: var(--pw-blue-700);
+}
+
+.srOnly:focus-visible + .box {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+/* ----------------------------------------------------------------- rows */
+
+.row,
+.checkRow {
+  display: flex;
+  gap: var(--pw-space-3);
+  padding: var(--pw-space-3) var(--pw-space-4);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-surface);
+  cursor: pointer;
+}
+
+.row {
+  align-items: center;
+  justify-content: space-between;
+}
+
+.checkRow {
+  align-items: flex-start;
+}
+
+.rowWarning {
+  background: var(--pw-yellow-100);
+}
+
+.rowText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-1);
+  min-width: 0;
+}
+
+.rowTitle {
+  font: var(--pw-type-body);
+  font-weight: 700;
+}
+
+.rowDesc {
+  font: var(--pw-type-caption);
+  font-weight: 400;
+  color: var(--pw-ink-2);
+}
+
+.checkText {
+  font: var(--pw-type-body-s);
+  line-height: 1.45;
+}

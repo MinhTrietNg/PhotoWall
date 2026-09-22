@@ -1,0 +1,118 @@
+.nameText {
+  max-width: 11ch;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.main {
+  display: flex;
+  gap: var(--pw-space-4);
+  padding: var(--pw-space-3) var(--pw-gutter) 0;
+  align-items: center;
+  min-height: 0;
+  flex: 1;
+}
+
+.stripCard {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  box-shadow: var(--pw-shadow-2);
+  background: var(--pw-surface);
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-3);
+  flex: 1;
+  min-width: 0;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pw-space-2);
+}
+
+.tile {
+  position: relative;
+  display: block;
+  height: 56px;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  background: var(--pw-surface-2);
+}
+
+.tile:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+.tileImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tileNumber {
+  position: absolute;
+  left: 6px;
+  top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(28, 27, 51, 0.6);
+}
+
+.tileAction {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pw-surface);
+  border: var(--pw-outline);
+  color: var(--pw-ink);
+}
+
+.frameChip {
+  height: 36px;
+  justify-content: space-between;
+  width: 100%;
+  font: var(--pw-type-body-s);
+  font-weight: 600;
+}
+
+.frameChipText {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.note {
+  margin: 0;
+  padding: var(--pw-space-4) var(--pw-gutter) 0;
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+.actions {
+  flex-direction: row;
+  padding-top: var(--pw-space-4);
+}
+
+.actions > * {
+  flex: 1;
+  min-width: 0;
+}

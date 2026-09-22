@@ -1,0 +1,39 @@
+.bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pw-space-2);
+  height: 76px;
+  padding: var(--pw-space-5) var(--pw-gutter) var(--pw-space-2);
+  flex-shrink: 0;
+}
+
+.title {
+  font: var(--pw-type-title);
+  color: var(--pw-ink);
+  text-align: center;
+  flex: 1;
+  min-width: 0;
+}
+
+.dark .title {
+  color: #fff;
+}
+
+/*
+ * 48px minimum on both sides. The right slot renders even when empty so the
+ * title never drifts off centre.
+ */
+.slot {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: var(--pw-space-2);
+  min-width: var(--pw-ctl-m);
+  min-height: var(--pw-ctl-m);
+  flex-shrink: 0;
+}
+
+.slot:first-child {
+  justify-content: flex-start;
+}

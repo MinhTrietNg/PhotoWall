@@ -1,0 +1,41 @@
+.stripWrap {
+  display: flex;
+  justify-content: center;
+  padding: var(--pw-space-5) var(--pw-gutter) 0;
+}
+
+.strip {
+  display: inline-flex;
+  border: var(--pw-outline);
+  border-color: #fff;
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  box-shadow: var(--pw-shadow-2);
+  background: var(--pw-surface);
+}
+
+.remote {
+  display: block;
+  aspect-ratio: 1080 / 3400;
+  object-fit: cover;
+}
+
+.meta {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pw-space-1);
+  padding: var(--pw-space-5) var(--pw-gutter) 0;
+  text-align: center;
+}
+
+.name {
+  font: var(--pw-type-h3);
+  color: #fff;
+}
+
+.time {
+  font: var(--pw-type-caption);
+  color: var(--pw-on-dark-3);
+}

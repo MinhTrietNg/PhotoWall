@@ -1,0 +1,68 @@
+.main {
+  display: flex;
+  gap: var(--pw-space-4);
+  padding: var(--pw-space-4) var(--pw-gutter) 0;
+  align-items: flex-start;
+  min-height: 0;
+  flex: 1;
+}
+
+.previewCol {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  width: 154px;
+  flex-shrink: 0;
+}
+
+.previewCard {
+  display: inline-flex;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  box-shadow: var(--pw-shadow-2);
+  background: var(--pw-surface);
+}
+
+.previewSkeleton {
+  aspect-ratio: 1080 / 3400;
+  background: var(--pw-surface-2);
+}
+
+/* 160ms crossfade on variant change — the box size never changes. */
+.fade {
+  animation: crossfade var(--pw-dur-2) var(--pw-ease-std) both;
+}
+
+@keyframes crossfade {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+.caption {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.45;
+  color: var(--pw-ink-2);
+}
+
+.optionCol {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  flex: 1;
+  min-width: 0;
+}
+
+/* The preview is the tallest thing on the screen; on short devices let the
+   option column scroll instead of pushing the CTA off. */
+@media (max-height: 740px) {
+  .main {
+    overflow-y: auto;
+  }
+}

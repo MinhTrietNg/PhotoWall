@@ -1,0 +1,378 @@
+/*
+ * Reset + the design-system primitives.
+ *
+ * The class names mirror the ones used on the Claude Design artboards (.u, .btn,
+ * .ibtn, .card, .pill, .lbl, .input) so code and design stay traceable to each other.
+ * See Claude/Claude-Plan.md §7 and §10.
+ */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background: var(--pw-bg);
+  color: var(--pw-ink);
+  font: var(--pw-type-body);
+  -webkit-font-smoothing: antialiased;
+  -webkit-tap-highlight-color: transparent;
+}
+
+#root {
+  min-height: 100dvh;
+}
+
+img,
+video,
+canvas {
+  display: block;
+  max-width: 100%;
+}
+
+button {
+  font: inherit;
+  color: inherit;
+}
+
+a {
+  color: var(--pw-blue-700);
+}
+a:hover {
+  color: var(--pw-blue-900);
+}
+
+/* Display face. Headings only — never body copy, never buttons. */
+.u {
+  font-family: var(--pw-font-display);
+}
+
+/* Uppercase group label. */
+.lbl {
+  font: var(--pw-type-label);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--pw-ink-2);
+}
+
+/* ------------------------------------------------------------------ button */
+
+.btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pw-space-2);
+  height: var(--pw-ctl-l);
+  padding: 0 var(--pw-space-6);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  font: var(--pw-type-body-l);
+  line-height: 1;
+  text-decoration: none;
+  white-space: nowrap;
+  flex-shrink: 0;
+  cursor: pointer;
+  background: transparent;
+  transition:
+    transform var(--pw-dur-2) var(--pw-ease-decel),
+    box-shadow var(--pw-dur-2) var(--pw-ease-decel),
+    background-color var(--pw-dur-2) var(--pw-ease-decel);
+}
+
+.btn--m {
+  height: var(--pw-ctl-m);
+  padding: 0 var(--pw-space-5);
+  font: var(--pw-type-body);
+  font-weight: 600;
+}
+
+.btn--s {
+  height: var(--pw-ctl-s);
+  padding: 0 var(--pw-space-4);
+  gap: var(--pw-space-1);
+  font: var(--pw-type-body-s);
+  font-weight: 600;
+}
+
+.btn--block {
+  width: 100%;
+}
+
+.btn--primary {
+  background: var(--pw-blue-700);
+  color: #fff;
+  box-shadow: var(--pw-shadow-1);
+}
+.btn--primary:hover:not(:disabled) {
+  background: var(--pw-blue-900);
+}
+
+.btn--secondary {
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+}
+.btn--secondary:hover:not(:disabled) {
+  background: var(--pw-surface-2);
+}
+
+.btn--tonal {
+  background: var(--pw-blue-100);
+  color: var(--pw-blue-900);
+  border-color: var(--pw-blue-100);
+}
+
+.btn--success {
+  background: var(--pw-green-700);
+  color: #fff;
+  box-shadow: var(--pw-shadow-1);
+}
+
+.btn--destructive {
+  background: var(--pw-red-700);
+  color: #fff;
+}
+
+.btn--text {
+  height: var(--pw-ctl-m);
+  background: transparent;
+  color: var(--pw-blue-700);
+  border-color: transparent;
+  box-shadow: none;
+}
+.btn--text.btn--danger-text {
+  color: var(--pw-red-700);
+}
+
+.btn:disabled,
+.btn[aria-disabled='true'] {
+  background: var(--pw-line);
+  border-color: var(--pw-line);
+  color: var(--pw-ink-2);
+  box-shadow: none;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
+/* Press: move 2px into the shadow and drop it. 80ms down, 160ms back. */
+.btn:active:not(:disabled) {
+  transform: translate(2px, 2px);
+  box-shadow: none;
+  transition-duration: var(--pw-dur-1);
+}
+
+/* ------------------------------------------------------- icon button */
+
+.ibtn {
+  width: var(--pw-ctl-m);
+  height: var(--pw-ctl-m);
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  text-decoration: none;
+  cursor: pointer;
+  transition: transform var(--pw-dur-2) var(--pw-ease-decel);
+}
+
+.ibtn--l {
+  width: var(--pw-ctl-l);
+  height: var(--pw-ctl-l);
+}
+
+.ibtn--s {
+  width: var(--pw-ctl-s);
+  height: var(--pw-ctl-s);
+}
+
+/* On the camera screens the chrome sits on ink, so the disc inverts. */
+.ibtn--dark {
+  background: var(--pw-ink-800);
+  border-color: var(--pw-ink-700);
+  color: #fff;
+}
+
+.ibtn--on-ink {
+  background: var(--pw-ink);
+  border-color: #fff;
+  color: #fff;
+}
+
+.ibtn:active {
+  transform: translate(2px, 2px);
+  transition-duration: var(--pw-dur-1);
+}
+
+/* --------------------------------------------------------------- surfaces */
+
+.card {
+  background: var(--pw-surface);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-5);
+}
+
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-1);
+  height: 28px;
+  padding: 0 var(--pw-space-3);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-caption);
+  white-space: nowrap;
+  text-decoration: none;
+}
+
+.pill--lg {
+  height: 32px;
+  gap: var(--pw-space-2);
+}
+
+.pill--on-ink {
+  background: var(--pw-ink);
+  border-color: #fff;
+  color: #fff;
+}
+
+.tag {
+  display: inline-flex;
+  align-items: center;
+  height: 24px;
+  padding: 0 var(--pw-space-2);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  font: var(--pw-type-label);
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+/* ------------------------------------------------------------------ input */
+
+.input {
+  width: 100%;
+  height: var(--pw-ctl-l);
+  padding: 0 var(--pw-space-4);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-body-l);
+  font-weight: 500;
+}
+.input::placeholder {
+  color: var(--pw-ink-3);
+}
+.input:focus {
+  outline: none;
+  border-color: var(--pw-blue-700);
+  box-shadow: 0 0 0 3px var(--pw-blue-100);
+}
+.input[aria-invalid='true'] {
+  border-color: var(--pw-red-700);
+  box-shadow: 0 0 0 3px var(--pw-red-100);
+}
+.input:disabled {
+  background: var(--pw-surface-2);
+  border-color: var(--pw-line);
+  color: var(--pw-ink-3);
+}
+
+/* ------------------------------------------------------------------ focus */
+
+.btn:focus-visible,
+.ibtn:focus-visible,
+.input:focus-visible,
+.pill:focus-visible,
+[data-focus-ring]:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+/* --------------------------------------------------------- screen shell */
+
+/*
+ * Every guest screen is one non-scrolling column. The CTA block is pushed to the
+ * bottom with margin-top:auto, so it pins regardless of how tall the content is.
+ */
+.screen {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  min-height: 100dvh;
+  /*
+   * The design requires the capture flow not to scroll, and the sizing rules in
+   * each screen achieve that. overflow-y stays `auto` as a safety net: if a
+   * device is shorter than anything we tested, the CTA must still be reachable
+   * rather than clipped away.
+   */
+  overflow-x: hidden;
+  overflow-y: auto;
+  background: var(--pw-bg);
+}
+
+.screen--dark {
+  background: var(--pw-ink);
+  color: #fff;
+}
+
+/* /me is the one screen the design expects to scroll on short devices. */
+.screen--scroll {
+  overflow-y: auto;
+}
+
+/* Reduce the chance of ever needing that safety net on short viewports. */
+@media (max-height: 700px) {
+  .screen__cta {
+    gap: var(--pw-space-2);
+  }
+}
+
+.screen__cta {
+  margin-top: auto;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-3);
+  flex-shrink: 0;
+  padding: 0 var(--pw-gutter) var(--pw-cta-bottom);
+}
+
+/* On tablet and desktop the whole flow stays a 430px column on the cream ground. */
+@media (min-width: 768px) {
+  body {
+    background:
+      radial-gradient(circle at 12% 18%, rgba(66, 133, 244, 0.06) 0 22%, transparent 22%),
+      radial-gradient(circle at 88% 72%, rgba(251, 188, 4, 0.08) 0 18%, transparent 18%),
+      var(--pw-bg);
+  }
+  .screen {
+    width: 430px;
+    margin: 0 auto;
+    border-left: var(--pw-outline);
+    border-right: var(--pw-outline);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 150ms !important;
+  }
+}

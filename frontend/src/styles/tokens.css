@@ -1,0 +1,113 @@
+/*
+ * PhotoWall design tokens.
+ * Transcribed verbatim from the Claude Design canvas, board "06 Developer handoff".
+ * See Claude/Claude-Plan.md §7.
+ *
+ * Never hardcode a hex or a px in a component — if the value you need is not here,
+ * it is probably not part of the design.
+ */
+:root {
+  /* ---------- colour: brand ---------- */
+  --pw-blue-500: #4285f4;
+  --pw-blue-700: #1967d2;
+  --pw-blue-900: #174ea6;
+  --pw-blue-100: #d2e3fc;
+
+  --pw-red-500: #ea4335;
+  --pw-red-700: #c5221f;
+  --pw-red-100: #fad2cf;
+
+  --pw-yellow-500: #fbbc04;
+  --pw-yellow-700: #b06000;
+  --pw-yellow-100: #feefc3;
+
+  --pw-green-500: #34a853;
+  --pw-green-700: #188038;
+  --pw-green-100: #ceead6;
+
+  /* ---------- colour: neutral ---------- */
+  --pw-bg: #faf7f2;
+  --pw-surface: #ffffff;
+  --pw-surface-2: #f1eee7;
+  --pw-line: #dad6ce;
+
+  --pw-ink: #1c1b33;
+  --pw-ink-2: #5b5975;
+  --pw-ink-3: #8d8ba3;
+  --pw-ink-700: #3d3b5c;
+  --pw-ink-800: #26253f;
+
+  --pw-on-dark-2: #c9c6da;
+  --pw-on-dark-3: #b8b5d1;
+
+  --pw-scrim: rgba(28, 27, 51, 0.55);
+  --pw-partner-aws: #3bb0ff;
+
+  /* ---------- type ---------- */
+  --pw-font-display: 'Unbounded', sans-serif;
+  --pw-font-body: 'Be Vietnam Pro', system-ui, sans-serif;
+
+  --pw-type-display: 800 64px / 0.95 var(--pw-font-display);
+  --pw-type-h1: 800 32px / 1.1 var(--pw-font-display);
+  --pw-type-h2: 700 24px / 1.2 var(--pw-font-display);
+  --pw-type-h3: 700 20px / 1.25 var(--pw-font-display);
+  --pw-type-title: 600 16px / 1.3 var(--pw-font-display);
+  --pw-type-body-l: 600 17px / 1.5 var(--pw-font-body);
+  --pw-type-body: 400 15px / 1.5 var(--pw-font-body);
+  --pw-type-body-s: 400 13px / 1.45 var(--pw-font-body);
+  --pw-type-caption: 600 12px / 1.4 var(--pw-font-body);
+  --pw-type-label: 700 11px / 1.2 var(--pw-font-body); /* uppercase, ls .08em */
+
+  /* ---------- space ---------- */
+  --pw-space-1: 4px;
+  --pw-space-2: 8px;
+  --pw-space-3: 12px;
+  --pw-space-4: 16px;
+  --pw-space-5: 20px;
+  --pw-space-6: 24px;
+  --pw-space-7: 32px;
+  --pw-space-8: 40px;
+  --pw-space-9: 48px;
+  --pw-space-10: 64px;
+
+  /* ---------- radius ---------- */
+  --pw-radius-1: 4px;
+  --pw-radius-2: 8px;
+  --pw-radius-3: 12px;
+  --pw-radius-4: 16px;
+  --pw-radius-5: 20px;
+  --pw-radius-6: 24px;
+  --pw-radius-7: 32px;
+  --pw-radius-full: 999px;
+
+  /* ---------- outline · shadow · focus ---------- */
+  --pw-outline: 2px solid var(--pw-ink);
+  --pw-outline-strong: 3px solid var(--pw-ink);
+  --pw-shadow-1: 3px 3px 0 var(--pw-ink);
+  --pw-shadow-2: 4px 4px 0 var(--pw-ink);
+  --pw-focus: 0 0 0 3px var(--pw-blue-700);
+
+  /* ---------- control ---------- */
+  --pw-ctl-l: 56px;
+  --pw-ctl-m: 48px;
+  --pw-ctl-s: 40px;
+  --pw-icon-s: 16px;
+  --pw-icon-m: 20px;
+  --pw-icon-l: 24px;
+  --pw-icon-xl: 32px;
+
+  /* ---------- motion ---------- */
+  --pw-dur-1: 80ms;
+  --pw-dur-2: 160ms;
+  --pw-dur-3: 240ms;
+  --pw-dur-4: 360ms;
+  --pw-dur-5: 700ms;
+  --pw-ease-std: cubic-bezier(0.2, 0, 0, 1);
+  --pw-ease-decel: cubic-bezier(0, 0, 0, 1);
+  --pw-ease-accel: cubic-bezier(0.3, 0, 1, 1);
+
+  /* ---------- layout ---------- */
+  --pw-gutter: var(--pw-space-5); /* 20 on mobile */
+  --pw-cta-bottom: calc(var(--pw-space-7) + env(safe-area-inset-bottom, 0px));
+  --pw-strip-ratio: 1080 / 3400;
+}

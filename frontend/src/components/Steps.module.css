@@ -1,0 +1,38 @@
+.row {
+  display: flex;
+  gap: var(--pw-space-2);
+  justify-content: center;
+  padding: var(--pw-space-4) var(--pw-gutter) 0;
+  flex-shrink: 0;
+}
+
+.chip {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-1);
+  height: 28px;
+  padding: 0 var(--pw-space-3);
+  border-radius: var(--pw-radius-full);
+  border: var(--pw-outline);
+  font: var(--pw-type-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.done {
+  background: var(--pw-green-700);
+  border-color: var(--pw-green-700);
+  color: #fff;
+}
+
+.current {
+  background: var(--pw-ink);
+  border-color: var(--pw-ink);
+  color: #fff;
+}
+
+.todo {
+  background: var(--pw-surface);
+  border-color: var(--pw-line);
+  color: var(--pw-ink-2);
+}

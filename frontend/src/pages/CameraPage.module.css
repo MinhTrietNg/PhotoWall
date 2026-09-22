@@ -1,0 +1,417 @@
+/* Top-bar tool pills (timer, mirror). 32px — display size S. */
+.tool {
+  height: 32px;
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.toolOn {
+  background: var(--pw-yellow-500);
+  border-color: var(--pw-ink);
+  color: var(--pw-ink);
+}
+
+.toolOff {
+  background: var(--pw-ink);
+  border-color: #fff;
+  color: #fff;
+}
+
+.toolIcon {
+  width: 32px;
+  padding: 0;
+  justify-content: center;
+}
+
+/* ------------------------------------------------------------- viewfinder */
+
+.viewportWrap {
+  padding: var(--pw-space-4) var(--pw-space-4) 0;
+  flex-shrink: 0;
+}
+
+/*
+ * The design's own sizing rule, kept verbatim so the tray plus three controls
+ * always fit and the screen never scrolls:
+ *   viewport 4:3 = min(100vw - 32, (100dvh - 420) * 4/3)
+ */
+.viewport {
+  position: relative;
+  width: min(100%, calc((100dvh - 420px) * 4 / 3));
+  aspect-ratio: 4 / 3;
+  margin: 0 auto;
+  border-radius: var(--pw-radius-5);
+  border: 2px solid #fff;
+  background: var(--pw-ink-800);
+  overflow: hidden;
+  overflow: clip;
+}
+
+.video {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.gridLine {
+  position: absolute;
+  background: rgba(255, 255, 255, 0.18);
+}
+.gridV1,
+.gridV2 {
+  top: 0;
+  bottom: 0;
+  width: 1px;
+}
+.gridV1 {
+  left: 33.3%;
+}
+.gridV2 {
+  left: 66.6%;
+}
+.gridH1,
+.gridH2 {
+  left: 0;
+  right: 0;
+  height: 1px;
+}
+.gridH1 {
+  top: 33.3%;
+}
+.gridH2 {
+  top: 66.6%;
+}
+
+.corner {
+  position: absolute;
+  width: 30px;
+  height: 30px;
+}
+.tl {
+  left: var(--pw-space-3);
+  top: var(--pw-space-3);
+  border-left: 4px solid var(--pw-yellow-500);
+  border-top: 4px solid var(--pw-yellow-500);
+  border-radius: var(--pw-radius-2) 0 0 0;
+}
+.tr {
+  right: var(--pw-space-3);
+  top: var(--pw-space-3);
+  border-right: 4px solid var(--pw-yellow-500);
+  border-top: 4px solid var(--pw-yellow-500);
+  border-radius: 0 var(--pw-radius-2) 0 0;
+}
+.bl {
+  left: var(--pw-space-3);
+  bottom: var(--pw-space-3);
+  border-left: 4px solid var(--pw-yellow-500);
+  border-bottom: 4px solid var(--pw-yellow-500);
+  border-radius: 0 0 0 var(--pw-radius-2);
+}
+.br {
+  right: var(--pw-space-3);
+  bottom: var(--pw-space-3);
+  border-right: 4px solid var(--pw-yellow-500);
+  border-bottom: 4px solid var(--pw-yellow-500);
+  border-radius: 0 0 var(--pw-radius-2) 0;
+}
+
+.slotPill {
+  position: absolute;
+  top: var(--pw-space-3);
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.hint {
+  position: absolute;
+  bottom: var(--pw-space-3);
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 6px var(--pw-space-3);
+  border-radius: var(--pw-radius-full);
+  background: rgba(28, 27, 51, 0.75);
+  color: #fff;
+  font: var(--pw-type-caption);
+  white-space: nowrap;
+}
+
+.countdown {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.countdownNumber {
+  width: 64px;
+  height: 64px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 4px solid var(--pw-yellow-500);
+  background: rgba(28, 27, 51, 0.55);
+  color: #fff;
+  font-size: 32px;
+  font-weight: 800;
+}
+
+.flash {
+  position: absolute;
+  inset: 0;
+  background: #fff;
+  animation: flash 120ms var(--pw-ease-accel) both;
+}
+
+@keyframes flash {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+
+/* ----------------------------------------------------------------- copy */
+
+.caption {
+  margin: 0;
+  padding: var(--pw-space-3) var(--pw-gutter) 0;
+  text-align: center;
+  font: var(--pw-type-body-s);
+  color: var(--pw-on-dark-2);
+}
+
+/* ----------------------------------------------------------- strip hint */
+
+.stripCard {
+  margin: var(--pw-space-4) var(--pw-gutter) 0;
+  padding: var(--pw-space-3) var(--pw-space-4);
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-4);
+  border: 2px solid var(--pw-ink-700);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-ink-800);
+}
+
+.stripThumb {
+  display: inline-flex;
+  flex-shrink: 0;
+  border: 2px solid #fff;
+  border-radius: var(--pw-radius-2);
+  overflow: hidden;
+  overflow: clip;
+}
+
+.stripText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+  min-width: 0;
+}
+
+.stripLabel {
+  color: var(--pw-on-dark-3);
+}
+
+.stripHint {
+  font: var(--pw-type-body-s);
+  color: var(--pw-on-dark-2);
+}
+
+/* ------------------------------------------------------------- controls */
+
+.controls {
+  margin-top: auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--pw-space-4) var(--pw-space-7) 0;
+  flex-shrink: 0;
+}
+
+.control {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pw-space-2);
+  min-width: var(--pw-ctl-l);
+}
+
+.controlLabel {
+  font: var(--pw-type-caption);
+  color: #fff;
+}
+
+.controlSpacer {
+  display: block;
+  width: var(--pw-ctl-l);
+  height: var(--pw-ctl-l);
+}
+
+.shutter {
+  width: 84px;
+  height: 84px;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  border: 4px solid #fff;
+  background: #fff;
+  box-shadow: 0 0 0 3px var(--pw-ink);
+  cursor: pointer;
+  transition: transform var(--pw-dur-1) var(--pw-ease-std);
+}
+
+.shutter:active:not(:disabled) {
+  transform: scale(0.94);
+}
+
+.shutter:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}
+
+.shutter:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+.shutterCore {
+  width: 66px;
+  height: 66px;
+  border-radius: 50%;
+  background: var(--pw-blue-700);
+  border: 3px solid var(--pw-ink);
+}
+
+.footnote {
+  margin: 0;
+  padding: var(--pw-space-4) var(--pw-gutter) var(--pw-cta-bottom);
+  text-align: center;
+  font: var(--pw-type-caption);
+  font-weight: 400;
+  color: var(--pw-on-dark-3);
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------- E01 permission */
+
+.deniedBody {
+  padding: var(--pw-space-8) var(--pw-gutter) 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--pw-space-3);
+}
+
+.deniedDisc {
+  width: var(--pw-space-10);
+  height: var(--pw-space-10);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pw-red-100);
+  color: var(--pw-red-700);
+  border: var(--pw-outline);
+}
+
+.deniedTitle {
+  margin: var(--pw-space-2) 0 0;
+  font: var(--pw-type-h1);
+  color: #fff;
+}
+
+.deniedText {
+  margin: 0;
+  font: var(--pw-type-body);
+  color: var(--pw-on-dark-2);
+  max-width: 34ch;
+}
+
+.deniedHint {
+  margin: 0;
+  text-align: center;
+  font: var(--pw-type-caption);
+  font-weight: 400;
+  color: var(--pw-on-dark-3);
+}
+
+/* Very short viewports: drop the strip hint card before anything else gives. */
+@media (max-height: 700px) {
+  .stripCard {
+    display: none;
+  }
+}
+
+.deniedProgress {
+  margin: var(--pw-space-2) 0 0;
+  font: var(--pw-type-body-s);
+  color: var(--pw-on-dark-3);
+}
+
+.deniedProgress b {
+  color: #fff;
+}
+
+/*
+ * A decode failure used to be invisible, which left a hole in the strip that
+ * only surfaced on /frame. Pinned above the CTA stack so it cannot be missed.
+ */
+.pickError {
+  position: fixed;
+  left: var(--pw-gutter);
+  right: var(--pw-gutter);
+  bottom: calc(var(--pw-cta-bottom) + var(--pw-space-4));
+  z-index: 40;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pw-space-3);
+  padding: var(--pw-space-3) var(--pw-space-4);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-red-100);
+  color: var(--pw-red-700);
+  box-shadow: var(--pw-shadow-2);
+  font: var(--pw-type-body-s);
+  animation: pickErrorIn var(--pw-dur-2) var(--pw-ease-decel) both;
+}
+
+.pickError span {
+  flex: 1;
+  min-width: 0;
+}
+
+.pickError button {
+  flex-shrink: 0;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: inherit;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+@keyframes pickErrorIn {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .pickError {
+    animation: none;
+  }
+}
