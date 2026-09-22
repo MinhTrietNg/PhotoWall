@@ -5,13 +5,33 @@
   flex-shrink: 0;
 }
 
-/* Fixed-height decor band. Items are anchored to both edges so 360 and 430
-   both hold together without the composition drifting. */
+/*
+ * Decor band. Items are anchored to both edges so 360 and 430 both hold
+ * together without the composition drifting.
+ *
+ * The collage is the only thing on this screen that can give — the headline
+ * and the CTA are the message. So the band scales as a group rather than
+ * being cropped or rewrapped: the inner box keeps the artboard's 290px
+ * coordinates and the outer one reserves only the scaled height.
+ *
+ * A scale factor has to be unitless, and CSS cannot divide one length by
+ * another, so this is a ladder rather than a formula. The steps come from
+ * measuring the screen at each viewport, not from taste.
+ */
 .decor {
+  --pw-decor-scale: 1;
   position: relative;
-  height: 290px;
+  height: calc(290px * var(--pw-decor-scale));
   margin-top: var(--pw-space-3);
   flex-shrink: 0;
+}
+
+.decorInner {
+  position: absolute;
+  inset: 0;
+  height: 290px;
+  transform: scale(var(--pw-decor-scale));
+  transform-origin: top center;
 }
 
 .float {
@@ -194,6 +214,31 @@
 @media (max-width: 374px) {
   .hero {
     font-size: 56px;
+  }
+}
+
+/* Short phones. Each step is the smallest that clears the measured overflow. */
+@media (max-height: 740px) {
+  .decor {
+    --pw-decor-scale: 0.92;
+  }
+}
+
+@media (max-height: 680px) {
+  .decor {
+    --pw-decor-scale: 0.76;
+  }
+}
+
+@media (max-height: 610px) {
+  .decor {
+    --pw-decor-scale: 0.46;
+  }
+  .hero {
+    font-size: 52px;
+  }
+  .promise {
+    font-size: 17px;
   }
 }
 

@@ -38,40 +38,47 @@ export function Welcome() {
         <PartnerLine />
       </div>
 
-      {/* Decorative only — the whole zone is hidden from assistive tech. */}
+      {/*
+        Decorative only — the whole zone is hidden from assistive tech.
+        The inner box keeps the artboard's 290px composition at its original
+        coordinates; the outer one scales it down on short phones so the
+        collage shrinks as a group instead of being cropped.
+      */}
       <div className={styles.decor} aria-hidden="true">
-        <div className={`${styles.float} ${styles.f1}`}>
-          <span className="u">&lt;/&gt;</span>
-        </div>
-        <div className={`${styles.float} ${styles.f2}`} />
-        <div className={`${styles.float} ${styles.f3}`}>
-          <Icon name="bolt" size={20} />
-          {approvedCount} trên Wall
-        </div>
+        <div className={styles.decorInner}>
+          <div className={`${styles.float} ${styles.f1}`}>
+            <span className="u">&lt;/&gt;</span>
+          </div>
+          <div className={`${styles.float} ${styles.f2}`} />
+          <div className={`${styles.float} ${styles.f3}`}>
+            <Icon name="bolt" size={20} />
+            {approvedCount} trên Wall
+          </div>
 
-        <div className={`${styles.float} ${styles.f4}`}>
-          {registry?.frames.length
-            ? FAN.map(({ id, rotate, top }) => {
-                const frame = registry.frames.find((f) => f.id === id);
-                return frame ? (
-                  <span
-                    key={id}
-                    className={styles.fanCard}
-                    style={{ top, transform: `rotate(${rotate}deg)` }}
-                  >
-                    <PhotoWallFrame frame={frame} width={58} />
-                  </span>
-                ) : null;
-              })
-            : null}
-        </div>
+          <div className={`${styles.float} ${styles.f4}`}>
+            {registry?.frames.length
+              ? FAN.map(({ id, rotate, top }) => {
+                  const frame = registry.frames.find((f) => f.id === id);
+                  return frame ? (
+                    <span
+                      key={id}
+                      className={styles.fanCard}
+                      style={{ top, transform: `rotate(${rotate}deg)` }}
+                    >
+                      <PhotoWallFrame frame={frame} width={58} />
+                    </span>
+                  ) : null;
+                })
+              : null}
+          </div>
 
-        <div className={`${styles.float} ${styles.f5}`} />
-        <div className={`${styles.float} ${styles.f6}`}>
-          <span style={{ background: 'var(--pw-blue-500)' }} />
-          <span style={{ background: 'var(--pw-red-500)' }} />
-          <span style={{ background: 'var(--pw-yellow-500)' }} />
-          <span style={{ background: 'var(--pw-green-500)' }} />
+          <div className={`${styles.float} ${styles.f5}`} />
+          <div className={`${styles.float} ${styles.f6}`}>
+            <span style={{ background: 'var(--pw-blue-500)' }} />
+            <span style={{ background: 'var(--pw-red-500)' }} />
+            <span style={{ background: 'var(--pw-yellow-500)' }} />
+            <span style={{ background: 'var(--pw-green-500)' }} />
+          </div>
         </div>
       </div>
 
