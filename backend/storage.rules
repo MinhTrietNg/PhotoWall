@@ -14,12 +14,17 @@ service firebase.storage {
         && firestore.exists(/databases/(default)/documents/moderators/$(request.auth.token.email));
     }
 
-    match /photos/{photoId}/strip.jpg {
+    // strip.jpg = full composed strip, thumb.jpg = small copy for the phone feed.
+    match /photos/{photoId}/{file} {
+      function maxBytes() {
+        return file == 'strip.jpg' ? 2 * 1024 * 1024 : 300 * 1024;
+      }
+
       function canUpload(photo) {
         return request.auth != null
           && photo.ownerUid == request.auth.uid
           && photo.status == 'uploading'
-          && request.resource.size < 2 * 1024 * 1024
+          && request.resource.size < maxBytes()
           && request.resource.contentType == 'image/jpeg';
       }
 
@@ -28,9 +33,9 @@ service firebase.storage {
           || (request.auth != null && photo.ownerUid == request.auth.uid);
       }
 
-      allow create, update: if canUpload(photoDoc(photoId));
-      allow read: if canRead(photoDoc(photoId)) || isModerator();
-      // Moderators delete the object on reject/remove so leaked download URLs die.
+      allow create, update: if file in ['strip.jpg', 'thumb.jpg'] && canUpload(photoDoc(photoId));
+      allow read: if file in ['strip.jpg', 'thumb.jpg'] && (canRead(photoDoc(photoId)) || isModerator());
+      // Moderators delete the files on reject/remove so leaked download URLs die.
       allow delete: if isModerator();
     }
   }

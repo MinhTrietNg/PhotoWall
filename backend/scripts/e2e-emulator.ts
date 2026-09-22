@@ -7,8 +7,8 @@ import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth
 import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import {
-  AlreadyReviewedError, approve, connectEmulators, ensureGuest, isModerator, photoUrl, reject,
-  remove, setUploadsOpen, submitPhoto, SubmitError, watchApproved, watchPending, watchStats,
+  AlreadyReviewedError, approve, connectEmulators, ensureGuest, isModerator, loadFeedPage, photoUrl, reject,
+  remove, setUploadsOpen, submitPhoto, SubmitError, watchApproved, watchNewInFeed, watchPending, watchStats,
   type ApprovedUpdate, type Backend,
 } from '../src/client';
 import { EMULATOR_PROJECT, seedEmulator } from './seed-emulator';
@@ -35,7 +35,10 @@ async function moderatorDevice(name: string) {
   return b;
 }
 
-const strip = () => new Blob([new Uint8Array(300 * 1024)], { type: 'image/jpeg' });
+const strip = () => ({
+  image: new Blob([new Uint8Array(300 * 1024)], { type: 'image/jpeg' }),
+  thumbnail: new Blob([new Uint8Array(30 * 1024)], { type: 'image/jpeg' }),
+});
 
 async function waitFor<T>(label: string, fn: () => T | undefined, timeoutMs = 5000): Promise<T> {
   const start = Date.now();
@@ -79,14 +82,14 @@ step('big screen and moderators connected');
 // Phone 1: submit, then get rate-limited
 const phone1 = device('phone1');
 await ensureGuest(phone1);
-const p1 = await submitPhoto(phone1, { image: strip(), displayName: 'Khả', frameVariant: 'light' });
+const p1 = await submitPhoto(phone1, { ...strip(), displayName: 'Khả', frameVariant: 'light' });
 await waitFor('p1 in pending queue', () => pending.includes(p1));
 await expectSubmitError(
-  submitPhoto(phone1, { image: strip(), displayName: 'Khả', frameVariant: 'light' }),
+  submitPhoto(phone1, { ...strip(), displayName: 'Khả', frameVariant: 'light' }),
   'rate-limited',
 );
 await expectSubmitError(
-  submitPhoto(phone1, { image: new Blob([new Uint8Array(10)], { type: 'image/png' }), displayName: 'x', frameVariant: 'light' }),
+  submitPhoto(phone1, { ...strip(), image: new Blob([new Uint8Array(10)], { type: 'image/png' }), displayName: 'x', frameVariant: 'light' }),
   'invalid-input',
 );
 step('phone submits; second submit within 60s is rate-limited');
@@ -105,17 +108,18 @@ step(`approve → big screen pop in ${latency} ms, counter = 1, image downloadab
 // Phone 2: rejected → object deleted, never shown
 const phone2 = device('phone2');
 await ensureGuest(phone2);
-const p2 = await submitPhoto(phone2, { image: strip(), displayName: 'Bình', frameVariant: 'dark' });
+const p2 = await submitPhoto(phone2, { ...strip(), displayName: 'Bình', frameVariant: 'dark' });
 await waitFor('p2 pending', () => pending.includes(p2));
 await reject(mod1, p2);
 await assert.rejects(photoUrl(phone2, p2));
+await assert.rejects(photoUrl(phone2, p2, 'thumb'));
 assert.ok(!updates.some((u) => u.added.some((p) => p.id === p2)));
-step('reject → strip deleted, never reaches big screen');
+step('reject → strip + thumbnail deleted, never reaches big screen');
 
 // Phone 3: two moderators race; exactly one wins
 const phone3 = device('phone3');
 await ensureGuest(phone3);
-const p3 = await submitPhoto(phone3, { image: strip(), displayName: 'Chi', frameVariant: 'light' });
+const p3 = await submitPhoto(phone3, { ...strip(), displayName: 'Chi', frameVariant: 'light' });
 await waitFor('p3 pending', () => pending.includes(p3));
 const race = await Promise.allSettled([approve(mod1, p3), approve(mod2, p3)]);
 assert.equal(race.filter((r) => r.status === 'fulfilled').length, 1);
@@ -124,18 +128,39 @@ assert.ok(loser.reason instanceof AlreadyReviewedError, `loser error: ${loser.re
 await waitFor('counter = 2', () => approvedCount === 2);
 step('two moderators approve at once → one wins, counter counted once');
 
+// Phone feed: paginate, then "N ảnh mới" button
+const reader = device('reader');
+await ensureGuest(reader);
+const page1 = await loadFeedPage(reader, null, 1);
+assert.deepEqual(page1.photos.map((p) => p.id), [p3]);
+const page2 = await loadFeedPage(reader, page1.next, 1);
+assert.deepEqual(page2.photos.map((p) => p.id), [p1]);
+assert.equal((await loadFeedPage(reader, page2.next, 1)).photos.length, 0);
+assert.equal((await fetch(await photoUrl(reader, p3, 'thumb'))).status, 200);
+let fresh: string[] = [];
+unsubs.push(watchNewInFeed(reader, page1.photos[0], (ps) => { fresh = ps.map((p) => p.id); }));
+const phone5 = device('phone5');
+await ensureGuest(phone5);
+const p5 = await submitPhoto(phone5, { ...strip(), displayName: 'Em', frameVariant: 'dark' });
+await waitFor('p5 pending', () => pending.includes(p5));
+assert.deepEqual(fresh, []);
+await approve(mod1, p5);
+await waitFor('feed sees 1 new photo', () => fresh.length === 1 && fresh[0] === p5);
+await waitFor('counter = 3', () => approvedCount === 3);
+step('feed paginates newest-first, thumbnail loads, "new photos" fires on approve');
+
 // Remove p1 from the big screen
 await remove(mod2, p1);
 await waitFor('big screen drops p1', () => updates.find((u) => u.removedIds.includes(p1)));
-await waitFor('counter = 1', () => approvedCount === 1);
-step('remove → big screen drops photo, counter = 1');
+await waitFor('counter = 2', () => approvedCount === 2);
+step('remove → big screen drops photo, counter = 2');
 
 // Close uploads
 await setUploadsOpen(mod1, false);
 const phone4 = device('phone4');
 await ensureGuest(phone4);
 await expectSubmitError(
-  submitPhoto(phone4, { image: strip(), displayName: 'Dũng', frameVariant: 'light' }),
+  submitPhoto(phone4, { ...strip(), displayName: 'Dũng', frameVariant: 'light' }),
   'uploads-closed',
 );
 step('uploadsOpen = false → submissions refused');
