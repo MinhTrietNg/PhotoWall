@@ -13,7 +13,6 @@ export const LIMITS = {
   submitIntervalSeconds: 60,
   maxSubmitsPerUser: 20,
   maxUploadBytes: 2 * 1024 * 1024,
-  maxThumbBytes: 300 * 1024,
   displayNameMaxLength: 40,
 } as const;
 
@@ -24,8 +23,6 @@ export const paths = {
   photo: (photoId: string) => `photos/${photoId}`,
   moderator: (email: string) => `moderators/${email}`,
   photoObject: (photoId: string) => `photos/${photoId}/strip.jpg`,
-  /** Small copy of the strip (~400px wide) for the phone feed. */
-  photoThumb: (photoId: string) => `photos/${photoId}/thumb.jpg`,
 };
 
 export interface AppConfig {

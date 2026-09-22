@@ -58,33 +58,17 @@ describe('uploading', () => {
     await assertFails(uploadBytes(ref(st(guest(env, 'alice')), paths.photoObject('p1')), small, { contentType: 'image/png' }));
   });
 
-  it('lets the owner upload a thumbnail under 300 KB, not larger', async () => {
-    await seedPhoto('uploading');
-    const s = st(guest(env, 'alice'));
-    await assertSucceeds(uploadBytes(ref(s, paths.photoThumb('p1')), small, jpeg));
-    await assertFails(uploadBytes(ref(s, paths.photoThumb('p1')), new Uint8Array(LIMITS.maxThumbBytes), jpeg));
-  });
-
-  it('rejects a thumbnail once the photo is pending', async () => {
-    await seedPhoto('pending');
-    await assertFails(uploadBytes(ref(st(guest(env, 'alice')), paths.photoThumb('p1')), small, jpeg));
-  });
-
-  it('rejects any path outside photos/{id}/strip.jpg|thumb.jpg', async () => {
+  it('rejects any path outside photos/{id}/strip.jpg', async () => {
     await seedPhoto('uploading');
     await assertFails(uploadBytes(ref(st(guest(env, 'alice')), 'photos/p1/evil.jpg'), small, jpeg));
   });
 });
 
 describe('reading and deleting', () => {
-  it('anyone signed in can read an approved photo and its thumbnail', async () => {
+  it('anyone signed in can read an approved photo', async () => {
     await seedPhoto('approved');
     await seedObject();
-    await env.withSecurityRulesDisabled(async (ctx) => {
-      await uploadBytes(ref(st(ctx), paths.photoThumb('p1')), small, jpeg);
-    });
     await assertSucceeds(getBytes(ref(st(guest(env, 'screen')), paths.photoObject('p1'))));
-    await assertSucceeds(getBytes(ref(st(guest(env, 'screen')), paths.photoThumb('p1'))));
   });
 
   it('only owner and moderators can read a pending photo', async () => {

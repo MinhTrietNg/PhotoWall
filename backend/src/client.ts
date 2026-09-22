@@ -2,9 +2,9 @@
 // perform the exact write sequences that firestore.rules / storage.rules accept.
 import { connectAuthEmulator, signInAnonymously, type Auth } from 'firebase/auth';
 import {
-  collection, connectFirestoreEmulator, doc, getDoc, getDocs, increment, limit, onSnapshot, orderBy,
-  query, runTransaction, serverTimestamp, startAfter, updateDoc, where, writeBatch,
-  type Firestore, type QueryDocumentSnapshot, type Unsubscribe,
+  collection, connectFirestoreEmulator, doc, getDoc, increment, limit, onSnapshot, orderBy,
+  query, runTransaction, serverTimestamp, updateDoc, where, writeBatch,
+  type Firestore, type Unsubscribe,
 } from 'firebase/firestore';
 import {
   connectStorageEmulator, deleteObject, getDownloadURL, ref, uploadBytes,
@@ -44,7 +44,7 @@ function requireUser(b: Backend) {
 // match on `code` rather than instanceof.
 const errorCode = (e: unknown) => (e as { code?: string } | null)?.code;
 
-const toPhoto = (snap: { id: string; data(): unknown }): Photo => ({ id: snap.id, ...(snap.data() as PhotoDoc) });
+const toPhoto =(snap: { id: string; data(): unknown }): Photo => ({ id: snap.id, ...(snap.data() as PhotoDoc) });
 
 // ---------------------------------------------------------------- guests
 
@@ -61,6 +61,8 @@ export class SubmitError extends Error {
     readonly code: SubmitErrorCode,
     readonly photoId?: string,
     readonly retryAfterSeconds?: number,
+    /** Underlying Firebase error, for logging. */
+    readonly cause?: unknown,
   ) {
     super(code);
   }
@@ -69,8 +71,6 @@ export class SubmitError extends Error {
 export interface SubmitInput {
   /** The composed 4-shot strip, JPEG. */
   image: Blob;
-  /** Same strip scaled to ~400px wide, JPEG — shown in the phone feed. */
-  thumbnail: Blob;
   displayName: string;
   frameVariant: FrameVariant;
 }
@@ -78,7 +78,7 @@ export interface SubmitInput {
 /**
  * Submits a strip for moderation and returns its photo id.
  * 1. batch: photos/{id} (uploading) + users/{uid} rate-limit ledger
- * 2. upload photos/{id}/strip.jpg and thumb.jpg
+ * 2. upload photos/{id}/strip.jpg
  * 3. mark pending
  */
 export async function submitPhoto(b: Backend, input: SubmitInput): Promise<string> {
@@ -86,7 +86,6 @@ export async function submitPhoto(b: Backend, input: SubmitInput): Promise<strin
   if (
     displayName.length < 1 || displayName.length > LIMITS.displayNameMaxLength
     || input.image.type !== 'image/jpeg' || input.image.size >= LIMITS.maxUploadBytes
-    || input.thumbnail.type !== 'image/jpeg' || input.thumbnail.size >= LIMITS.maxThumbBytes
   ) {
     throw new SubmitError('invalid-input');
   }
@@ -115,23 +114,20 @@ export async function submitPhoto(b: Backend, input: SubmitInput): Promise<strin
     throw new SubmitError('unknown');
   }
 
-  await resumeSubmission(b, photoId, input.image, input.thumbnail);
+  await resumeSubmission(b, photoId, input.image);
   return photoId;
 }
 
 /** Steps 2–3 alone; safe to retry while the photo is still `uploading`. */
-export async function resumeSubmission(
-  b: Backend, photoId: string, image: Blob, thumbnail: Blob,
-): Promise<void> {
-  const metadata = { contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000' };
+export async function resumeSubmission(b: Backend, photoId: string, image: Blob): Promise<void> {
   try {
-    await Promise.all([
-      uploadBytes(ref(b.storage, paths.photoObject(photoId)), image, metadata),
-      uploadBytes(ref(b.storage, paths.photoThumb(photoId)), thumbnail, metadata),
-    ]);
+    await uploadBytes(ref(b.storage, paths.photoObject(photoId)), image, {
+      contentType: 'image/jpeg',
+      cacheControl: 'public, max-age=31536000',
+    });
     await updateDoc(doc(b.db, paths.photo(photoId)), { status: 'pending', submittedAt: serverTimestamp() });
-  } catch {
-    throw new SubmitError('upload-failed', photoId);
+  } catch (e) {
+    throw new SubmitError('upload-failed', photoId, undefined, e);
   }
 }
 
@@ -201,61 +197,15 @@ export function watchStats(b: Backend, cb: (stats: PublicStats) => void): Unsubs
 
 const urlCache = new Map<string, Promise<string>>();
 
-/**
- * Download URL for a photo the caller may read. Cached for the page's lifetime.
- * `thumb` is the small feed copy; fall back to `full` if it fails to load.
- */
-export function photoUrl(b: Backend, photoId: string, size: 'full' | 'thumb' = 'full'): Promise<string> {
-  const key = `${photoId}/${size}`;
-  let url = urlCache.get(key);
+/** Download URL for a photo the caller may read. Cached for the page's lifetime. */
+export function photoUrl(b: Backend, photoId: string): Promise<string> {
+  let url = urlCache.get(photoId);
   if (!url) {
-    const path = size === 'thumb' ? paths.photoThumb(photoId) : paths.photoObject(photoId);
-    url = getDownloadURL(ref(b.storage, path));
-    url.catch(() => urlCache.delete(key));
-    urlCache.set(key, url);
+    url = getDownloadURL(ref(b.storage, paths.photoObject(photoId)));
+    url.catch(() => urlCache.delete(photoId));
+    urlCache.set(photoId, url);
   }
   return url;
-}
-
-// ------------------------------------------------------------ phone feed
-
-export interface FeedPage {
-  photos: Photo[];
-  /** Pass to the next loadFeedPage call; null when there are no more photos. */
-  next: FeedCursor | null;
-}
-
-export type FeedCursor = QueryDocumentSnapshot;
-
-/** One page of approved photos, newest first, for infinite scroll. */
-export async function loadFeedPage(b: Backend, after: FeedCursor | null = null, pageSize = 20): Promise<FeedPage> {
-  const q = query(
-    collection(b.db, 'photos'),
-    where('status', '==', 'approved'),
-    orderBy('reviewedAt', 'desc'),
-    ...(after ? [startAfter(after)] : []),
-    limit(pageSize),
-  );
-  const s = await getDocs(q);
-  return {
-    photos: s.docs.map(toPhoto),
-    next: s.docs.length === pageSize ? s.docs[s.docs.length - 1] : null,
-  };
-}
-
-/**
- * Photos approved after `newest` (the top photo currently shown) — drives the
- * "N ảnh mới" button. On tap, prepend them and re-watch with the new top photo.
- */
-export function watchNewInFeed(b: Backend, newest: Photo | null, cb: (photos: Photo[]) => void, max = 50): Unsubscribe {
-  const q = query(
-    collection(b.db, 'photos'),
-    where('status', '==', 'approved'),
-    ...(newest?.reviewedAt ? [where('reviewedAt', '>', newest.reviewedAt)] : []),
-    orderBy('reviewedAt', 'desc'),
-    limit(max),
-  );
-  return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
 }
 
 // ------------------------------------------------------------ moderators
@@ -300,17 +250,14 @@ async function review(b: Backend, photoId: string, from: PhotoDoc['status'], to:
   }
 }
 
-/** Deletes the strip and thumbnail so any leaked download URL stops working. */
-async function deleteFiles(b: Backend, photoId: string) {
-  urlCache.delete(`${photoId}/full`);
-  urlCache.delete(`${photoId}/thumb`);
-  await Promise.all([paths.photoObject(photoId), paths.photoThumb(photoId)].map(async (path) => {
-    try {
-      await deleteObject(ref(b.storage, path));
-    } catch (e) {
-      if (errorCode(e) !== 'storage/object-not-found') throw e;
-    }
-  }));
+/** Deletes the stored strip so any leaked download URL stops working. */
+async function deleteStrip(b: Backend, photoId: string) {
+  urlCache.delete(photoId);
+  try {
+    await deleteObject(ref(b.storage, paths.photoObject(photoId)));
+  } catch (e) {
+    if (errorCode(e) !== 'storage/object-not-found') throw e;
+  }
 }
 
 export function approve(b: Backend, photoId: string) {
@@ -319,13 +266,13 @@ export function approve(b: Backend, photoId: string) {
 
 export async function reject(b: Backend, photoId: string) {
   await review(b, photoId, 'pending', 'rejected', 0);
-  await deleteFiles(b, photoId);
+  await deleteStrip(b, photoId);
 }
 
 /** Takes an approved photo down from the big screen. */
 export async function remove(b: Backend, photoId: string) {
   await review(b, photoId, 'approved', 'removed', -1);
-  await deleteFiles(b, photoId);
+  await deleteStrip(b, photoId);
 }
 
 export async function setUploadsOpen(b: Backend, open: boolean) {

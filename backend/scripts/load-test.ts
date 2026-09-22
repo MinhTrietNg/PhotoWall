@@ -1,7 +1,7 @@
-// Load test against the emulators: many phones browsing the feed, some of them
-// submitting strips, a few moderators approving, one big screen.
-//   npm run load-test                              (800 sessions, 100 submitters)
-//   npx tsx scripts/load-test.ts --sessions 200 --submitters 30   (emulators already running)
+// Load test against the emulators: many phones each submitting one strip, a few
+// moderators approving, one big screen.
+//   npm run load-test                                    (800 phones)
+//   npx tsx scripts/load-test.ts --sessions 200 --ramp 30   (emulators already running)
 // Checks correctness under concurrency; latency numbers are local, not production.
 import { monitorEventLoopDelay } from 'node:perf_hooks';
 import { parseArgs } from 'node:util';
@@ -10,8 +10,8 @@ import { getAuth, GoogleAuthProvider, signInWithCredential } from 'firebase/auth
 import { collection, getCountFromServer, getFirestore, query, where } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import {
-  AlreadyReviewedError, approve, connectEmulators, ensureGuest, loadFeedPage, photoUrl, reject,
-  submitPhoto, SubmitError, watchApproved, watchMyPhotos, watchNewInFeed, watchPending, watchStats,
+  AlreadyReviewedError, approve, connectEmulators, ensureGuest, reject,
+  submitPhoto, SubmitError, watchApproved, watchMyPhotos, watchPending, watchStats,
   type Backend, type Photo,
 } from '../src/client';
 import { EMULATOR_PROJECT, seedEmulator } from './seed-emulator';
@@ -19,15 +19,13 @@ import { EMULATOR_PROJECT, seedEmulator } from './seed-emulator';
 const { values: args } = parseArgs({
   options: {
     sessions: { type: 'string', default: '800' },
-    submitters: { type: 'string', default: '100' },
     moderators: { type: 'string', default: '3' },
-    ramp: { type: 'string', default: '60' }, // seconds over which sessions arrive
+    ramp: { type: 'string', default: '120' }, // seconds over which sessions arrive
     'reject-rate': { type: 'string', default: '0.1' },
     'settle': { type: 'string', default: '180' }, // seconds to let listeners catch up at the end
   },
 });
 const SESSIONS = Number(args.sessions);
-const SUBMITTERS = Math.min(Number(args.submitters), SESSIONS);
 const MODERATORS = Number(args.moderators);
 const RAMP_MS = Number(args.ramp) * 1000;
 const REJECT_RATE = Number(args['reject-rate']);
@@ -62,52 +60,23 @@ function pct(xs: number[], p: number) {
   return s[Math.min(s.length - 1, Math.floor((p / 100) * s.length))];
 }
 
-// Moderation start time per photo; screen/feed latency is measured from here.
+// Moderation start time per photo; screen latency is measured from here.
 const approveStartedAt = new Map<string, number>();
 const approvedIds = new Set<string>();
-const reviewedAtMs = new Map<string, number>();
-
-interface Watcher { ids: Set<string>; baseline: number }
 const rejectedIds = new Set<string>();
 
-const strip = () => ({
-  image: new Blob([new Uint8Array(300 * 1024)], { type: 'image/jpeg' }),
-  thumbnail: new Blob([new Uint8Array(30 * 1024)], { type: 'image/jpeg' }),
-});
+const strip = () => new Blob([new Uint8Array(500 * 1024)], { type: 'image/jpeg' });
 
 // ------------------------------------------------------------ actors
 
-/** Browses the feed without signing in, then waits for "new photos". */
-async function reader(i: number, seen: Map<string, Watcher>) {
-  const b = device(`reader-${i}`);
-  const t0 = performance.now();
-  const first = await loadFeedPage(b);
-  if (first.next) await loadFeedPage(b, first.next);
-  record('feed: first 2 pages', performance.now() - t0);
-  await Promise.all(first.photos.slice(0, 6).map((p) => photoUrl(b, p.id, 'thumb')));
-
-  const mine = new Set<string>();
-  // Only photos approved after the newest one on the first page must arrive via the listener.
-  seen.set(`reader-${i}`, { ids: mine, baseline: first.photos[0]?.reviewedAt?.toMillis() ?? 0 });
-  unsubs.push(watchNewInFeed(b, first.photos[0] ?? null, (photos) => {
-    for (const p of photos) {
-      if (mine.has(p.id)) continue;
-      mine.add(p.id);
-      const started = approveStartedAt.get(p.id);
-      if (started) record('approve → feed "ảnh mới"', performance.now() - started);
-    }
-  }, 200));
-  return b;
-}
-
-/** A reader that also submits one strip and waits until it is reviewed. */
-async function submitter(i: number, seen: Map<string, Watcher>) {
-  const b = await reader(i, seen);
+/** A phone: signs in, submits one strip, waits until it is reviewed. */
+async function phone(i: number) {
+  const b = device(`phone-${i}`);
   await ensureGuest(b);
   const t0 = performance.now();
   try {
-    const id = await submitPhoto(b, { ...strip(), displayName: `Load ${i}`, frameVariant: i % 2 ? 'light' : 'dark' });
-    record('submit (batch + 2 uploads + pending)', performance.now() - t0);
+    const id = await submitPhoto(b, { image: strip(), displayName: `Load ${i}`, frameVariant: i % 2 ? 'light' : 'dark' });
+    record('submit (batch + upload + pending)', performance.now() - t0);
     count('submit ok');
     await new Promise<void>((resolve) => {
       const un = watchMyPhotos(b, (ps) => {
@@ -118,7 +87,8 @@ async function submitter(i: number, seen: Map<string, Watcher>) {
       });
     });
   } catch (e) {
-    count(`submit error: ${e instanceof SubmitError ? e.code : (e as Error).message}`);
+    const cause = e instanceof SubmitError && e.cause ? ` (${(e.cause as { code?: string }).code ?? (e.cause as Error).message})` : '';
+    count(`submit error: ${e instanceof SubmitError ? e.code : (e as Error).message}${cause}`);
   }
 }
 
@@ -167,14 +137,13 @@ async function moderator(n: number, stop: () => boolean) {
 
 // ------------------------------------------------------------ run
 
-console.log(`Load test: ${SESSIONS} sessions (${SUBMITTERS} submit), ${MODERATORS} moderators, ramp ${RAMP_MS / 1000}s`);
+console.log(`Load test: ${SESSIONS} phones, ${MODERATORS} moderators, ramp ${RAMP_MS / 1000}s`);
 await seedEmulator(['mod@example.com'], { clear: true });
 
 const screen = device('screen');
 const onScreen = new Set<string>();
 let approvedCount = 0;
 unsubs.push(watchApproved(screen, (u) => {
-  for (const p of u.photos) if (p.reviewedAt) reviewedAtMs.set(p.id, p.reviewedAt.toMillis());
   for (const p of u.added) {
     onScreen.add(p.id);
     const started = approveStartedAt.get(p.id);
@@ -186,24 +155,19 @@ unsubs.push(watchStats(screen, (s) => { approvedCount = s.approvedCount; }));
 let submittersDone = false;
 const mods = Array.from({ length: MODERATORS }, (_, n) => moderator(n, () => submittersDone));
 
-const seen = new Map<string, Watcher>();
 const startedAt = performance.now();
 const sessions: Promise<unknown>[] = [];
-const submitterSlots = new Set(Array.from({ length: SUBMITTERS }, (_, k) => Math.floor((k * SESSIONS) / SUBMITTERS)));
 for (let i = 0; i < SESSIONS; i++) {
-  const run = submitterSlots.has(i) ? submitter(i, seen) : reader(i, seen);
-  sessions.push(run.catch((e) => count(`session error: ${(e as Error).message}`)));
+  sessions.push(phone(i).catch((e) => count(`session error: ${(e as Error).message}`)));
   await sleep(RAMP_MS / SESSIONS);
 }
 await Promise.all(sessions);
 submittersDone = true;
 await Promise.all(mods);
 
-// Let listeners catch up, then check every reader saw every approved photo.
+// Let listeners catch up.
 const settleStart = Date.now();
 const deadline = settleStart + SETTLE_MS;
-const missing = () => [...seen.values()].reduce((n, w) => n + [...onScreen]
-  .filter((id) => (reviewedAtMs.get(id) ?? Infinity) > w.baseline && !w.ids.has(id)).length, 0);
 // Ground truth from the server, not the moderators' own bookkeeping: under load a
 // commit can time out client-side yet succeed, so a "lost" approve may have won.
 // Only moderators may read unapproved photos, so audit with a moderator account.
@@ -212,12 +176,12 @@ const countWhere = async (status: string) => (await getCountFromServer(
   query(collection(auditor.db, 'photos'), where('status', '==', status)),
 )).data().count;
 const serverApproved = await countWhere('approved');
-while ((missing() > 0 || onScreen.size < serverApproved || approvedCount !== serverApproved) && Date.now() < deadline) {
+while ((onScreen.size < serverApproved || approvedCount !== serverApproved) && Date.now() < deadline) {
   await sleep(200);
 }
 const unreviewed = (await countWhere('pending')) + (await countWhere('uploading'));
 const settledAfter = (Date.now() - settleStart) / 1000;
-console.log(`Settle: ${settledAfter.toFixed(0)}s; server approved ${serverApproved}, moderators saw ${approvedIds.size}, counter ${approvedCount}, on screen ${onScreen.size}, reader misses ${missing()}`);
+console.log(`Settle: ${settledAfter.toFixed(0)}s; server approved ${serverApproved}, moderators saw ${approvedIds.size}, counter ${approvedCount}, on screen ${onScreen.size}`);
 console.log(`Node event-loop delay p99: ${Math.round(loopDelay.percentile(99) / 1e6)} ms, max ${Math.round(loopDelay.max / 1e6)} ms`);
 const totalSeconds = (performance.now() - startedAt) / 1000;
 const rssMb = Math.round(process.memoryUsage().rss / 1e6);
@@ -234,7 +198,6 @@ const failures = Object.entries(counters)
 // Correctness only: emulator latency does not reflect production (one Java
 // process fanning out to every listener) — measure latency against the real project.
 const checks = {
-  'every reader got every later approval': missing() === 0,
   'counter == server approved': approvedCount === serverApproved,
   'big screen shows every approved': onScreen.size === serverApproved,
   'no rejected photo on screen': [...rejectedIds].every((id) => !onScreen.has(id)),

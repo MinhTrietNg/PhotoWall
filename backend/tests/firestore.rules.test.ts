@@ -22,6 +22,12 @@ describe('submitting a photo', () => {
     await assertSucceeds(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
   });
 
+  it('allows two different people to use the same display name', async () => {
+    await seed(env);
+    await assertSucceeds(submitBatch(db(guest(env, 'alice')), 'alice', 'p1', { displayName: 'Bảo Anh' }).commit());
+    await assertSucceeds(submitBatch(db(guest(env, 'bob')), 'bob', 'p2', { displayName: 'Bảo Anh' }).commit());
+  });
+
   it('rejects when uploads are closed', async () => {
     await seed(env, { uploadsOpen: false });
     await assertFails(submitBatch(db(guest(env, 'alice')), 'alice', 'p1').commit());
