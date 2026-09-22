@@ -2,19 +2,25 @@
  * S07 Đang gửi — DESIGN-D11, route "/upload".
  * E02 Gửi lỗi — DESIGN-D16, rendered in place when the upload fails.
  * E03 is reached by redirect when the backend reports `uploads-closed`.
+ *
+ * Both states share the same centred column and the same "pipeline" figure —
+ * strip, four Google blocks, wall tile — so the failure reads as the same
+ * journey stalled rather than as a different screen.
  */
 import { useEffect, useMemo, useRef } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Button } from '@/components/Button';
+import { Icon } from '@/components/Icon';
 import { Progress } from '@/components/Progress';
-import { StateBlock } from '@/components/StateBlock';
 import { Steps } from '@/components/Steps';
+import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
 import { findFrame } from '@/features/frames/frameRegistry';
 import { useFrames } from '@/features/frames/useFrames';
 import { useUpload } from '@/features/submit/useUpload';
 import { useSession } from '@/state/SessionContext';
+import type { FrameTemplate } from '@/types/frame';
 import { isSessionComplete } from '@/types/session';
 import styles from './Upload.module.css';
 
@@ -47,34 +53,26 @@ export function Upload() {
 
   if (!complete) return <Navigate to="/camera/1" replace />;
 
-  if (state.phase === 'failed') return <UploadFailed state={state} onRetry={retry} />;
+  if (state.phase === 'failed') {
+    return <UploadFailed state={state} frame={frame} photos={photos} onRetry={retry} />;
+  }
 
   return (
-    <div className="screen">
-      <TopBar title="Bước 3 / 3" />
+    <Screen>
+      <TopBar title="Bước 3 / 3" backTo="/review" />
       <Steps current={3} />
 
       <div className={styles.body}>
-        <div className={styles.loaderRow}>
-          <div className={`card ${styles.loaderCard}`} aria-hidden="true">
-            <span style={{ background: 'var(--pw-blue-500)' }} />
-            <span style={{ background: 'var(--pw-red-500)' }} />
-            <span style={{ background: 'var(--pw-yellow-500)' }} />
-            <span style={{ background: 'var(--pw-green-500)' }} />
-          </div>
-          {frame ? (
-            <span className={styles.miniStrip}>
-              <PhotoWallFrame frame={frame} width={40} photos={photos} />
-            </span>
-          ) : null}
-        </div>
+        <Pipeline frame={frame} photos={photos} />
 
-        <h1 className={`u ${styles.title}`}>
-          Đang gửi lên
-          <br />
-          Photo Wall…
-        </h1>
-        <p className={styles.sub}>Vài giây thôi. Đừng đóng trang nhé.</p>
+        <div className={styles.copy}>
+          <h1 className={`u ${styles.title}`}>
+            Đang gửi lên
+            <br />
+            Photo Wall…
+          </h1>
+          <p className={styles.sub}>Vài giây thôi. Đừng đóng trang nhé.</p>
+        </div>
 
         <Progress
           value={state.phase === 'composing' ? null : state.progress}
@@ -82,11 +80,53 @@ export function Upload() {
         />
       </div>
 
-      <div className="screen__cta">
-        <Button variant="text" block onClick={() => navigate('/review')}>
+      <div className={`screen__cta ${styles.cancelRow}`}>
+        <Button variant="text" onClick={() => navigate('/review')}>
           Huỷ
         </Button>
       </div>
+    </Screen>
+  );
+}
+
+/**
+ * Strip → four blocks → wall tile. Decorative, and the only looping animation
+ * the design allows outside the live dot on the big screen.
+ */
+function Pipeline({
+  frame,
+  photos,
+  failed,
+}: {
+  frame?: FrameTemplate;
+  photos: (Blob | null)[];
+  failed?: boolean;
+}) {
+  return (
+    <div className={styles.pipeline} aria-hidden="true">
+      <span className={styles.miniStrip}>
+        {frame ? <PhotoWallFrame frame={frame} width={40} photos={photos} /> : null}
+      </span>
+
+      <span className={styles.dash} />
+
+      <span className={styles.blocks}>
+        <span className={styles.b1} />
+        <span className={styles.b2} />
+        <span className={styles.b3} />
+        <span className={styles.b4} />
+      </span>
+
+      <span className={styles.dash} />
+
+      <span className={`card ${styles.wallTile} ${failed ? styles.wallTileFailed : ''}`}>
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+        <span />
+      </span>
     </div>
   );
 }
@@ -94,9 +134,13 @@ export function Upload() {
 /** E02 — DESIGN-D16. The blob is still in memory; retry resumes, never resubmits. */
 function UploadFailed({
   state,
+  frame,
+  photos,
   onRetry,
 }: {
   state: ReturnType<typeof useUpload>['state'];
+  frame?: FrameTemplate;
+  photos: (Blob | null)[];
   onRetry: () => void;
 }) {
   const navigate = useNavigate();
@@ -106,36 +150,48 @@ function UploadFailed({
       ? {
           title: 'Chờ một chút nhé',
           body: `Bạn vừa gửi một dải ảnh. Chờ ${state.retryAfterSeconds ?? 60} giây nữa để gửi tiếp.`,
+          icon: 'hourglass' as const,
         }
       : state.errorCode === 'quota-exceeded'
-        ? { title: 'Bạn đã gửi đủ số ảnh', body: 'Cảm ơn bạn đã tham gia Photo Wall!' }
+        ? {
+            title: 'Bạn đã gửi đủ số ảnh',
+            body: 'Cảm ơn bạn đã tham gia Photo Wall!',
+            icon: 'checkCircle' as const,
+          }
         : state.errorCode === 'invalid-input'
           ? {
               title: 'Ảnh chưa hợp lệ',
               body: 'Có lỗi khi ghép ảnh. Thử chụp lại dải ảnh giúp mình nhé.',
+              icon: 'errorCircle' as const,
             }
           : {
               title: 'Gửi ảnh chưa thành công',
               body: 'Mạng hơi chập chờn. 4 ảnh của bạn vẫn còn đây, chỉ cần gửi lại thôi.',
+              icon: 'wifiOff' as const,
             };
 
   const canResume = state.errorCode === 'upload-failed' && Boolean(state.photoId);
 
   return (
-    <div className="screen">
+    <Screen>
       <TopBar title="Bước 3 / 3" backTo="/review" />
       <Steps current={3} />
 
-      <StateBlock
-        tone="error"
-        icon={state.errorCode === 'rate-limited' ? 'hourglass' : 'wifiOff'}
-        title={copy.title}
-        body={copy.body}
-      />
+      <div className={styles.body}>
+        <Pipeline frame={frame} photos={photos} failed />
+
+        <div className={styles.copy}>
+          <span className={styles.errorDisc} aria-hidden="true">
+            <Icon name={copy.icon} size={32} />
+          </span>
+          <h1 className={`u ${styles.title}`}>{copy.title}</h1>
+          <p className={styles.sub}>{copy.body}</p>
+        </div>
+      </div>
 
       <div className="screen__cta">
         {canResume ? (
-          <Button block onClick={onRetry}>
+          <Button block iconStart={<Icon name="refresh" />} onClick={onRetry}>
             Gửi lại
           </Button>
         ) : null}
@@ -143,6 +199,6 @@ function UploadFailed({
           Xem lại dải ảnh
         </Button>
       </div>
-    </div>
+    </Screen>
   );
 }

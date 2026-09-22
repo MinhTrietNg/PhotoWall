@@ -1,53 +1,23 @@
+/* Centred in whatever is left between the steps row and the cancel link. */
 .body {
-  padding: var(--pw-space-8) var(--pw-gutter) 0;
+  flex-grow: 1;
   display: flex;
   flex-direction: column;
-  align-items: flex-start;
-  gap: var(--pw-space-5);
+  align-items: center;
+  justify-content: center;
+  gap: var(--pw-space-7);
+  padding: var(--pw-space-4) var(--pw-gutter) 0;
+  min-height: 0;
 }
 
-.loaderRow {
+/* ------------------------------------------------------------- pipeline */
+
+.pipeline {
   display: flex;
   align-items: center;
-  gap: var(--pw-space-4);
-}
-
-/* 110x96, 3-column grid, gap 4 — the four Google blocks. */
-.loaderCard {
-  width: 110px;
-  height: 96px;
-  padding: var(--pw-space-2);
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: var(--pw-space-1);
-  box-shadow: var(--pw-shadow-2);
-  border-radius: var(--pw-radius-4);
-}
-
-.loaderCard span {
-  border-radius: var(--pw-radius-1);
-  animation: blockRun 1.2s ease-in-out infinite;
-}
-.loaderCard span:nth-child(2) {
-  animation-delay: 120ms;
-}
-.loaderCard span:nth-child(3) {
-  animation-delay: 240ms;
-}
-.loaderCard span:nth-child(4) {
-  animation-delay: 360ms;
-}
-
-@keyframes blockRun {
-  0%,
-  100% {
-    opacity: 0.3;
-    transform: scale(0.9);
-  }
-  50% {
-    opacity: 1;
-    transform: scale(1);
-  }
+  justify-content: center;
+  gap: var(--pw-space-2);
+  flex-shrink: 0;
 }
 
 .miniStrip {
@@ -56,15 +26,159 @@
   border-radius: var(--pw-radius-2);
   overflow: hidden;
   overflow: clip;
+  background: var(--pw-surface);
+}
+
+.dash {
+  width: 22px;
+  border-top: 3px dashed var(--pw-ink-2);
+  flex-shrink: 0;
+}
+
+/* Four Google blocks, staggered 120ms — the design's upload loop. */
+.blocks {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+}
+
+.blocks span {
+  border: var(--pw-outline);
+  flex-shrink: 0;
+  animation: blockRun 1.2s ease-in-out infinite;
+}
+
+.b1 {
+  width: 22px;
+  height: 22px;
+  border-radius: 6px;
+  background: var(--pw-blue-500);
+  --pw-block-rest: 0px;
+}
+.b2 {
+  width: 18px;
+  height: 18px;
+  border-radius: 50px;
+  background: var(--pw-red-500);
+  --pw-block-rest: -8px;
+  animation-delay: 120ms;
+}
+.b3 {
+  width: 20px;
+  height: 20px;
+  border-radius: 5px;
+  background: var(--pw-yellow-500);
+  --pw-block-rest: 5px;
+  animation-delay: 240ms;
+}
+.b4 {
+  width: 16px;
+  height: 16px;
+  border-radius: 50px;
+  background: var(--pw-green-500);
+  --pw-block-rest: -3px;
+  animation-delay: 360ms;
+}
+
+/* Rests at the artboard offset, lifts 6px, returns. */
+@keyframes blockRun {
+  0%,
+  100% {
+    transform: translateY(var(--pw-block-rest, 0px));
+  }
+  50% {
+    transform: translateY(calc(var(--pw-block-rest, 0px) - 6px));
+  }
+}
+
+/* The wall, as a 3x2 tile grid. */
+.wallTile {
+  width: 110px;
+  height: 96px;
+  padding: var(--pw-space-2);
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: var(--pw-space-1);
+  box-shadow: var(--pw-shadow-2);
+  border-radius: var(--pw-radius-4);
+  flex-shrink: 0;
+}
+
+/* Illustration-only fills: photo placeholder tints, not semantic tokens. */
+.wallTile span {
+  border-radius: var(--pw-radius-1);
+  border: var(--pw-outline);
+}
+.wallTile span:nth-child(1),
+.wallTile span:nth-child(6) {
+  background: #c6dafb;
+}
+.wallTile span:nth-child(2) {
+  background: #fce8b2;
+}
+.wallTile span:nth-child(3) {
+  background: var(--pw-green-100);
+}
+.wallTile span:nth-child(4) {
+  background: var(--pw-red-100);
+}
+.wallTile span:nth-child(5) {
+  background: var(--pw-surface);
+}
+
+/* E02: the tile that never got filled. */
+.wallTileFailed {
+  border-color: var(--pw-red-700);
+}
+
+/* ----------------------------------------------------------------- copy */
+
+.copy {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+  gap: var(--pw-space-3);
+}
+
+.errorDisc {
+  width: var(--pw-ctl-l);
+  height: var(--pw-ctl-l);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pw-red-100);
+  border: var(--pw-outline);
+  color: var(--pw-red-700);
 }
 
 .title {
   margin: 0;
-  font: var(--pw-type-h1);
+  font: var(--pw-type-h2);
 }
 
 .sub {
   margin: 0;
   font: var(--pw-type-body);
   color: var(--pw-ink-2);
+}
+
+/* "Huỷ" is a text button, centred — never full width. */
+.cancelRow {
+  align-items: center;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .blocks span {
+    animation: none;
+    transform: translateY(var(--pw-block-rest, 0px));
+  }
+}
+
+/* 360: the pipeline is 250px of fixed parts; drop the connectors first. */
+@media (max-width: 374px) {
+  .dash {
+    display: none;
+  }
 }
