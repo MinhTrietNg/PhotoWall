@@ -67,9 +67,7 @@ export function Done() {
 
         <div className={`${styles.tilt} ${approved ? '' : styles.tiltWait}`}>
           <span className={styles.strip}>
-            {frame ? (
-              <PhotoWallFrame frame={frame} width={approved ? 90 : 84} photos={photos} />
-            ) : null}
+            {frame ? <PhotoWallFrame frame={frame} width="fit" photos={photos} /> : null}
           </span>
           <span className={`${styles.disc} ${approved ? styles.discOk : ''}`} aria-hidden="true">
             <Icon name={approved ? 'check' : 'hourglass'} size={32} />
@@ -157,17 +155,20 @@ export function Done() {
 
 /**
  * Seven pieces, scattered across the band, fired once — never looping.
- * Positions are the artboard's, expressed as a share of the 390px width so the
- * scatter keeps its spread from 360 up to the 430 column.
+ *
+ * Both axes are a share of the band, not the artboard's pixels: the band
+ * shrinks on short phones, and px offsets put the lower pieces outside it,
+ * where the band's own clip swallowed them. The fractions are the artboard's
+ * values over 390 wide and 330 tall.
  */
 const CONFETTI = [
-  { left: '6.2%', top: 26, size: 18, radius: '4px', color: 'var(--pw-yellow-500)', rot: 20 },
-  { left: '76.9%', top: 18, size: 14, radius: '50%', color: 'var(--pw-red-500)', rot: 0 },
-  { left: '84.6%', top: 120, size: 20, radius: '4px', color: 'var(--pw-blue-500)', rot: -15 },
-  { left: '10.3%', top: 150, size: 12, radius: '50%', color: 'var(--pw-green-500)', rot: 0 },
-  { left: '69.2%', top: 200, size: 16, radius: '4px', color: 'var(--pw-yellow-500)', rot: 35 },
-  { left: '15.4%', top: 220, size: 22, radius: '50%', color: 'var(--pw-blue-500)', rot: 0 },
-  { left: '79.5%', top: 60, size: 10, radius: '4px', color: 'var(--pw-green-500)', rot: 10 },
+  { left: '6.2%', top: '7.9%', size: 18, radius: '4px', color: 'var(--pw-yellow-500)', rot: 20 },
+  { left: '76.9%', top: '5.5%', size: 14, radius: '50%', color: 'var(--pw-red-500)', rot: 0 },
+  { left: '84.6%', top: '36.4%', size: 20, radius: '4px', color: 'var(--pw-blue-500)', rot: -15 },
+  { left: '10.3%', top: '45.5%', size: 12, radius: '50%', color: 'var(--pw-green-500)', rot: 0 },
+  { left: '69.2%', top: '60.6%', size: 16, radius: '4px', color: 'var(--pw-yellow-500)', rot: 35 },
+  { left: '15.4%', top: '66.7%', size: 22, radius: '50%', color: 'var(--pw-blue-500)', rot: 0 },
+  { left: '79.5%', top: '18.2%', size: 10, radius: '4px', color: 'var(--pw-green-500)', rot: 10 },
 ];
 
 function Confetti() {

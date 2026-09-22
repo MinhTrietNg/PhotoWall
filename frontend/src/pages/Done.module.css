@@ -3,6 +3,12 @@
  * 30px is where the confetti lives. It never scrolls away; the copy below it
  * does the shrinking on short devices.
  */
+/*
+ * The band is the only part of this screen with slack, so it is the part that
+ * gives: it holds the design's height where there is room and shrinks towards
+ * 176 where there is not. It never grows — the copy and the CTA stack keep the
+ * positions the artboard gives them.
+ */
 .band {
   position: relative;
   display: flex;
@@ -11,7 +17,8 @@
   border-bottom: var(--pw-outline);
   overflow: hidden;
   overflow: clip;
-  flex-shrink: 0;
+  flex: 0 1 auto;
+  min-height: 176px;
 }
 
 .bandOk {
@@ -38,17 +45,22 @@
   color: #fff;
 }
 
+/* Sized off the band so the strip shrinks with it — 24px of air above and below. */
 .tilt {
   position: relative;
+  height: calc(100% - var(--pw-space-6) * 2);
   transform: rotate(-4deg);
   animation: drop 600ms cubic-bezier(0.2, 0.9, 0.3, 1.2) both;
 }
 
+/* The waiting band is 30px shorter but its strip only 19px smaller. */
 .tiltWait {
+  height: calc(100% - var(--pw-space-5) * 2 + 4px);
   opacity: 0.92;
 }
 
 .strip {
+  height: 100%;
   display: inline-flex;
   border: var(--pw-outline);
   border-radius: var(--pw-radius-3);
@@ -186,7 +198,7 @@
   }
 }
 
-/* Short devices: the band is the only thing with slack. */
+/* Short devices: the band is the first thing with slack. */
 @media (max-height: 760px) {
   .bandOk {
     height: 270px;
@@ -197,6 +209,23 @@
   .copy {
     padding-top: var(--pw-space-4);
     gap: var(--pw-space-2);
+  }
+}
+
+/*
+ * Compact mode. Three stacked buttons plus four lines of copy is the tallest
+ * fixed block in the product, so the band gives up its floor as well.
+ */
+@media (max-height: 620px) {
+  .band {
+    min-height: 132px;
+  }
+  .copy {
+    padding-top: var(--pw-space-3);
+  }
+  /* The pending copy runs to four lines; 13px keeps it to four shorter ones. */
+  .text {
+    font: var(--pw-type-body-s);
   }
 }
 
