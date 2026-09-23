@@ -8,9 +8,13 @@
   white-space: nowrap;
 }
 
-/* Same box as the viewfinder it replaces, so the shot lands where it was framed. */
+/*
+ * Same box as the viewfinder it replaces, so the shot lands where it was
+ * framed. Like that box it never grows past the full-width picture: the title
+ * follows the photo directly and the spare height sits above the buttons.
+ */
 .previewWrap {
-  flex: 1 1 0;
+  flex: 0 1 calc(var(--pw-viewfinder-h) + var(--pw-space-4));
   min-height: 0;
   container-type: size;
   display: flex;

@@ -28,9 +28,16 @@
 
 /* ------------------------------------------------------------- viewfinder */
 
-/* 16, not the 20 gutter — the viewport is the widest element on the screen. */
+/*
+ * 16, not the 20 gutter — the viewport is the widest element on the screen.
+ *
+ * The box starts at exactly the full-width viewfinder and never grows past it,
+ * so the viewfinder sits right under the tray the way the artboard draws it and
+ * the spare height collects above the controls instead of around the picture.
+ * Where there is not enough height, the box shrinks and the viewfinder with it.
+ */
 .viewportWrap {
-  flex: 1 1 0;
+  flex: 0 1 calc(var(--pw-viewfinder-h) + var(--pw-space-4));
   min-height: 0;
   container-type: size;
   display: flex;
@@ -290,7 +297,9 @@
 
 /* ------------------------------------------------------------- controls */
 
+/* Pinned to the bottom with the footnote; the spare height sits above them. */
 .controls {
+  margin-top: auto;
   display: flex;
   align-items: center;
   justify-content: space-between;

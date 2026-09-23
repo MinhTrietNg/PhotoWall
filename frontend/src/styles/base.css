@@ -459,8 +459,11 @@ a {
       radial-gradient(circle at 88% 72%, rgba(251, 188, 4, 0.08) 0 18%, transparent 18%),
       var(--pw-bg);
   }
+  :root {
+    --pw-column: 430px;
+  }
   .screen {
-    width: 430px;
+    width: var(--pw-column);
     margin: 0 auto;
     border-left: var(--pw-outline);
     border-right: var(--pw-outline);

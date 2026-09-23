@@ -114,6 +114,14 @@
 
   /* ---------- layout ---------- */
   --pw-gutter: var(--pw-space-5); /* 20 on mobile */
+  /* The guest column: the whole viewport on a phone, 430 on tablet and desktop. */
+  --pw-column: 100vw;
+  /*
+   * The 4:3 viewfinder at its full width, 16px in from each side of the column.
+   * S03 and S04 both size their photo box from this, which is what makes a
+   * reviewed shot land exactly where it was framed.
+   */
+  --pw-viewfinder-h: calc((var(--pw-column) - 2 * var(--pw-space-4)) * 3 / 4);
   --pw-cta-bottom: calc(var(--pw-space-7) + env(safe-area-inset-bottom, 0px));
   --pw-strip-ratio: 1080 / 3400;
 }
