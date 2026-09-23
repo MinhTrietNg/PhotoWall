@@ -26,7 +26,7 @@ import styles from './Upload.module.css';
 
 export function Upload() {
   const navigate = useNavigate();
-  const { session } = useSession();
+  const { session, markSubmitted } = useSession();
   const { registry } = useFrames();
   const { state, start, retry } = useUpload();
   const started = useRef(false);
@@ -47,9 +47,12 @@ export function Upload() {
   }, [complete, frame, session.shots, session.displayName, start]);
 
   useEffect(() => {
-    if (state.phase === 'done' && state.photoId) navigate('/done', { replace: true });
+    if (state.phase === 'done' && state.photoId) {
+      markSubmitted();
+      navigate('/done', { replace: true });
+    }
     if (state.errorCode === 'uploads-closed') navigate('/closed', { replace: true });
-  }, [state.phase, state.photoId, state.errorCode, navigate]);
+  }, [state.phase, state.photoId, state.errorCode, navigate, markSubmitted]);
 
   if (!complete) return <Navigate to="/camera/1" replace />;
 

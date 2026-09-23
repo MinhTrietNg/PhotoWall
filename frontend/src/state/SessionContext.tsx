@@ -47,6 +47,8 @@ interface SessionContextValue {
   setShot: (slot: number, shot: Shot | null) => void;
   clearShots: () => void;
   selectFrame: (id: string) => void;
+  /** The upload landed: this set is done, not something to resume. */
+  markSubmitted: () => void;
   /** After a successful submit, or "Chụp bộ khác". Keeps the name. */
   resetKeepingName: () => void;
 }
@@ -67,7 +69,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const hasShots = stored?.shots?.some(Boolean) ?? false;
       const fresh = stored ? Date.now() - stored.startedAt < RESUME_WINDOW_MS : false;
 
-      if (stored && hasShots && fresh) {
+      if (stored?.submittedAt) {
+        // Already on the Wall. Keep who they are, not the shots they sent.
+        setSession({
+          ...emptySession(),
+          displayName: stored.displayName,
+          showName: stored.showName,
+          consentGiven: stored.consentGiven,
+        });
+      } else if (stored && hasShots && fresh) {
         // Offer it rather than applying it — the design asks first.
         setResumable(stored);
       } else if (stored && !fresh) {
@@ -94,6 +104,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const update = useCallback((patch: Partial<CaptureSession>) => {
     setSession((prev) => ({ ...prev, ...patch }));
+  }, []);
+
+  // Stable and idempotent: Upload calls it from an effect that lists it as a
+  // dependency, so a new identity or a new session per call would loop.
+  const markSubmitted = useCallback(() => {
+    setSession((prev) => (prev.submittedAt ? prev : { ...prev, submittedAt: Date.now() }));
   }, []);
 
   const value = useMemo<SessionContextValue>(
@@ -125,7 +141,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
             ? // Retakes carry over so analytics can report them.
               { ...shot, retakes: previous ? previous.retakes + 1 : 0 }
             : null;
-          return { ...prev, shots };
+          return { ...prev, shots, submittedAt: undefined };
         }),
 
       clearShots: () =>
@@ -133,9 +149,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           ...prev,
           shots: Array.from({ length: SHOT_COUNT }, () => null),
           startedAt: Date.now(),
+          submittedAt: undefined,
         })),
 
       selectFrame: (selectedFrameId) => update({ selectedFrameId }),
+
+      markSubmitted,
 
       resetKeepingName: () =>
         setSession((prev) => ({
@@ -145,7 +164,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           consentGiven: prev.consentGiven,
         })),
     }),
-    [session, ready, resumable, update],
+    [session, ready, resumable, update, markSubmitted],
   );
 
   return <Ctx value={value}>{children}</Ctx>;

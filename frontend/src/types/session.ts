@@ -30,6 +30,13 @@ export interface CaptureSession {
   shots: (Shot | null)[];
   selectedFrameId: FrameId | null;
   startedAt: number;
+  /**
+   * When these four shots reached the Wall. A sent set stays in the session so
+   * /done and /me can draw it, but it is not an unfinished one: offering
+   * "Tiếp tục bộ đang chụp?" for it would upload the same strip a second time.
+   * Any change to the shots clears it.
+   */
+  submittedAt?: number;
 }
 
 export function emptySession(): CaptureSession {
