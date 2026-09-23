@@ -17,14 +17,20 @@
   background: var(--pw-red-700);
 }
 
+/*
+ * Tight on purpose: on the artboard the strip starts level with the bottom of
+ * the close button and the name sits just under it, which is what lets the
+ * strip reach its full 186px at 844 tall. 16px above and between gave that
+ * height away and drew it at 172.
+ */
 .body {
   flex: 1 1 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: var(--pw-space-4);
-  padding: var(--pw-space-4) var(--pw-gutter) 0;
+  gap: var(--pw-space-2);
+  padding: 0 var(--pw-gutter);
   min-height: 0;
 }
 
@@ -85,7 +91,8 @@
   display: flex;
   align-items: center;
   gap: var(--pw-space-3);
-  padding: var(--pw-space-4) var(--pw-gutter) var(--pw-space-3);
+  /* The meta line sits almost on the button in the artboard; 4px keeps that. */
+  padding: var(--pw-space-1) var(--pw-gutter) var(--pw-space-3);
   flex-shrink: 0;
 }
 

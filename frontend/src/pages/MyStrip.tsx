@@ -36,6 +36,18 @@ const STATUS_LABEL: Record<Photo['status'], string> = {
   removed: 'Đã gỡ bởi BTC',
 };
 
+/**
+ * The artboard's meta line reads "14:32 · Khoảnh khắc #129". The number only
+ * exists once a moderator approves the strip, so until then the line says
+ * where the strip is instead.
+ */
+function metaLabel(photo: Photo): string {
+  if (photo.status === 'approved' && photo.momentNo != null) {
+    return `Khoảnh khắc #${photo.momentNo}`;
+  }
+  return STATUS_LABEL[photo.status];
+}
+
 export function MyStrip() {
   const { id } = useParams();
   const backend = useBackend();
@@ -133,7 +145,7 @@ export function MyStrip() {
                   ? `${new Date(photo.createdAtMs).toLocaleTimeString('vi-VN', {
                       hour: '2-digit',
                       minute: '2-digit',
-                    })} · ${STATUS_LABEL[photo.status]}`
+                    })} · ${metaLabel(photo)}`
                   : 'Đang tải…'}
               </span>
             </div>
