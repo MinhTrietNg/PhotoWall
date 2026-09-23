@@ -121,27 +121,18 @@ export const STEPS = [
     },
   },
   {
-    id: 'S05 Chọn khung',
-    route: '/frame',
+    id: 'S05 Hoàn thiện',
+    route: '/finish',
     async go(page) {
       await shoot(page, 4);
       await keepShot(page);
-      await page.waitForURL(/\/frame$/, { timeout: 10_000 });
-      // frames.json plus three overlay PNGs decide the height here.
+      await page.waitForURL(/\/finish$/, { timeout: 10_000 });
+      // frames.json plus four overlay PNGs decide the height here.
       await settle(page, 800);
     },
   },
   {
-    id: 'S06 Xem lại dải ảnh',
-    route: '/review',
-    async go(page) {
-      await page.getByRole('button', { name: /Dùng khung này/ }).click();
-      await page.waitForURL(/\/review$/, { timeout: 10_000 });
-      await settle(page, 500);
-    },
-  },
-  {
-    id: 'S07 Đang gửi',
+    id: 'S06 Đang gửi',
     route: '/upload',
     async go(page) {
       await page.getByRole('button', { name: /Gửi lên Wall/ }).click();

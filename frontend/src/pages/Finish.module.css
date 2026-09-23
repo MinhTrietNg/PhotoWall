@@ -1,0 +1,157 @@
+/*
+ * Strip on the left, choices on the right, both hung from the top as the
+ * artboard draws them.
+ */
+.main {
+  display: flex;
+  gap: 14px;
+  padding: var(--pw-space-3) var(--pw-gutter) 0;
+  align-items: flex-start;
+  min-height: 0;
+  flex: 1 1 0;
+}
+
+/*
+ * Height-capped cell. The strip takes the height it is given and derives its
+ * width from the 1080:3400 ratio, so it can never be the reason this screen
+ * scrolls. The cap is the design's size: 172 wide is 541 tall, 545 with the
+ * border.
+ */
+.stripCard {
+  height: min(100%, 545px);
+  flex-shrink: 0;
+  display: inline-flex;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  box-shadow: var(--pw-shadow-2);
+  background: var(--pw-surface);
+}
+
+.skeleton {
+  height: 100%;
+  aspect-ratio: 1080 / 3400;
+  background: var(--pw-surface-2);
+}
+
+/* 160ms crossfade on variant change — the box size never changes. */
+.fade {
+  animation: crossfade var(--pw-dur-2) var(--pw-ease-std) both;
+}
+
+@keyframes crossfade {
+  from {
+    opacity: 0.35;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Takes the column's full height so the card list can give way below. */
+.side {
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/*
+ * The one part allowed to scroll, and only on a phone too short for four
+ * cards: the strip beside it shrinks instead, and the retake tiles stay put.
+ * The inset keeps the selected card's halo and the focus ring inside the
+ * scroll box, which would otherwise clip them.
+ */
+.frames {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+  flex: 0 1 auto;
+  min-height: 0;
+  overflow-y: auto;
+  padding: 6px;
+  margin: -6px;
+}
+
+/* A card keeps its 73px; the list scrolls instead of squeezing them together. */
+.frames > * {
+  flex-shrink: 0;
+}
+
+.retakeLabel {
+  margin-top: 10px;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pw-space-2);
+  flex-shrink: 0;
+}
+
+.tile {
+  position: relative;
+  display: block;
+  height: 54px;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  overflow: hidden;
+  overflow: clip;
+  background: var(--pw-surface-2);
+}
+
+.tile:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+.tileImg {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.tileNumber {
+  position: absolute;
+  left: 6px;
+  top: 4px;
+  font-size: 11px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow:
+    0 0 3px var(--pw-ink),
+    0 0 3px var(--pw-ink);
+}
+
+.tileAction {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pw-surface);
+  border: var(--pw-outline);
+  color: var(--pw-ink);
+}
+
+/*
+ * The artboard packs this CTA tighter than the other screens do — 14 above,
+ * 24 below — to leave the strip its full height. Doubled up so it outranks
+ * the shared compaction steps in base.css.
+ */
+.cta:global(.screen__cta) {
+  --pw-cta-pad-top: 14px;
+  --pw-cta-pad-bottom: calc(var(--pw-space-6) + env(safe-area-inset-bottom, 0px));
+}
+
+.cta > :global(.btn):first-child {
+  padding: 0 var(--pw-space-3);
+}

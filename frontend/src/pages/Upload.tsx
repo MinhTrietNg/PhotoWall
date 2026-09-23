@@ -1,6 +1,6 @@
 /**
- * S07 Đang gửi — DESIGN-D11, route "/upload".
- * E02 Gửi lỗi — DESIGN-D16, rendered in place when the upload fails.
+ * S06 Đang gửi — route "/upload".
+ * E02 Gửi lỗi, rendered in place when the upload fails.
  * E03 is reached by redirect when the backend reports `uploads-closed`.
  *
  * Both states share the same centred column and the same "pipeline" figure —
@@ -62,7 +62,7 @@ export function Upload() {
 
   return (
     <Screen>
-      <TopBar title="Bước 3 / 3" backTo="/review" />
+      <TopBar title="Bước 3 / 3" backTo="/finish" />
       <Steps current={3} />
 
       <div className={styles.body}>
@@ -84,7 +84,7 @@ export function Upload() {
       </div>
 
       <div className={`screen__cta ${styles.cancelRow}`}>
-        <Button variant="text" onClick={() => navigate('/review')}>
+        <Button variant="text" onClick={() => navigate('/finish')}>
           Huỷ
         </Button>
       </div>
@@ -134,7 +134,7 @@ function Pipeline({
   );
 }
 
-/** E02 — DESIGN-D16. The blob is still in memory; retry resumes, never resubmits. */
+/** E02. The blob is still in memory; retry resumes, never resubmits. */
 function UploadFailed({
   state,
   frame,
@@ -177,7 +177,7 @@ function UploadFailed({
 
   return (
     <Screen>
-      <TopBar title="Bước 3 / 3" backTo="/review" />
+      <TopBar title="Bước 3 / 3" backTo="/finish" />
       <Steps current={3} />
 
       <div className={styles.body}>
@@ -198,7 +198,7 @@ function UploadFailed({
             Gửi lại
           </Button>
         ) : null}
-        <Button variant="secondary" block onClick={() => navigate('/review')}>
+        <Button variant="secondary" block onClick={() => navigate('/finish')}>
           Xem lại dải ảnh
         </Button>
       </div>

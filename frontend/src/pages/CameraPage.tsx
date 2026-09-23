@@ -68,7 +68,7 @@ export function CameraPage() {
         setBusy(false);
         setFlash(false);
         // Never swallow this. A silent failure here leaves a hole in the strip
-        // that only surfaces four screens later, when /frame bounces the guest
+        // that only surfaces screens later, when /finish bounces the guest
         // back to the slot they thought they had filled.
         console.error('[photowall] capture failed', error);
         setPickError(

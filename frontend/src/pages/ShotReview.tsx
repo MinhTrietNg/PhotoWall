@@ -64,7 +64,7 @@ export function ShotReview() {
     // rather than blindly to slot + 1.
     const filled = session.shots.map((shot, i) => i === slot - 1 || Boolean(shot));
     const gap = filled.indexOf(false);
-    navigate(gap === -1 ? '/frame' : `/camera/${gap + 1}`);
+    navigate(gap === -1 ? '/finish' : `/camera/${gap + 1}`);
   }
 
   return (

@@ -12,15 +12,14 @@ import { CameraPage } from '@/pages/CameraPage';
 import { Closed } from '@/pages/Closed';
 import { Done } from '@/pages/Done';
 import { EnterName } from '@/pages/EnterName';
-import { FrameSelect } from '@/pages/FrameSelect';
+import { Finish } from '@/pages/Finish';
 import { MyStrip } from '@/pages/MyStrip';
-import { Review } from '@/pages/Review';
 import { ShotReview } from '@/pages/ShotReview';
 import { Upload } from '@/pages/Upload';
 import { Welcome } from '@/pages/Welcome';
 
 /** Routes a guest must not be on once the organisers stop accepting photos. */
-const CAPTURE_ROUTES = ['/name', '/camera', '/frame', '/review', '/upload'];
+const CAPTURE_ROUTES = ['/name', '/camera', '/finish', '/upload'];
 
 export function App() {
   const { ready } = useSession();
@@ -39,8 +38,7 @@ export function App() {
         <Route path="/name" element={<EnterName />} />
         <Route path="/camera/:n" element={<CameraPage />} />
         <Route path="/camera/:n/review" element={<ShotReview />} />
-        <Route path="/frame" element={<FrameSelect />} />
-        <Route path="/review" element={<Review />} />
+        <Route path="/finish" element={<Finish />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/done" element={<Done />} />
         <Route path="/me/:id" element={<MyStrip />} />
@@ -95,7 +93,7 @@ function ResumePrompt() {
       onConfirm={() => {
         const next = resumable?.shots.findIndex((s) => !s) ?? -1;
         resume();
-        navigate(next === -1 ? '/frame' : `/camera/${next + 1}`);
+        navigate(next === -1 ? '/finish' : `/camera/${next + 1}`);
       }}
     />
   );
