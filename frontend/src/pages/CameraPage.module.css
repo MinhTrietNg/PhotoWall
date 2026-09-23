@@ -31,19 +31,17 @@
 /*
  * 16, not the 20 gutter — the viewport is the widest element on the screen.
  *
- * The box starts at exactly the full-width viewfinder and never grows past it,
- * so the viewfinder sits right under the tray the way the artboard draws it and
- * the spare height collects above the controls instead of around the picture.
- * Where there is not enough height, the box shrinks and the viewfinder with it.
+ * Everything between the tray and the dock, with the viewfinder centred in it,
+ * as the artboard draws it. S04 builds the same box between the same two rows.
  */
 .viewportWrap {
-  flex: 0 1 calc(var(--pw-viewfinder-h) + var(--pw-space-4));
+  flex: 1 1 0;
   min-height: 0;
   container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--pw-space-4) var(--pw-space-4) 0;
+  padding: 0 var(--pw-space-4);
 }
 
 /*
@@ -55,7 +53,7 @@
  */
 .viewport {
   position: relative;
-  width: min(100%, calc((100dvh - 547px) * 4 / 3));
+  width: min(100%, calc((100dvh - 420px) * 4 / 3));
   width: min(100cqw, calc(100cqh * 4 / 3));
   aspect-ratio: 4 / 3;
   border-radius: var(--pw-radius-5);
@@ -141,19 +139,6 @@
   transform: translateX(-50%);
 }
 
-.hint {
-  position: absolute;
-  bottom: var(--pw-space-3);
-  left: 50%;
-  transform: translateX(-50%);
-  padding: 6px var(--pw-space-3);
-  border-radius: var(--pw-radius-full);
-  background: rgba(28, 27, 51, 0.75);
-  color: #fff;
-  font: var(--pw-type-caption);
-  white-space: nowrap;
-}
-
 /* Yellow disc on a light scrim — the number has to read at arm's length. */
 .countdown {
   position: absolute;
@@ -236,75 +221,25 @@
   color: var(--pw-on-dark-2);
 }
 
-/* Takes the place of the caption + strip card on the live screen. */
-.deniedActions {
-  padding: var(--pw-space-4) var(--pw-gutter) 0;
-  display: flex;
-  flex-direction: column;
-  gap: var(--pw-space-3);
-  flex-shrink: 0;
-}
-
-/* ----------------------------------------------------------------- copy */
-
-.caption {
-  margin: 0;
-  padding: var(--pw-space-3) var(--pw-gutter) 0;
-  text-align: center;
-  font: var(--pw-type-body-s);
-  line-height: 1.5;
-  color: var(--pw-on-dark-2);
-}
-
-/* ----------------------------------------------------------- strip hint */
-
-.stripCard {
-  margin: var(--pw-space-4) var(--pw-gutter) 0;
-  padding: var(--pw-space-3) var(--pw-space-4);
-  display: flex;
-  align-items: center;
-  gap: var(--pw-space-4);
-  border: 2px solid var(--pw-ink-700);
-  border-radius: var(--pw-radius-4);
-  background: var(--pw-ink-800);
-}
-
-.stripThumb {
-  display: inline-flex;
-  flex-shrink: 0;
-  border: 2px solid #fff;
-  border-radius: var(--pw-radius-2);
-  overflow: hidden;
-  overflow: clip;
-}
-
-.stripText {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pw-space-2);
-  min-width: 0;
-}
-
-.stripLabel {
-  color: var(--pw-on-dark-3);
-}
-
-.stripHint {
-  font: var(--pw-type-body-s);
-  line-height: 1.5;
-  color: var(--pw-on-dark-2);
+.deniedAction {
+  margin-top: 6px;
 }
 
 /* ------------------------------------------------------------- controls */
 
-/* Pinned to the bottom with the footnote; the spare height sits above them. */
+/*
+ * The dock: a fixed height, so the box above it is exactly the one S04 builds.
+ * The three controls centre on the shutter row; the 24px under them plus the
+ * safe area is the dock's bottom padding.
+ */
 .controls {
-  margin-top: auto;
+  height: var(--pw-camera-dock);
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--pw-space-2);
-  padding: var(--pw-space-4) var(--pw-space-7) 0;
+  padding: var(--pw-space-4) var(--pw-space-7)
+    calc(var(--pw-space-6) + env(safe-area-inset-bottom, 0px));
   flex-shrink: 0;
 }
 
@@ -314,11 +249,6 @@
   align-items: center;
   gap: var(--pw-space-2);
   min-width: var(--pw-ctl-l);
-}
-
-/* E01 keeps the shutter and camera switch visible but plainly out of play. */
-.controlDim {
-  opacity: 0.4;
 }
 
 .controlLabel {
@@ -366,17 +296,6 @@
   border-radius: 50%;
   background: var(--pw-blue-700);
   border: 3px solid var(--pw-ink);
-}
-
-.footnote {
-  margin: 0;
-  padding: var(--pw-space-4) var(--pw-gutter)
-    calc(var(--pw-space-5) + env(safe-area-inset-bottom, 0px));
-  text-align: center;
-  font: var(--pw-type-caption);
-  font-weight: 400;
-  color: var(--pw-on-dark-3);
-  flex-shrink: 0;
 }
 
 /*
@@ -437,13 +356,6 @@
   .controls {
     padding-left: var(--pw-space-8);
     padding-right: var(--pw-space-8);
-  }
-}
-
-/* Very short viewports: drop the strip hint card before anything else gives. */
-@media (max-height: 700px) {
-  .stripCard {
-    display: none;
   }
 }
 

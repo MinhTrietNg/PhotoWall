@@ -9,18 +9,24 @@
 }
 
 /*
- * Same box as the viewfinder it replaces, so the shot lands where it was
- * framed. Like that box it never grows past the full-width picture: the title
- * follows the photo directly and the spare height sits above the buttons.
+ * The same box as S03's viewfinder: everything between the tray and a dock of
+ * the camera's height, with the picture centred in it. Same box, same picture
+ * size, so the shot lands exactly where it was framed — the artboard's 141px
+ * top offset is this centring at 844.
  */
 .previewWrap {
-  flex: 0 1 calc(var(--pw-viewfinder-h) + var(--pw-space-4));
+  flex: 1 1 0;
   min-height: 0;
   container-type: size;
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: var(--pw-space-4) var(--pw-space-4) 0;
+  padding: 0 var(--pw-space-4);
+}
+
+/* Carries the title so it can hang under the photo without moving it. */
+.stage {
+  position: relative;
 }
 
 /*
@@ -55,23 +61,27 @@
   left: var(--pw-space-3);
 }
 
-.copy {
-  padding: var(--pw-space-4) var(--pw-gutter) 0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  text-align: center;
-  gap: var(--pw-space-2);
-}
-
+/*
+ * 20px under the photo, out of flow. In flow it would take height from the
+ * box and push the photo up, off the spot it was framed on. There is always
+ * room: the dock below keeps more free space above its buttons than the
+ * title needs, even once the box has shrunk to the photo's own height.
+ */
 .title {
+  position: absolute;
+  top: calc(100% + var(--pw-space-5));
+  left: 50%;
+  translate: -50% 0;
+  width: max-content;
+  max-width: 100cqw;
   margin: 0;
   font: var(--pw-type-h2);
   color: #fff;
+  text-align: center;
 }
 
-.body {
-  margin: 0;
-  font: var(--pw-type-body);
-  color: var(--pw-on-dark-2);
+/* The camera's dock height, buttons at its foot. Doubled up to outrank the row rule. */
+.dock:global(.screen__cta) {
+  height: var(--pw-camera-dock);
+  align-items: flex-end;
 }

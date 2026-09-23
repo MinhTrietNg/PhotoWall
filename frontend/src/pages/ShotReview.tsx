@@ -87,24 +87,20 @@ export function ShotReview() {
       <ShotTray shots={session.shots} current={slot} preview={pending.blob} />
 
       <div className={styles.previewWrap}>
-        <div className={styles.preview}>
-          {url ? <img src={url} alt="Ảnh vừa chụp" className={styles.photo} /> : null}
-          <span className={`pill ${styles.badge}`}>
-            <Icon name="check" size={16} />
-            Vừa chụp
-          </span>
+        <div className={styles.stage}>
+          <div className={styles.preview}>
+            {url ? <img src={url} alt="Ảnh vừa chụp" className={styles.photo} /> : null}
+            <span className={`pill ${styles.badge}`}>
+              <Icon name="check" size={16} />
+              Vừa chụp
+            </span>
+          </div>
+          <h1 className={`u ${styles.title}`}>Tấm này được chứ?</h1>
         </div>
       </div>
 
-      <div className={styles.copy}>
-        <h1 className={`u ${styles.title}`}>Tấm này được chứ?</h1>
-        <p className={styles.body}>
-          Ảnh sẽ vào ô {slot} của dải. Chụp lại bao nhiêu lần cũng được.
-        </p>
-      </div>
-
       {/* 42 / 58, not half and half — "Dùng ảnh này" has to stay the bigger target. */}
-      <div className="screen__cta screen__cta--row">
+      <div className={`screen__cta screen__cta--row ${styles.dock}`}>
         <Button variant="secondary" iconStart={<Icon name="refresh" />} onClick={() => navigate(`/camera/${slot}`)}>
           Chụp lại
         </Button>

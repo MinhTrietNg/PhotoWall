@@ -117,11 +117,15 @@
   /* The guest column: the whole viewport on a phone, 430 on tablet and desktop. */
   --pw-column: 100vw;
   /*
-   * The 4:3 viewfinder at its full width, 16px in from each side of the column.
-   * S03 and S04 both size their photo box from this, which is what makes a
-   * reviewed shot land exactly where it was framed.
+   * The camera's bottom dock: 16 above, the 84px shutter, 8, its 17px label,
+   * 24 below. S03 draws its controls in it; S04 reserves the same height for
+   * its buttons, so the photo box between tray and dock is the same box on
+   * both screens and a reviewed shot lands exactly where it was framed.
    */
-  --pw-viewfinder-h: calc((var(--pw-column) - 2 * var(--pw-space-4)) * 3 / 4);
+  --pw-camera-dock: calc(
+    var(--pw-space-4) + 84px + var(--pw-space-2) + 17px + var(--pw-space-6) +
+      env(safe-area-inset-bottom, 0px)
+  );
   --pw-cta-bottom: calc(var(--pw-space-7) + env(safe-area-inset-bottom, 0px));
   --pw-strip-ratio: 1080 / 3400;
 }
