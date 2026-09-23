@@ -11,14 +11,14 @@
 import type { FormEventHandler, ReactNode } from 'react';
 import { useScreenTheme, type ScreenThemeToken } from '@/lib/useScreenTheme';
 
-export type ScreenTone = 'light' | 'dark';
+type ScreenTone = 'light' | 'dark';
 
 const TONE_TOKEN: Record<ScreenTone, ScreenThemeToken> = {
   light: '--pw-bg',
   dark: '--pw-ink',
 };
 
-export interface ScreenProps {
+interface ScreenProps {
   /** Drives both the page background and the browser chrome. */
   tone?: ScreenTone;
   /** Renders a <form> instead of a <div>. */

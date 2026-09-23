@@ -9,7 +9,7 @@ import type { ReactNode } from 'react';
 import { Icon, type IconName } from './Icon';
 import styles from './StateBlock.module.css';
 
-export type StateTone = 'empty' | 'loading' | 'error' | 'success';
+type StateTone = 'empty' | 'loading' | 'error' | 'success';
 
 const DEFAULT_ICON: Record<StateTone, IconName> = {
   empty: 'photoCamera',

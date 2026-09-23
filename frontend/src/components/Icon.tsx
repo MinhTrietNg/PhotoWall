@@ -85,7 +85,7 @@ const PATHS = {
 
 export type IconName = keyof typeof PATHS;
 
-export interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
+interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
   /** Token sizes only: 16 | 20 | 24 | 32 | 48. */
   size?: 16 | 20 | 24 | 32 | 48;

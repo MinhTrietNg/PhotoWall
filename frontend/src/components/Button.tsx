@@ -10,7 +10,7 @@
 import { Link } from 'react-router-dom';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type ButtonVariant =
+type ButtonVariant =
   | 'primary'
   | 'secondary'
   | 'tonal'
@@ -18,7 +18,7 @@ export type ButtonVariant =
   | 'destructive'
   | 'text';
 
-export type ButtonSize = 'l' | 'm' | 's';
+type ButtonSize = 'l' | 'm' | 's';
 
 interface CommonProps {
   variant?: ButtonVariant;
@@ -46,7 +46,7 @@ function classes({ variant = 'primary', size = 'l', block, dangerText, className
     .join(' ');
 }
 
-export type ButtonProps = CommonProps &
+type ButtonProps = CommonProps &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'className'>;
 
 export function Button({
@@ -74,7 +74,7 @@ export function Button({
   );
 }
 
-export type ButtonLinkProps = CommonProps & {
+type ButtonLinkProps = CommonProps & {
   to: string;
   replace?: boolean;
   state?: unknown;

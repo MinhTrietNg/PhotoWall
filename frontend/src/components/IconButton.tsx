@@ -6,8 +6,8 @@
 import { Link } from 'react-router-dom';
 import type { ButtonHTMLAttributes, ReactNode } from 'react';
 
-export type IconButtonTone = 'light' | 'dark' | 'on-ink';
-export type IconButtonSize = 's' | 'm' | 'l';
+type IconButtonTone = 'light' | 'dark' | 'on-ink';
+type IconButtonSize = 's' | 'm' | 'l';
 
 interface Common {
   /** Becomes aria-label. Required. */
@@ -31,7 +31,7 @@ function classes({ tone = 'light', size = 'm', className }: Common) {
     .join(' ');
 }
 
-export type IconButtonProps = Common &
+type IconButtonProps = Common &
   Omit<ButtonHTMLAttributes<HTMLButtonElement>, 'children' | 'className'>;
 
 export function IconButton({

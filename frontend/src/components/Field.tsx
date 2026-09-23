@@ -7,7 +7,7 @@ import { useId, type InputHTMLAttributes } from 'react';
 import { Icon } from './Icon';
 import styles from './Field.module.css';
 
-export interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'size'> {
+interface FieldProps extends Omit<InputHTMLAttributes<HTMLInputElement>, 'id' | 'size'> {
   label: string;
   helper?: string;
   error?: string;
