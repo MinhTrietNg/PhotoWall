@@ -64,13 +64,14 @@
 .optionCol {
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  /*
+   * 8, not the artboard's 6: the cards are touch targets stacked edge to edge,
+   * and the Motion · Responsive board keeps targets at least 8px apart. The
+   * label keeps the 8px it always had above the first card.
+   */
+  gap: var(--pw-space-2);
   flex: 1;
   min-width: 0;
-}
-
-.optionLabel {
-  margin-bottom: 2px;
 }
 
 /* The three option cards are the only part that may need to scroll; the

@@ -88,7 +88,7 @@ export function FrameSelect() {
         </div>
 
         <div className={styles.optionCol} role="group" aria-label="Khung có sẵn">
-          <span className={`lbl ${styles.optionLabel}`}>Khung có sẵn · {frames.length}</span>
+          <span className="lbl">Khung có sẵn · {frames.length}</span>
           {frames.map((frame) => (
             <FrameOption
               key={frame.id}
@@ -105,6 +105,7 @@ export function FrameSelect() {
         <Button
           block
           disabled={!selected}
+          iconEnd={<Icon name="arrowForward" />}
           onClick={() => {
             if (!selected) return;
             track('pw_frame_select', { variant: selected.id });
