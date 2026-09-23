@@ -1,7 +1,8 @@
 /**
- * The guest mobile app. Routes are fixed by the design — DESIGN-D30 / §5 of the
- * plan. Do not add routes; in particular there is deliberately no /wall on the
- * phone (invariant I9).
+ * The guest mobile app. Routes are fixed by the design's handoff board. Do not
+ * add routes; in particular there is deliberately no /wall on the phone
+ * (invariant I9), and no "my strip" screen — the done screen is where a guest
+ * downloads, shares or removes their strip.
  */
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
@@ -13,7 +14,6 @@ import { Closed } from '@/pages/Closed';
 import { Done } from '@/pages/Done';
 import { EnterName } from '@/pages/EnterName';
 import { Finish } from '@/pages/Finish';
-import { MyStrip } from '@/pages/MyStrip';
 import { ShotReview } from '@/pages/ShotReview';
 import { Upload } from '@/pages/Upload';
 import { Welcome } from '@/pages/Welcome';
@@ -41,7 +41,6 @@ export function App() {
         <Route path="/finish" element={<Finish />} />
         <Route path="/upload" element={<Upload />} />
         <Route path="/done" element={<Done />} />
-        <Route path="/me/:id" element={<MyStrip />} />
         <Route path="/closed" element={<Closed />} />
         {/* 404 -> Welcome, per the design. */}
         <Route path="*" element={<Navigate to="/" replace />} />

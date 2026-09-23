@@ -141,7 +141,7 @@ export const STEPS = [
     },
   },
   {
-    id: 'S08b Đã nhận, đang duyệt',
+    id: 'S07b Đã nhận, đang duyệt',
     route: '/done',
     async go(page) {
       await page.waitForURL(/\/done$/, { timeout: 25_000 });
@@ -149,21 +149,12 @@ export const STEPS = [
     },
   },
   {
-    id: 'S08 Thành công',
+    id: 'S07 Thành công',
     route: '/done',
     async go(page) {
       // The mock backend approves after 6s and the same route upgrades in place.
       await page.getByText('Bạn đã lên Wall!').waitFor({ timeout: 25_000 });
       await settle(page, 400);
-    },
-  },
-  {
-    id: 'S09 Dải ảnh của tôi',
-    route: '/me/:id',
-    async go(page) {
-      await page.getByRole('link', { name: /Dải ảnh của tôi/ }).first().click();
-      await page.waitForURL(/\/me\//, { timeout: 10_000 });
-      await settle(page, 600);
     },
   },
   {

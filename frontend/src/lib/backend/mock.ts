@@ -148,7 +148,7 @@ export function createMockBackend(): GuestApi {
       emit();
 
       // Stand in for a moderator tapping Duyệt, so /done can be seen upgrading
-      // from S08b to S08 in place.
+      // from S07b to S07 in place.
       setTimeout(() => {
         const p = store.photos.find((x) => x.id === photoId);
         if (p?.status !== 'pending') return;

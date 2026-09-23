@@ -1,18 +1,23 @@
 /**
- * S08 Thành công / S08b Đã nhận, đang duyệt — DESIGN-D12 / D13, route "/done".
+ * S07 Thành công / S07b Đã nhận, đang duyệt — route "/done".
  *
  * One route, two states, chosen by the photo's live moderation status. With no
- * auto-approval service in the backend, S08b is the NORMAL first state and the
- * screen upgrades to S08 in place when a moderator approves. Claude-Plan.md §20.5 #3.
+ * auto-approval service in the backend, S07b is the NORMAL first state and the
+ * screen upgrades to S07 in place when a moderator approves. Claude-Plan.md §20.5 #3.
  *
  * Both states are a full-bleed colour band — green when approved, yellow while
  * waiting — with the strip tilted inside it, then centred copy, then the CTA
  * stack. The band is what makes the outcome readable before any text is.
+ *
+ * This is also the only place a guest can take their strip back: there is no
+ * "my strip" screen and no stored session, so download, share and "Gỡ dải ảnh
+ * này" all live here.
  */
 import { useEffect, useMemo, useState } from 'react';
 import { Screen } from '@/components/Screen';
 import { Navigate, useNavigate } from 'react-router-dom';
-import { Button, ButtonLink } from '@/components/Button';
+import { Button } from '@/components/Button';
+import { Dialog } from '@/components/Dialog';
 import { Icon } from '@/components/Icon';
 import { IconButtonLink } from '@/components/IconButton';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
@@ -20,6 +25,7 @@ import { findFrame } from '@/features/frames/frameRegistry';
 import { useFrames } from '@/features/frames/useFrames';
 import { canShareStrip, downloadStrip, shareStrip } from '@/features/submit/download';
 import { getSubmission } from '@/features/submit/submission';
+import { GUEST_SELF_REMOVE_ENABLED } from '@/config';
 import { useBackend, type PhotoStatus } from '@/lib/backend';
 import { useSession } from '@/state/SessionContext';
 import styles from './Done.module.css';
@@ -33,6 +39,7 @@ export function Done() {
   const submission = getSubmission();
   const [status, setStatus] = useState<PhotoStatus>('pending');
   const [momentNo, setMomentNo] = useState<number | null>(null);
+  const [confirmRemove, setConfirmRemove] = useState(false);
 
   const photos = useMemo(() => session.shots.map((s) => s?.blob ?? null), [session.shots]);
   const frame = registry ? findFrame(registry, submission?.frameId ?? null) : undefined;
@@ -53,6 +60,8 @@ export function Done() {
   const approved = status === 'approved';
   const name = submission.displayName;
   const canShare = canShareStrip(submission.blob, name);
+  const photoId = submission.photoId;
+  const canRemove = GUEST_SELF_REMOVE_ENABLED && Boolean(photoId);
 
   return (
     <Screen>
@@ -83,13 +92,10 @@ export function Done() {
         <p className={styles.text}>
           {approved ? (
             <>
-              Dải ảnh của <b>{name}</b> đang trượt trên màn hình lớn tại gian hàng.
+              Dải ảnh của <b>bạn</b> đang trượt trên màn hình lớn tại gian hàng.
             </>
           ) : (
-            <>
-              Ban tổ chức xem nhanh trước khi lên màn hình lớn, thường dưới 1 phút. Dải ảnh của{' '}
-              <b>{name}</b> sẽ tự xuất hiện trên đó, không cần làm gì thêm.
-            </>
+            'Bạn hãy chờ trong giây lát, ban tổ chức đang duyệt ảnh của bạn.'
           )}
         </p>
 
@@ -138,17 +144,39 @@ export function Done() {
               Chia sẻ
             </Button>
           ) : null}
-          {submission.photoId ? (
-            <ButtonLink
+          {canRemove ? (
+            <Button
               variant="text"
-              to={`/me/${submission.photoId}`}
-              iconStart={<Icon name="person" />}
+              dangerText
+              iconStart={<Icon name="delete" />}
+              onClick={() => setConfirmRemove(true)}
             >
-              Dải ảnh của tôi
-            </ButtonLink>
+              Gỡ dải ảnh này
+            </Button>
           ) : null}
         </div>
       </div>
+
+      <Dialog
+        open={confirmRemove}
+        title="Gỡ dải ảnh của bạn?"
+        body="Ảnh sẽ biến mất khỏi màn hình lớn ngay và không khôi phục được."
+        confirmLabel="Gỡ dải ảnh"
+        onCancel={() => setConfirmRemove(false)}
+        onConfirm={() => {
+          setConfirmRemove(false);
+          if (!photoId) return;
+          // Home only once the backend has it: a failed removal must not look
+          // like one, and the strip is still on this screen to try again.
+          backend
+            .removeMyPhoto(photoId)
+            .then(() => {
+              resetKeepingName();
+              navigate('/', { replace: true });
+            })
+            .catch(() => undefined);
+        }}
+      />
     </Screen>
   );
 }

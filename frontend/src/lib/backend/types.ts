@@ -146,7 +146,7 @@ export interface GuestApi {
   photoUrl(photoId: string): Promise<string>;
 
   /**
-   * S09 "Gỡ dải ảnh của tôi". Final: off the big screen and deleted, not restorable.
+   * "Gỡ dải ảnh này" on S07 / S07b. Final: off the big screen and deleted, not restorable.
    * Only while the photo is pending or approved.
    */
   removeMyPhoto(photoId: string): Promise<void>;

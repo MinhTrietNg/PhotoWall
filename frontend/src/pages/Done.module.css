@@ -142,26 +142,22 @@
 }
 
 /*
- * "Chia sẻ" and "Dải ảnh của tôi" share one row, pushed to its two ends as S08
- * draws them. At the buttons' usual 24px padding the pair came to 366px at 390
- * wide, over the 350 inside the gutter, so they stacked into a fourth row. 8px
- * each plus 12 on the row puts the icons where the artboard has them and still
- * fits at 360. A link on its own — S08b, or no Web Share — sits in the middle.
+ * "Chia sẻ" and "Gỡ dải ảnh này" share one centred row, as S07 draws them. At
+ * the buttons' usual 24px padding the pair only just fits inside the gutter at
+ * 390 and wraps into a fourth row below it. So the padding follows the column:
+ * 18 from 390 up, easing to 12 at 360 — the most that keeps the pair, about
+ * 261px of icon and text, on one line at each width. On its own — S07b, or no
+ * Web Share — the one button simply centres.
  */
 .textActions {
   display: flex;
-  justify-content: space-between;
+  justify-content: center;
   gap: var(--pw-space-2);
   flex-wrap: wrap;
-  padding: 0 var(--pw-space-3);
 }
 
 .textActions > :global(.btn) {
-  padding: 0 var(--pw-space-2);
-}
-
-.textActions > :only-child {
-  margin: 0 auto;
+  padding: 0 clamp(var(--pw-space-3), calc(var(--pw-column) * 0.2 - 60px), 18px);
 }
 
 /* ------------------------------------------------------------- confetti */

@@ -72,7 +72,7 @@ cần khoảng 637, nên màn cuộn ở cả dải 621–639. Danh sách chỉ 
 
 Sửa bố cục, đừng nới ngân sách. Vài hướng đã dùng trong code này:
 
-- Cho phần không mang thông tin nhường chỗ trước (dải màu ở S08, cụm trang trí
+- Cho phần không mang thông tin nhường chỗ trước (dải màu ở S07, cụm trang trí
   ở S01), thay vì cắt chữ.
 - Để phần tử theo tỉ lệ nhận chiều cao còn lại rồi suy ra bề rộng
   (`container-type: size` + đơn vị `cqh`), thay vì tự trừ chiều cao chrome bằng

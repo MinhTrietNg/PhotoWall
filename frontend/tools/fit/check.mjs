@@ -134,7 +134,7 @@ function startServer(port) {
   const vite = join(APP, 'node_modules/vite/bin/vite.js');
   if (!existsSync(vite)) die('thiếu node_modules — chạy npm install trong frontend/ trước.');
   // The walk needs the mock backend: fixed data, no network, and a photo that
-  // approves itself after 6s so the approved state of S08 is reachable.
+  // approves itself after 6s so the approved state of S07 is reachable.
   return spawn(process.execPath, [vite, '--port', String(port), '--strictPort'], {
     cwd: APP,
     env: { ...process.env, VITE_BACKEND: 'mock' },

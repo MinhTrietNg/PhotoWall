@@ -4,7 +4,7 @@
  */
 
 /**
- * S09's "Gỡ dải ảnh của tôi" (DESIGN-D14). The backend allows the owner
+ * "Gỡ dải ảnh này" on the done screen, S07 / S07b. The backend allows the owner
  * `pending|approved -> removed` (final, the strip is deleted) — see removeMyPhoto.
  */
 export const GUEST_SELF_REMOVE_ENABLED = true;
