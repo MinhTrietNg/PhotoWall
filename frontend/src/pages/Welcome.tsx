@@ -13,7 +13,13 @@ import { track } from '@/lib/analytics';
 import { useBackend } from '@/lib/backend';
 import styles from './Welcome.module.css';
 
-/** The three strips fan out like held cards. Rotations are from the artboard. */
+/**
+ * The three strips fan out like held cards. Rotations are from the artboard.
+ *
+ * Their slots stay empty on purpose. The artboard fills them with pastel
+ * silhouettes, but Foundations marks those as mockup-only — production shows
+ * real photos — and a guest who has not started has none to show.
+ */
 const FAN = [
   { id: 'f01-gdgoc', rotate: -15, top: 6 },
   { id: 'f02-aws', rotate: -2, top: 2 },

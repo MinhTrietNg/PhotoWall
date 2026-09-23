@@ -178,16 +178,15 @@
   line-height: 1.35;
 }
 
+/* Left-aligned, icon first: at 390 it wraps, and the artboard wraps it flush left. */
 .helper {
   margin: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
   gap: var(--pw-space-2);
   font: var(--pw-type-body-s);
   font-weight: 600;
   color: var(--pw-ink-2);
-  text-align: center;
 }
 
 @keyframes floaty {
