@@ -212,7 +212,7 @@ export function CameraPage() {
             iconStart={<Icon name="gallery" size={20} />}
             onClick={openPicker}
           >
-            Chọn ảnh cho ô {slot}
+            Chọn từ thư viện
           </Button>
         </div>
       ) : (
