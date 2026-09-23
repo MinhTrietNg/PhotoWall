@@ -28,7 +28,7 @@ export function Closed() {
 
       <div className={styles.body}>
         <span className={styles.disc} aria-hidden="true">
-          <Icon name="eventBusy" size={48} />
+          <Icon name="lock" size={48} />
         </span>
 
         <h1 className={`u ${styles.title}`}>Wall đã đóng nhận ảnh</h1>
@@ -49,7 +49,7 @@ export function Closed() {
             Dải ảnh của tôi
           </ButtonLink>
         ) : null}
-        <ButtonLink to="/" variant="secondary" block>
+        <ButtonLink to="/" variant="secondary" block iconStart={<Icon name="home" />}>
           Về trang chủ
         </ButtonLink>
       </div>
