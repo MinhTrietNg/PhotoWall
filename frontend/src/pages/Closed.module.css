@@ -13,7 +13,7 @@
   justify-content: center;
   text-align: center;
   gap: var(--pw-space-4);
-  padding: var(--pw-space-6) var(--pw-gutter) 0;
+  padding: 0 var(--pw-gutter);
   min-height: 0;
 }
 
