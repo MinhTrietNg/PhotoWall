@@ -39,7 +39,7 @@ export function EnterName() {
       <div className={styles.body}>
         <div className={styles.intro}>
           <span className={styles.disc} aria-hidden="true">
-            <Icon name="edit" size={32} />
+            <Icon name="wavingHand" size={32} />
           </span>
           <h1 className={`u ${styles.title}`}>Bạn tên gì?</h1>
           <p className={styles.sub}>Tên sẽ xuất hiện cùng dải ảnh của bạn trên màn hình lớn.</p>
