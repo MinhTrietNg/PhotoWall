@@ -2,7 +2,10 @@
  * E03 Đã đóng nhận ảnh — DESIGN-D17, route "/closed".
  *
  * Reached by the global guard whenever config.uploadsOpen flips to false.
- * Guests can still get their own strip back.
+ * Guests can still get their own strip back — the copy promises seven days —
+ * so "Dải ảnh của tôi" cannot depend on the strip still being in memory from
+ * this visit. It falls back to the guest's newest photo on the backend, which
+ * is what survives a reload or a later visit.
  */
 import { useEffect, useState } from 'react';
 import { Screen } from '@/components/Screen';
@@ -16,9 +19,22 @@ import styles from './Closed.module.css';
 export function Closed() {
   const backend = useBackend();
   const [approvedCount, setApprovedCount] = useState<number | null>(null);
+  const [latestId, setLatestId] = useState<string | null>(null);
   const submission = getSubmission();
 
   useEffect(() => backend.watchStats((s) => setApprovedCount(s.approvedCount)), [backend]);
+
+  useEffect(
+    () =>
+      backend.watchMyPhotos((photos) => {
+        const kept = photos.filter((p) => p.status !== 'removed' && p.status !== 'rejected');
+        kept.sort((a, b) => b.createdAtMs - a.createdAtMs);
+        setLatestId(kept[0]?.id ?? null);
+      }),
+    [backend],
+  );
+
+  const myStripId = submission?.photoId ?? latestId;
 
   return (
     <Screen>
@@ -40,9 +56,9 @@ export function Closed() {
       </div>
 
       <div className="screen__cta">
-        {submission?.photoId ? (
+        {myStripId ? (
           <ButtonLink
-            to={`/me/${submission.photoId}`}
+            to={`/me/${myStripId}`}
             block
             iconStart={<Icon name="person" />}
           >
