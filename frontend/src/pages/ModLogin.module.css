@@ -62,12 +62,6 @@
   text-align: left;
 }
 
-.signIn {
-  width: 100%;
-  background: var(--pw-surface);
-  color: var(--pw-ink);
-}
-
 .footer {
   margin: 0;
   font: var(--pw-type-body-s);
