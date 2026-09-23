@@ -95,6 +95,8 @@
   --pw-ctl-l: 56px;
   --pw-ctl-m: 48px;
   --pw-ctl-s: 40px;
+  /* Motion · Responsive: every touch target reaches 48, whatever is drawn. */
+  --pw-touch-min: 48px;
   --pw-icon-s: 16px;
   --pw-icon-m: 20px;
   --pw-icon-l: 24px;

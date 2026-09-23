@@ -118,7 +118,9 @@ export function CameraPage() {
           <>
             <button
               type="button"
-              className={`pill ${styles.tool} ${timerOn ? styles.toolOn : styles.toolOff}`}
+              className={`pill tap-target ${styles.tool} ${
+                timerOn ? styles.toolOn : styles.toolOff
+              }`}
               aria-pressed={timerOn}
               onClick={() => setTimerOn((v) => !v)}
             >
@@ -127,7 +129,7 @@ export function CameraPage() {
             </button>
             <button
               type="button"
-              className={`pill ${styles.tool} ${styles.toolIcon} ${
+              className={`pill tap-target ${styles.tool} ${styles.toolIcon} ${
                 camera.mirrored ? styles.toolOn : styles.toolOff
               }`}
               aria-pressed={camera.mirrored}

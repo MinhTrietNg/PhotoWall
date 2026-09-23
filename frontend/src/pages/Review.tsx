@@ -38,7 +38,11 @@ export function Review() {
         title="Xem lại"
         backTo="/frame"
         right={
-          <Link to="/name" className={`pill pill--lg ${styles.namePill}`} aria-label="Sửa tên">
+          <Link
+            to="/name"
+            className={`pill pill--lg tap-target ${styles.namePill}`}
+            aria-label="Sửa tên"
+          >
             <Icon name="person" size={16} />
             <span className={styles.nameText}>{session.displayName}</span>
             <Icon name="edit" size={16} />
@@ -74,7 +78,7 @@ export function Review() {
           </div>
 
           <span className={`lbl ${styles.frameLabel}`}>Khung</span>
-          <Link to="/frame" className={`pill ${styles.frameChip}`}>
+          <Link to="/frame" className={`pill tap-target ${styles.frameChip}`}>
             <PaletteGlyph size={16} />
             <span className={styles.frameChipText}>
               {frame ? `${frame.label} · ${frame.title.split(' · ')[0]}` : '—'}

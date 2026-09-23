@@ -259,6 +259,23 @@ a:hover {
   color: #fff;
 }
 
+/*
+ * The artboards draw some tappable things smaller than the 48px the
+ * Motion · Responsive board asks of every touch target: the 32px camera tool
+ * pills, the 32px name pill, the 36px frame chip. This keeps what is drawn and
+ * grows only what a finger reaches, with an invisible layer centred on the
+ * control. Each side is min(0, …), so a control already 48px along an axis
+ * keeps exactly its own box there.
+ */
+.tap-target {
+  position: relative;
+}
+.tap-target::before {
+  content: '';
+  position: absolute;
+  inset: min(0px, calc(50% - var(--pw-touch-min) / 2));
+}
+
 .tag {
   display: inline-flex;
   align-items: center;

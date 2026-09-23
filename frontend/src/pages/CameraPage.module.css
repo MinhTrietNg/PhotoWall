@@ -1,4 +1,7 @@
-/* Top-bar tool pills (timer, mirror). 32px — display size S. */
+/*
+ * Top-bar tool pills (timer, mirror). Drawn 32px — display size S — and grown
+ * to 48 for a finger by `tap-target`.
+ */
 .tool {
   height: 32px;
   cursor: pointer;
