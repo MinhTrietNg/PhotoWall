@@ -14,16 +14,18 @@ import { useBackend } from '@/lib/backend';
 import styles from './Welcome.module.css';
 
 /**
- * The three strips fan out like held cards. Rotations are from the artboard.
+ * The four strips fan out like held cards, one per frame in the set.
+ * Rotations and offsets are from the artboard.
  *
  * Their slots stay empty on purpose. The artboard fills them with pastel
  * silhouettes, but Foundations marks those as mockup-only — production shows
  * real photos — and a guest who has not started has none to show.
  */
 const FAN = [
-  { id: 'f01-gdgoc', rotate: -15, top: 6 },
-  { id: 'f02-aws', rotate: -2, top: 2 },
-  { id: 'f03-partners', rotate: 12, top: 0 },
+  { id: 'f01-gdgoc', rotate: -16, top: 7 },
+  { id: 'f02-aws', rotate: -7, top: 3 },
+  { id: 'f03-isf', rotate: 3, top: 1 },
+  { id: 'f04-tpl', rotate: 13, top: 0 },
 ] as const;
 
 export function Welcome() {

@@ -95,9 +95,9 @@
 }
 
 .f4 {
-  right: 18px;
+  right: 14px;
   top: 58px;
-  width: 180px;
+  width: 190px;
   height: 216px;
   animation-duration: 7.4s;
   animation-delay: -3.4s;
@@ -105,7 +105,7 @@
 
 .fanCard {
   position: absolute;
-  left: 58px;
+  left: 62px;
   display: inline-flex;
   /* Pivot below the card so they splay like a hand of cards. */
   transform-origin: 50% 135%;
@@ -178,11 +178,15 @@
   line-height: 1.35;
 }
 
-/* Left-aligned, icon first: at 390 it wraps, and the artboard wraps it flush left. */
+/*
+ * Centred as a row, but the text itself is not: at 390 the line wraps, and the
+ * artboard wraps it flush left beside the icon.
+ */
 .helper {
   margin: 0;
   display: flex;
   align-items: center;
+  justify-content: center;
   gap: var(--pw-space-2);
   font: var(--pw-type-body-s);
   font-weight: 600;
