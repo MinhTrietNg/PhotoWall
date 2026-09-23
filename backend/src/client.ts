@@ -2,12 +2,14 @@
 // perform the exact write sequences that firestore.rules / storage.rules accept.
 import { connectAuthEmulator, signInAnonymously, type Auth } from 'firebase/auth';
 import {
-  collection, connectFirestoreEmulator, deleteDoc, deleteField, doc, getDoc, getDocs, increment,
-  limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc, Timestamp, updateDoc,
-  where, writeBatch, type Firestore, type Unsubscribe,
+  collection, connectFirestoreEmulator, deleteDoc, deleteField, doc, getCountFromServer, getDoc,
+  getDocs, increment, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc,
+  startAfter, Timestamp, updateDoc, where, writeBatch, type Firestore, type QueryDocumentSnapshot,
+  type QuerySnapshot,
+  type Unsubscribe,
 } from 'firebase/firestore';
 import {
-  connectStorageEmulator, deleteObject, getDownloadURL, ref, uploadBytes,
+  connectStorageEmulator, deleteObject, getBlob, getDownloadURL, ref, uploadBytes,
   type FirebaseStorage,
 } from 'firebase/storage';
 import {
@@ -76,6 +78,8 @@ export interface SubmitInput {
   displayName: string;
   /** Frame id, e.g. "f01-gdgoc". */
   frameVariant: FrameVariant;
+  /** S02 "Hiện tên trên màn hình lớn". Omitted = shown. */
+  showName?: boolean;
 }
 
 /**
@@ -100,6 +104,7 @@ export async function submitPhoto(b: Backend, input: SubmitInput): Promise<strin
   batch.set(doc(b.db, paths.photo(photoId)), {
     ownerUid: uid,
     displayName,
+    ...(typeof input.showName === 'boolean' ? { showName: input.showName } : {}),
     frameVariant: input.frameVariant,
     status: 'uploading',
     storagePath: paths.photoObject(photoId),
@@ -165,7 +170,8 @@ export function watchMyPhotos(b: Backend, cb: (photos: Photo[]) => void): Unsubs
 }
 
 /**
- * S09 "Gỡ dải ảnh của tôi". Final: the strip is deleted and cannot be restored.
+ * S07 / S07b "Gỡ dải ảnh này". Off the big screen at once and never restorable; the
+ * strip is kept for `removedRetentionHours` like any removal, then purged.
  * Works while the photo is pending or approved; throws AlreadyReviewedError otherwise.
  */
 export async function removeMyPhoto(b: Backend, photoId: string): Promise<void> {
@@ -176,14 +182,11 @@ export async function removeMyPhoto(b: Backend, photoId: string): Promise<void> 
     if (!cur || cur.ownerUid !== uid || (cur.status !== 'pending' && cur.status !== 'approved')) {
       throw new AlreadyReviewedError(photoId);
     }
-    tx.update(photoRef, {
-      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: OWNER_REVIEWER, purgedAt: serverTimestamp(),
-    });
+    tx.update(photoRef, { status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: OWNER_REVIEWER });
     if (cur.status === 'approved') {
       tx.set(doc(b.db, paths.stats), { approvedCount: increment(-1), lastOwnerRemoval: photoId }, { merge: true });
     }
   });
-  await deleteStrip(b, photoId);
 }
 
 /** `config/app` with defaults filled in; null if the document does not exist. */
@@ -258,6 +261,22 @@ export async function getMyRole(b: Backend): Promise<ModeratorRole | null> {
   }
 }
 
+export type Moderator = ModeratorDoc & { email: string; role: ModeratorRole };
+
+/** The signed-in moderator's allowlist entry — "Lan · Admin GDGoC" — or null. */
+export async function getMyModerator(b: Backend): Promise<Moderator | null> {
+  const email = b.auth.currentUser?.email;
+  if (!email) return null;
+  try {
+    const snap = await getDoc(doc(b.db, paths.moderator(email)));
+    if (!snap.exists()) return null;
+    const d = snap.data() as ModeratorDoc;
+    return { ...d, email, role: d.role ?? 'moderator' };
+  } catch {
+    return null;
+  }
+}
+
 /** True if the signed-in (Google) user is on the moderators allowlist. */
 export async function isModerator(b: Backend): Promise<boolean> {
   return (await getMyRole(b)) !== null;
@@ -284,6 +303,15 @@ export function watchByStatus(
     limit(max),
   );
   return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
+}
+
+/**
+ * Exact number of photos in `statuses` — tab badges ("Đã duyệt · 325"), which the
+ * 200-row lists cannot count. Costs one read per 1,000 photos.
+ */
+export async function countPhotos(b: Backend, statuses: PhotoStatus[]): Promise<number> {
+  const s = await getCountFromServer(query(collection(b.db, 'photos'), where('status', 'in', statuses)));
+  return s.data().count;
 }
 
 /** Thrown when the photo is no longer in the expected state (e.g. another moderator acted first). */
@@ -387,6 +415,42 @@ export function restore(b: Backend, photoId: string) {
   return review(b, photoId, { from: ['rejected', 'removed'], to: 'approved', countDelta: 1 });
 }
 
+export interface BulkResult {
+  ok: string[];
+  /** Another moderator handled these first. */
+  conflicts: string[];
+  failed: string[];
+}
+
+/** Runs one at a time: parallel reviews would fight over the shared counter. */
+async function bulk(ids: string[], run: (id: string) => Promise<void>): Promise<BulkResult> {
+  const result: BulkResult = { ok: [], conflicts: [], failed: [] };
+  for (const id of ids) {
+    try {
+      await run(id);
+      result.ok.push(id);
+    } catch (e) {
+      (e instanceof AlreadyReviewedError ? result.conflicts : result.failed).push(id);
+    }
+  }
+  return result;
+}
+
+/** "Duyệt N ảnh". */
+export function approveMany(b: Backend, ids: string[]) {
+  return bulk(ids, (id) => approve(b, id));
+}
+
+/** "Gỡ N ảnh" on the pending tab. */
+export function rejectMany(b: Backend, ids: string[], reason?: ReviewReason) {
+  return bulk(ids, (id) => reject(b, id, reason));
+}
+
+/** "Gỡ N ảnh" on the approved tab. */
+export function removeMany(b: Backend, ids: string[], reason?: ReviewReason) {
+  return bulk(ids, (id) => remove(b, id, reason));
+}
+
 /**
  * Deletes strips removed/rejected longer than `removedRetentionHours` ago and marks
  * them purged. Call when the moderation console opens. Returns how many were purged.
@@ -418,7 +482,7 @@ export async function purgeExpired(b: Backend): Promise<number> {
 
 // ------------------------------------------------------------ admin: settings (M02)
 
-export type ConfigPatch = Partial<Omit<AppConfig, 'uploadsChangedAt' | 'displayReloadAt'>>;
+export type ConfigPatch = Partial<Omit<AppConfig, 'uploadsChangedAt' | 'displayReloadAt' | 'deletionSchedule'>>;
 
 /** Admin only. `uploadsChangedAt` is stamped automatically when `uploadsOpen` flips. */
 export async function updateConfig(b: Backend, patch: ConfigPatch): Promise<void> {
@@ -444,8 +508,6 @@ export async function requestDisplayReload(b: Backend): Promise<void> {
 }
 
 // ------------------------------------------------------------ admin: moderators (M02)
-
-export type Moderator = ModeratorDoc & { email: string; role: ModeratorRole };
 
 /** Everyone on the allowlist. Readable by any moderator. */
 export function watchModerators(b: Backend, cb: (list: Moderator[]) => void): Unsubscribe {
@@ -473,4 +535,114 @@ export async function deleteModerator(b: Backend, email: string): Promise<void> 
 
 export async function setEventName(b: Backend, eventName: string) {
   await updateDoc(doc(b.db, paths.config), { eventName });
+}
+
+// ------------------------------------------------------------ admin: export (M02 "Dữ liệu")
+
+export interface ExportRow {
+  id: string;
+  displayName: string;
+  showName: boolean;
+  momentNo: number | null;
+  frameVariant: string;
+  submittedAt: Timestamp | null;
+  reviewedAt: Timestamp | null;
+  reviewedBy: string | null;
+}
+
+/**
+ * Every photo currently on the wall, in moment order — the source for "Tải toàn bộ
+ * dải ảnh (.zip)" and "Xuất danh sách tham gia (.csv)". Removed photos never appear.
+ */
+export async function listApprovedForExport(b: Backend): Promise<ExportRow[]> {
+  const rows: ExportRow[] = [];
+  let after: QueryDocumentSnapshot | null = null;
+  for (;;) {
+    const page: QuerySnapshot = await getDocs(query(
+      collection(b.db, 'photos'),
+      where('status', '==', 'approved'),
+      orderBy('reviewedAt', 'desc'),
+      ...(after ? [startAfter(after)] : []),
+      limit(300),
+    ));
+    for (const d of page.docs) {
+      const p = d.data() as PhotoDoc;
+      rows.push({
+        id: d.id,
+        displayName: p.displayName,
+        showName: p.showName !== false,
+        momentNo: p.momentNo ?? null,
+        frameVariant: p.frameVariant,
+        submittedAt: p.submittedAt ?? null,
+        reviewedAt: p.reviewedAt ?? null,
+        reviewedBy: p.reviewedBy ?? null,
+      });
+    }
+    if (page.docs.length < 300) break;
+    after = page.docs[page.docs.length - 1];
+  }
+  return rows.sort((a, c) => (a.momentNo ?? Infinity) - (c.momentNo ?? Infinity));
+}
+
+/** The stored strip as a Blob, for the ZIP export. */
+export function fetchStripBlob(b: Backend, photoId: string): Promise<Blob> {
+  return getBlob(ref(b.storage, paths.photoObject(photoId)));
+}
+
+// ------------------------------------------------------------ admin: scheduled wipe (M02 "Dữ liệu")
+
+/** "Lên lịch xoá": admin only; an existing, not-yet-run schedule must be cancelled first. */
+export async function scheduleDeletion(b: Backend, at: Date): Promise<void> {
+  const email = requireUser(b).email;
+  await updateDoc(doc(b.db, paths.config), {
+    deletionSchedule: { at: Timestamp.fromDate(at), requestedBy: email, confirmedBy: null, executedAt: null },
+  });
+}
+
+/** Second admin's confirmation. The admin who scheduled it cannot confirm it. */
+export async function confirmDeletion(b: Backend): Promise<void> {
+  await updateDoc(doc(b.db, paths.config), { 'deletionSchedule.confirmedBy': requireUser(b).email });
+}
+
+/** Cancels a schedule that has not run yet. */
+export async function cancelDeletion(b: Backend): Promise<void> {
+  await updateDoc(doc(b.db, paths.config), { deletionSchedule: null });
+}
+
+export interface WipeResult {
+  photos: number;
+  users: number;
+}
+
+/**
+ * Runs the wipe if it is confirmed and due; otherwise does nothing and returns null.
+ * Call when an admin opens the console. Deletes every strip, photo, rate-limit ledger
+ * and the counter; keeps `config/app` and the moderators list.
+ */
+export async function runDueDeletion(b: Backend): Promise<WipeResult | null> {
+  const configRef = doc(b.db, paths.config);
+  const s = ((await getDoc(configRef)).data() as AppConfig | undefined)?.deletionSchedule;
+  if (!s || !s.confirmedBy || s.executedAt || Date.now() < s.at.toMillis()) return null;
+
+  const result: WipeResult = { photos: 0, users: 0 };
+  for (;;) {
+    const page = await getDocs(query(collection(b.db, 'photos'), limit(200)));
+    if (page.empty) break;
+    for (const d of page.docs) await deleteStrip(b, d.id);
+    const batch = writeBatch(b.db);
+    page.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    result.photos += page.size;
+  }
+  for (;;) {
+    const page = await getDocs(query(collection(b.db, 'users'), limit(400)));
+    if (page.empty) break;
+    const batch = writeBatch(b.db);
+    page.docs.forEach((d) => batch.delete(d.ref));
+    await batch.commit();
+    result.users += page.size;
+  }
+  await deleteDoc(doc(b.db, paths.stats));
+  await updateDoc(configRef, { 'deletionSchedule.executedAt': serverTimestamp() });
+  return result;
 }

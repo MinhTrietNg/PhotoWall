@@ -14,6 +14,7 @@ import { useModShortcuts } from '@/features/moderation/useModShortcuts';
 import {
   ReviewConflict,
   useModeratorBackend,
+  type ModeratorAccount,
   type ModTab,
   type Photo,
 } from '@/lib/backend';
@@ -29,8 +30,16 @@ function sortRows(tab: ModTab, rows: Photo[], sort: 'newest' | 'oldest'): Photo[
   return sort === 'newest' ? sorted.reverse() : sorted;
 }
 
-export function ModQueue({ email, onSignOut }: { email: string; onSignOut: () => void }) {
+/** "Lan · Admin GDGoC" / "Mai · Kiểm duyệt AWS SC" — DESIGN-D21 header pill. */
+function accountLabel(a: ModeratorAccount): string {
+  const who = a.name?.split(' ').pop() ?? a.email;
+  const role = a.role === 'admin' ? 'Admin' : 'Kiểm duyệt';
+  return [who, [role, a.org].filter(Boolean).join(' ')].join(' · ');
+}
+
+export function ModQueue({ account, onSignOut }: { account: ModeratorAccount; onSignOut: () => void }) {
   const backend = useModeratorBackend();
+  const isAdmin = account.role === 'admin';
 
   const [rows, setRows] = useState<Rows>(EMPTY_ROWS);
   const [tab, setTab] = useState<ModTab>('pending');
@@ -140,18 +149,27 @@ export function ModQueue({ email, onSignOut }: { email: string; onSignOut: () =>
         <div className={styles.pills}>
           <span className="pill pill--lg">{rows.approved.length} dải ảnh</span>
           {uploadsOpen !== null ? (
-            <button
-              type="button"
-              className={`pill pill--lg ${styles.uploadsPill} ${uploadsOpen ? styles.uploadsOpen : styles.uploadsClosed}`}
-              onClick={() => backend.setUploadsOpen(!uploadsOpen)}
-            >
-              {uploadsOpen ? 'Đang nhận ảnh' : 'Đã tạm dừng'}
-            </button>
+            isAdmin ? (
+              <button
+                type="button"
+                className={`pill pill--lg ${styles.uploadsPill} ${uploadsOpen ? styles.uploadsOpen : styles.uploadsClosed}`}
+                onClick={() => backend.setUploadsOpen(!uploadsOpen)}
+              >
+                {uploadsOpen ? 'Đang nhận ảnh' : 'Đã tạm dừng'}
+              </button>
+            ) : (
+              // Moderators see the state; only an admin may switch it (board 07).
+              <span className={`pill pill--lg ${uploadsOpen ? styles.uploadsOpen : styles.uploadsClosed}`}>
+                {uploadsOpen ? 'Đang nhận ảnh' : 'Đã tạm dừng'}
+              </span>
+            )
           ) : null}
-          <IconButtonLink to="/settings" label="Cài đặt sự kiện" size="s">
-            <Icon name="settings" size={20} />
-          </IconButtonLink>
-          <span className="pill pill--on-ink">{email}</span>
+          {isAdmin ? (
+            <IconButtonLink to="/settings" label="Cài đặt sự kiện" size="s">
+              <Icon name="settings" size={20} />
+            </IconButtonLink>
+          ) : null}
+          <span className="pill pill--on-ink" title={account.email}>{accountLabel(account)}</span>
           <IconButton label="Đăng xuất" size="s" onClick={onSignOut}>
             <Icon name="logout" size={20} />
           </IconButton>

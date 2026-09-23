@@ -27,10 +27,13 @@ export function App() {
     );
   }
 
+  // Board 07: M02 (settings, uploads switch) is admin-only; moderators only review.
+  const isAdmin = auth.account.role === 'admin';
+
   return (
     <Routes>
-      <Route path="/" element={<ModQueue email={auth.email} onSignOut={() => void backend.signOut()} />} />
-      <Route path="/settings" element={<ModSettings email={auth.email} />} />
+      <Route path="/" element={<ModQueue account={auth.account} onSignOut={() => void backend.signOut()} />} />
+      {isAdmin ? <Route path="/settings" element={<ModSettings email={auth.email} />} /> : null}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

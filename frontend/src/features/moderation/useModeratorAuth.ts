@@ -4,28 +4,29 @@
  * this reports one status enum instead of two separate booleans.
  */
 import { useEffect, useState } from 'react';
-import type { ModeratorApi, ModeratorProfile } from '@/lib/backend';
+import type { ModeratorAccount, ModeratorApi, ModeratorProfile } from '@/lib/backend';
 
 type ModeratorAuthState =
   | { status: 'loading' }
   | { status: 'signed-out' }
   | { status: 'denied'; email: string }
-  | { status: 'ok'; email: string };
+  | { status: 'ok'; email: string; account: ModeratorAccount };
 
 export function useModeratorAuth(backend: ModeratorApi): ModeratorAuthState {
   const [user, setUser] = useState<ModeratorProfile | null | undefined>(undefined);
-  const [allowed, setAllowed] = useState<boolean | null>(null);
+  // undefined = still checking, null = not on the allowlist.
+  const [account, setAccount] = useState<ModeratorAccount | null | undefined>(undefined);
 
   useEffect(() => backend.watchAuthState(setUser), [backend]);
 
   useEffect(() => {
     if (!user) {
-      setAllowed(null);
+      setAccount(undefined);
       return;
     }
     let alive = true;
-    setAllowed(null);
-    backend.isModerator().then((ok) => alive && setAllowed(ok));
+    setAccount(undefined);
+    backend.getMyModerator().then((a) => alive && setAccount(a));
     return () => {
       alive = false;
     };
@@ -33,6 +34,6 @@ export function useModeratorAuth(backend: ModeratorApi): ModeratorAuthState {
 
   if (user === undefined) return { status: 'loading' };
   if (user === null) return { status: 'signed-out' };
-  if (allowed === null) return { status: 'loading' };
-  return allowed ? { status: 'ok', email: user.email } : { status: 'denied', email: user.email };
+  if (account === undefined) return { status: 'loading' };
+  return account ? { status: 'ok', email: user.email, account } : { status: 'denied', email: user.email };
 }

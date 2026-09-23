@@ -58,6 +58,14 @@ service cloud.firestore {
       return statsAfter().approvedCount == statsBefore().get('approvedCount', 0) + delta;
     }
 
+    // "Xoá toàn bộ dữ liệu sau sự kiện": an admin may delete event data once the
+    // schedule is confirmed by a second admin and its time has come.
+    function wipeDue() {
+      let s = config().get('deletionSchedule', null);
+      return isAdmin() && s != null && s.confirmedBy != null && s.executedAt == null
+        && request.time >= s.at;
+    }
+
     // ------------------------------------------------------------ config (M02)
 
     match /config/app {
@@ -65,7 +73,7 @@ service cloud.firestore {
         let d = request.resource.data;
         return d.keys().hasOnly(['uploadsOpen', 'eventName', 'uploadsChangedAt', 'closesAt',
             'maxSubmitsPerUser', 'allowGallery', 'removedRetentionHours', 'marqueePxPerSec',
-            'showNames', 'arrivalCard', 'qrUrl', 'frames', 'displayReloadAt'])
+            'showNames', 'arrivalCard', 'qrUrl', 'frames', 'displayReloadAt', 'deletionSchedule'])
           && d.uploadsOpen is bool
           && d.eventName is string && d.eventName.size() <= 120
           && (d.get('closesAt', null) == null || d.closesAt is timestamp)
@@ -91,8 +99,31 @@ service cloud.firestore {
           : d.get('uploadsChangedAt', null) == request.time;
       }
 
+      // schedule (new) → confirm (a different admin) → mark executed; cancel any time before it runs.
+      function scheduleOk() {
+        let me = request.auth.token.email;
+        let before = resource == null ? null : resource.data.get('deletionSchedule', null);
+        let after = request.resource.data.get('deletionSchedule', null);
+        return after == before
+          || (after == null && before != null && before.executedAt == null)
+          || ((before == null || before.executedAt != null)
+            && after is map
+            && after.keys().hasOnly(['at', 'requestedBy', 'confirmedBy', 'executedAt'])
+            && after.at is timestamp && after.at > request.time
+            && after.requestedBy == me && after.confirmedBy == null && after.executedAt == null)
+          || (before != null && before.confirmedBy == null && before.executedAt == null
+            && after is map && after.keys().hasOnly(['at', 'requestedBy', 'confirmedBy', 'executedAt'])
+            && after.at == before.at && after.requestedBy == before.requestedBy
+            && after.executedAt == null && after.confirmedBy == me && me != before.requestedBy)
+          || (before != null && before.confirmedBy != null && before.executedAt == null
+            && request.time >= before.at
+            && after is map && after.keys().hasOnly(['at', 'requestedBy', 'confirmedBy', 'executedAt'])
+            && after.at == before.at && after.requestedBy == before.requestedBy
+            && after.confirmedBy == before.confirmedBy && after.executedAt == request.time);
+      }
+
       allow read: if true;
-      allow create, update: if isAdmin() && validConfig() && uploadsStamped();
+      allow create, update: if isAdmin() && validConfig() && uploadsStamped() && scheduleOk();
     }
 
     // ------------------------------------------------------------ moderators
@@ -157,6 +188,7 @@ service cloud.firestore {
 
       allow read: if true;
       allow create, update: if moderatorWrite() || ownerRemoval();
+      allow delete: if wipeDue();
     }
 
     // ------------------------------------------------------------ rate-limit ledger
@@ -173,14 +205,14 @@ service cloud.firestore {
           && existsAfter(/databases/$(database)/documents/photos/$(d.lastPhotoId));
       }
 
-      allow read: if signedIn() && request.auth.uid == uid;
+      allow read: if (signedIn() && request.auth.uid == uid) || wipeDue();
       allow create: if signedIn() && validLedger()
         && request.resource.data.submitCount == 1;
       allow update: if signedIn() && validLedger()
         && request.time > resource.data.lastSubmitAt + duration.value(60, 's')
         && request.resource.data.submitCount == resource.data.submitCount + 1
         && request.resource.data.submitCount <= config().get('maxSubmitsPerUser', 3);
-      allow delete: if false;
+      allow delete: if wipeDue();
     }
 
     // ------------------------------------------------------------ photos
@@ -189,12 +221,13 @@ service cloud.firestore {
       function validNewPhoto() {
         let d = request.resource.data;
         let ledger = getAfter(/databases/$(database)/documents/users/$(request.auth.uid)).data;
-        return d.keys().hasOnly(['ownerUid', 'displayName', 'frameVariant', 'status', 'storagePath', 'createdAt'])
+        return d.keys().hasOnly(['ownerUid', 'displayName', 'showName', 'frameVariant', 'status', 'storagePath', 'createdAt'])
           && d.ownerUid == request.auth.uid
           && d.status == 'uploading'
           && d.displayName is string
           && d.displayName.size() >= 1
-          && d.displayName.size() <= 40
+          && d.displayName.size() <= 24
+          && (!('showName' in d) || d.showName is bool)
           && d.frameVariant is string
           && d.frameVariant.matches('^f[0-9]{2}-[a-z0-9-]{1,30}$')
           && d.storagePath == 'photos/' + photoId + '/strip.jpg'
@@ -217,7 +250,8 @@ service cloud.firestore {
           && changes().hasOnly(['status', 'submittedAt']);
       }
 
-      // S09 "Gỡ dải ảnh của tôi": final — the strip is deleted right after.
+      // S07 "Gỡ dải ảnh này": off the wall at once, never restorable; the strip is
+      // kept for the retention window like any removal, then purged.
       function ownerRemoves() {
         let from = resource.data.status;
         let d = request.resource.data;
@@ -226,8 +260,7 @@ service cloud.firestore {
           && d.status == 'removed'
           && d.reviewedAt == request.time
           && d.reviewedBy == 'owner'
-          && d.purgedAt == request.time
-          && changes().hasOnly(['status', 'reviewedAt', 'reviewedBy', 'purgedAt'])
+          && changes().hasOnly(['status', 'reviewedAt', 'reviewedBy'])
           && (from == 'pending' || (approvedCountMoved(-1) && statsAfter().lastOwnerRemoval == photoId));
       }
 
@@ -293,7 +326,7 @@ service cloud.firestore {
       allow create: if signedIn() && uploadsAllowed() && validNewPhoto();
       allow update: if signedIn()
         && (ownerSubmits() || ownerRemoves() || moderatorReviews() || moderatorPurges());
-      allow delete: if false;
+      allow delete: if wipeDue();
     }
   }
 }

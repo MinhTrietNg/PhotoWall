@@ -31,7 +31,11 @@ let pendingModerator: Promise<ModeratorApi> | null = null;
 
 function loadModeratorBackend(): Promise<ModeratorApi> {
   pendingModerator ??= (async () => {
-    if (import.meta.env.VITE_BACKEND === 'firebase') {
+    // Same rule as loadBackend(): production builds always talk to Firebase.
+    const useFirebase =
+      import.meta.env.VITE_BACKEND === 'firebase' ||
+      (import.meta.env.PROD && import.meta.env.VITE_BACKEND !== 'mock');
+    if (useFirebase) {
       const { createFirebaseModeratorBackend } = await import('./firebase');
       return createFirebaseModeratorBackend();
     }

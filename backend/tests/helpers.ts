@@ -13,6 +13,8 @@ import { paths } from '../src/schema';
 export const MOD_EMAIL = 'mod@example.com';
 /** Seeded with role 'moderator'. */
 export const MOD2_EMAIL = 'mod2@example.com';
+/** Seeded with role 'admin' — the second admin a wipe needs. */
+export const ADMIN2_EMAIL = 'admin2@example.com';
 
 export async function createEnv(): Promise<RulesTestEnvironment> {
   return initializeTestEnvironment({
@@ -57,6 +59,7 @@ export async function seed(
     await setDoc(doc(db, paths.config), { uploadsOpen: opts.uploadsOpen ?? true, eventName: 'SGU Day', ...opts.config });
     await setDoc(doc(db, paths.moderator(MOD_EMAIL)), { role: 'admin' });
     await setDoc(doc(db, paths.moderator(MOD2_EMAIL)), { role: 'moderator' });
+    await setDoc(doc(db, paths.moderator(ADMIN2_EMAIL)), { role: 'admin' });
     for (const [path, data] of Object.entries(opts.docs ?? {})) {
       await setDoc(doc(db, path), data);
     }

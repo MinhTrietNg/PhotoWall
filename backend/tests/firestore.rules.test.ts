@@ -1,16 +1,17 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import {
-  collection, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction,
+  collection, deleteDoc, doc, getDoc, getDocs, increment, limit, orderBy, query, runTransaction,
   serverTimestamp, setDoc, Timestamp, updateDoc, where, writeBatch, type Firestore,
 } from 'firebase/firestore';
 import {
-  AlreadyReviewedError, approve, deleteModerator, purgeExpired, reject, remove, removeMyPhoto,
-  restore, saveModerator, updateConfig, type Backend,
+  AlreadyReviewedError, approve, cancelDeletion, confirmDeletion, deleteModerator, purgeExpired,
+  reject, remove, removeMyPhoto, restore, runDueDeletion, saveModerator, scheduleDeletion,
+  updateConfig, type Backend,
 } from '../src/client';
 import { paths } from '../src/schema';
 import {
-  createEnv, guest, guestBackend, hoursAgo, MOD2_EMAIL, MOD_EMAIL, modBackend, moderator,
+  ADMIN2_EMAIL, createEnv, guest, guestBackend, hoursAgo, MOD2_EMAIL, MOD_EMAIL, modBackend, moderator,
   reviewedPhoto, secondsAgo, seed, storedPhoto, submitBatch,
 } from './helpers';
 
@@ -39,6 +40,14 @@ describe('submitting a photo', () => {
       const uid = `guest-${i}`;
       await assertSucceeds(submitBatch(db(guest(env, uid)), uid, `p${i}`, { frameVariant: frame }).commit());
     }
+  });
+
+  it('accepts a 24-character name and the "Hiện tên" choice', async () => {
+    await seed(env);
+    await assertSucceeds(submitBatch(db(guest(env, 'alice')), 'alice', 'p1', {
+      displayName: 'x'.repeat(24), showName: false,
+    }).commit());
+    expect(await readAs(paths.photo('p1'))).toMatchObject({ showName: false });
   });
 
   it('rejects when uploads are closed', async () => {
@@ -136,7 +145,8 @@ describe('submitting a photo', () => {
     await seed(env);
     const d = db(guest(env, 'alice'));
     await assertFails(submitBatch(d, 'alice', 'p1', { displayName: '' }).commit());
-    await assertFails(submitBatch(d, 'alice', 'p1', { displayName: 'x'.repeat(41) }).commit());
+    await assertFails(submitBatch(d, 'alice', 'p1', { displayName: 'x'.repeat(25) }).commit());
+    await assertFails(submitBatch(d, 'alice', 'p1', { showName: 'no' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: 'neon' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: '' }).commit());
     await assertFails(submitBatch(d, 'alice', 'p1', { frameVariant: 'F01-GDGOC' }).commit());
@@ -307,10 +317,20 @@ describe('restore and purge', () => {
 });
 
 describe('guest removes their own strip (S09)', () => {
-  it('removes a pending strip', async () => {
+  it('removes a pending strip, keeps it for the retention window, never restorable', async () => {
     await seed(env, { docs: { [paths.photo('p1')]: storedPhoto('alice', 'p1', 'pending') } });
     await assertSucceeds(removeMyPhoto(guestBackend(env, 'alice'), 'p1'));
-    expect(await readAs(paths.photo('p1'))).toMatchObject({ status: 'removed', reviewedBy: 'owner' });
+    const p = await readAs(paths.photo('p1'));
+    expect(p).toMatchObject({ status: 'removed', reviewedBy: 'owner' });
+    expect(p).not.toHaveProperty('purgedAt');
+    await assertFails(restore(modBackend(env), 'p1'));
+  });
+
+  it('a guest removal is purged once the retention window has passed', async () => {
+    await seed(env, {
+      docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'removed', 25 * 3600, { reviewedBy: 'owner' }) },
+    });
+    expect(await purgeExpired(modBackend(env))).toBe(1);
   });
 
   it('removes an approved strip and decrements the counter', async () => {
@@ -334,7 +354,7 @@ describe('guest removes their own strip (S09)', () => {
     const d = db(guest(env, 'bob'));
     const batch = writeBatch(d);
     batch.update(doc(d, paths.photo('p1')), {
-      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: 'owner', purgedAt: serverTimestamp(),
+      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: 'owner',
     });
     batch.set(doc(d, paths.stats), { approvedCount: increment(-1), lastOwnerRemoval: 'p1' }, { merge: true });
     await assertFails(batch.commit());
@@ -350,7 +370,7 @@ describe('guest removes their own strip (S09)', () => {
     const d = db(guest(env, 'alice'));
     await assertFails(setDoc(doc(d, paths.stats), { approvedCount: increment(-1), lastOwnerRemoval: 'p1' }, { merge: true }));
     await assertFails(updateDoc(doc(d, paths.photo('p1')), {
-      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: 'owner', purgedAt: serverTimestamp(),
+      status: 'removed', reviewedAt: serverTimestamp(), reviewedBy: 'owner',
     }));
   });
 });
@@ -455,5 +475,65 @@ describe('reading', () => {
 
   it("users cannot read other users' ledgers", async () => {
     await assertFails(getDoc(doc(db(guest(env, 'bob')), paths.user('alice'))));
+  });
+});
+
+describe('scheduled wipe (M02 "Xoá toàn bộ dữ liệu sau sự kiện")', () => {
+  const inHours = (h: number) => Timestamp.fromMillis(Date.now() + h * 3_600_000);
+  const schedule = (over: Record<string, unknown> = {}) => ({
+    at: inHours(-1), requestedBy: MOD_EMAIL, confirmedBy: ADMIN2_EMAIL, executedAt: null, ...over,
+  });
+
+  it('an admin schedules a future wipe; moderators and past dates are refused', async () => {
+    await seed(env);
+    await assertFails(scheduleDeletion(modBackend(env, MOD2_EMAIL), new Date(Date.now() + 86_400_000)));
+    await assertFails(scheduleDeletion(modBackend(env), new Date(Date.now() - 60_000)));
+    await assertSucceeds(scheduleDeletion(modBackend(env), new Date(Date.now() + 86_400_000)));
+    expect((await readAs(paths.config)).deletionSchedule).toMatchObject({ requestedBy: MOD_EMAIL, confirmedBy: null });
+  });
+
+  it('needs a second, different admin to confirm', async () => {
+    await seed(env, { config: { deletionSchedule: schedule({ at: inHours(24), confirmedBy: null }) } });
+    await assertFails(confirmDeletion(modBackend(env)));
+    await assertFails(confirmDeletion(modBackend(env, MOD2_EMAIL)));
+    await assertSucceeds(confirmDeletion(modBackend(env, ADMIN2_EMAIL)));
+  });
+
+  it('any admin can cancel before it runs', async () => {
+    await seed(env, { config: { deletionSchedule: schedule({ at: inHours(24) }) } });
+    await assertFails(cancelDeletion(modBackend(env, MOD2_EMAIL)));
+    await assertSucceeds(cancelDeletion(modBackend(env, ADMIN2_EMAIL)));
+  });
+
+  it('refuses deleting before the date or without confirmation', async () => {
+    for (const s of [schedule({ at: inHours(24) }), schedule({ confirmedBy: null })]) {
+      await seed(env, {
+        config: { deletionSchedule: s },
+        docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 60) },
+      });
+      await assertFails(deleteDoc(doc(db(moderator(env)), paths.photo('p1'))));
+      expect(await runDueDeletion(modBackend(env))).toBeNull();
+    }
+  });
+
+  it('when due and confirmed, an admin wipes photos, ledgers and the counter', async () => {
+    await seed(env, {
+      config: { deletionSchedule: schedule() },
+      docs: {
+        [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 60, { momentNo: 1 }),
+        [paths.photo('p2')]: storedPhoto('bob', 'p2', 'pending'),
+        [paths.user('alice')]: { lastSubmitAt: secondsAgo(100), lastPhotoId: 'p1', submitCount: 1 },
+        [paths.stats]: { approvedCount: 1, momentSeq: 1 },
+      },
+    });
+    await assertFails(deleteDoc(doc(db(moderator(env, MOD2_EMAIL)), paths.photo('p1'))));
+    expect(await runDueDeletion(modBackend(env))).toEqual({ photos: 2, users: 1 });
+    expect(await readAs(paths.photo('p1'))).toBeUndefined();
+    expect(await readAs(paths.stats)).toBeUndefined();
+    expect(await readAs(paths.moderator(MOD_EMAIL))).toBeDefined();
+    const c = await readAs(paths.config);
+    expect(c.uploadsOpen).toBe(true);
+    expect((c.deletionSchedule as { executedAt: unknown }).executedAt).toBeTruthy();
+    expect(await runDueDeletion(modBackend(env))).toBeNull();
   });
 });

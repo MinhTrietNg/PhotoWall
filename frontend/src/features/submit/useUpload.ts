@@ -11,6 +11,7 @@ import { useCallback, useRef, useState } from 'react';
 import { composeStrip } from '@/features/frames/compose';
 import { track } from '@/lib/analytics';
 import { SubmitFailure, useBackend, type SubmitErrorCode } from '@/lib/backend';
+import { useSession } from '@/state/SessionContext';
 import type { FrameTemplate } from '@/types/frame';
 import { attachPhotoId, getSubmission, setSubmission } from './submission';
 
@@ -34,6 +35,7 @@ const INITIAL: UploadState = {
 
 export function useUpload() {
   const backend = useBackend();
+  const { session } = useSession();
   const [state, setState] = useState<UploadState>(INITIAL);
   const running = useRef(false);
 
@@ -66,7 +68,7 @@ export function useUpload() {
         await backend.ensureGuest();
 
         const photoId = await backend.submitPhoto(
-          { image: blob, displayName, frameVariant: frame.id },
+          { image: blob, displayName, frameVariant: frame.id, showName: session.showName },
           (progress) => setState((s) => ({ ...s, progress })),
         );
         attachPhotoId(photoId);
@@ -79,7 +81,7 @@ export function useUpload() {
         running.current = false;
       }
     },
-    [backend, fail],
+    [backend, fail, session.showName],
   );
 
   /** E02 retry. Reuses the blob and the photo doc already created. */

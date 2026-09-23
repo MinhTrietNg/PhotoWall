@@ -25,7 +25,8 @@ export const LIMITS = {
   /** Upper bound an admin may set for `maxSubmitsPerUser`. */
   maxSubmitsPerUserCeiling: 20,
   maxUploadBytes: 2 * 1024 * 1024,
-  displayNameMaxLength: 40,
+  /** S02 "0/24". */
+  displayNameMaxLength: 24,
   maxRetentionHours: 168,
 } as const;
 
@@ -72,6 +73,19 @@ export interface AppConfig {
   frames?: FrameSetting[];
   /** "Làm mới màn lớn": the big screen reloads when this changes. */
   displayReloadAt?: Timestamp | null;
+  /** "Xoá toàn bộ dữ liệu sau sự kiện": needs a second admin to confirm. */
+  deletionSchedule?: DeletionSchedule | null;
+}
+
+export interface DeletionSchedule {
+  /** When the wipe may run. */
+  at: Timestamp;
+  /** Admin who scheduled it. */
+  requestedBy: string;
+  /** A different admin who confirmed it; null until then. */
+  confirmedBy: string | null;
+  /** Set once the wipe has run. */
+  executedAt: Timestamp | null;
 }
 
 export const CONFIG_DEFAULTS = {
@@ -86,6 +100,7 @@ export const CONFIG_DEFAULTS = {
   qrUrl: 'https://photowall-gdgocsgu.web.app/',
   frames: [] as FrameSetting[],
   displayReloadAt: null,
+  deletionSchedule: null,
 } satisfies Omit<Required<AppConfig>, 'uploadsOpen' | 'eventName'>;
 
 export type ResolvedConfig = Required<AppConfig>;
@@ -122,6 +137,8 @@ export interface UserDoc {
 export interface PhotoDoc {
   ownerUid: string;
   displayName: string;
+  /** S02 "Hiện tên trên màn hình lớn". Missing = true; false = big screen shows "Tân sinh viên". */
+  showName?: boolean;
   frameVariant: FrameVariant;
   status: PhotoStatus;
   storagePath: string;

@@ -8,9 +8,11 @@ import { getFirestore } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 import {
   AlreadyReviewedError, approve, connectEmulators, ensureGuest, isModerator, photoUrl, reject,
-  remove, removeMyPhoto, restore, setUploadsOpen, submitPhoto, SubmitError, watchApproved, watchPending, watchStats,
+  approveMany, countPhotos, listApprovedForExport, remove, removeMyPhoto, restore, setUploadsOpen,
+  submitPhoto, SubmitError, watchApproved, watchPending, watchStats,
   type ApprovedUpdate, type Backend,
 } from '../src/client';
+import { stripFileName, toParticipantsCsv } from '../src/export';
 import { EMULATOR_PROJECT, seedEmulator } from './seed-emulator';
 
 const MOD = 'mod@example.com';
@@ -135,13 +137,37 @@ await waitFor('big screen drops p1', () => updates.find((u) => u.removedIds.incl
 await waitFor('counter = 2', () => approvedCount === 2);
 step('remove → big screen drops photo, counter = 2');
 
-// Guest removes their own approved strip (S09): gone from the wall and deleted
+// Guest removes their own approved strip (S07): off the wall, kept 24h, never restorable
 await removeMyPhoto(phone3, p3);
 await waitFor('big screen drops p3', () => updates.find((u) => u.removedIds.includes(p3)));
 await waitFor('counter = 1', () => approvedCount === 1);
-await assert.rejects(photoUrl(phone3, p3));
 await assert.rejects(restore(mod1, p3));
-step('guest removes own strip → off the wall, file deleted, not restorable');
+step('guest removes own strip → off the wall, not restorable (file kept for the retention window)');
+
+// Bulk "Duyệt 5 ảnh", tab counts and the M02 export
+const batchIds: string[] = [];
+for (let i = 0; i < 5; i++) {
+  const phone = device(`bulk-${i}`);
+  await ensureGuest(phone);
+  batchIds.push(await submitPhoto(phone, {
+    image: strip(), displayName: `Bạn ${i}`, frameVariant: 'f03-isf', showName: i !== 0,
+  }));
+}
+await waitFor('5 pending', () => batchIds.every((id) => pending.includes(id)));
+const bulkResult = await approveMany(mod1, batchIds);
+assert.deepEqual(bulkResult, { ok: batchIds, conflicts: [], failed: [] });
+await waitFor('counter = 6', () => approvedCount === 6);
+assert.equal(await countPhotos(mod1, ['approved']), 6);
+assert.equal(await countPhotos(mod1, ['rejected', 'removed']), 2); // p1 removed by a moderator, p3 by its owner
+const exportRows = await listApprovedForExport(mod1);
+assert.equal(exportRows.length, 6);
+assert.deepEqual(exportRows.map((r) => r.momentNo), [...exportRows.map((r) => r.momentNo)].sort((a, c) => a! - c!));
+assert.equal(exportRows.find((r) => r.id === batchIds[0])!.showName, false);
+const csv = toParticipantsCsv(exportRows);
+assert.ok(csv.startsWith('\uFEFFKhoảnh khắc,Tên'));
+assert.equal(csv.trim().split('\r\n').length, 7);
+assert.match(stripFileName(exportRows[0]), /^\d{4}-[a-z0-9-]+\.jpg$/);
+step('approveMany 5 → no conflicts; counts and export match the wall; "Hiện tên" off is stored');
 
 // Close uploads
 await setUploadsOpen(mod1, false);

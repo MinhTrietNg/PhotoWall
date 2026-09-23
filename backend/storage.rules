@@ -14,6 +14,19 @@ service firebase.storage {
         && firestore.exists(/databases/(default)/documents/moderators/$(request.auth.token.email));
     }
 
+    function isAdmin() {
+      return isModerator()
+        && firestore.get(/databases/(default)/documents/moderators/$(request.auth.token.email)).data
+          .get('role', 'moderator') == 'admin';
+    }
+
+    // Mirrors wipeDue() in firestore.rules: confirmed by two admins and due.
+    function wipeDue() {
+      let s = firestore.get(/databases/(default)/documents/config/app).data.get('deletionSchedule', null);
+      return isAdmin() && s != null && s.confirmedBy != null && s.executedAt == null
+        && request.time >= s.at;
+    }
+
     function retention() {
       return duration.value(
         firestore.get(/databases/(default)/documents/config/app).data.get('removedRetentionHours', 24), 'h');
@@ -33,21 +46,17 @@ service firebase.storage {
           || (request.auth != null && photo.ownerUid == request.auth.uid);
       }
 
-      // Removed/rejected strips are kept for the retention window so moderators can
-      // restore them; a guest's own removal is final and deletes at once.
+      // Removed/rejected strips (including a guest's own removal) are kept for the
+      // retention window, then purged by a moderator's console.
       function canDelete(photo) {
-        return (isModerator()
-            && photo.status in ['rejected', 'removed']
-            && request.time >= photo.reviewedAt + retention())
-          || (request.auth != null
-            && photo.ownerUid == request.auth.uid
-            && photo.status == 'removed'
-            && photo.reviewedBy == 'owner');
+        return isModerator()
+          && photo.status in ['rejected', 'removed']
+          && request.time >= photo.reviewedAt + retention();
       }
 
       allow create, update: if canUpload(photoDoc(photoId));
       allow read: if canRead(photoDoc(photoId)) || isModerator();
-      allow delete: if canDelete(photoDoc(photoId));
+      allow delete: if wipeDue() || canDelete(photoDoc(photoId));
     }
   }
 }

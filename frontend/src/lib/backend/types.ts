@@ -25,12 +25,63 @@ export interface Photo {
   reviewedBy?: string;
   /** "Khoảnh khắc #N", set when the photo is first approved. */
   momentNo?: number;
+  /** S02 "Hiện tên trên màn hình lớn". false = big screen shows "Tân sinh viên". */
+  showName: boolean;
+  /** Why a moderator removed it (M01 remove dialog). Never shown to the guest. */
+  reviewReason?: ReviewReason;
+  /** Set once the stored strip was deleted — no longer restorable or viewable. */
+  purgedAtMs?: number;
 }
 
+/** M01 remove dialog: Không phù hợp · Trùng / lỗi ảnh · Người gửi yêu cầu. */
+export type ReviewReason = 'inappropriate' | 'duplicate' | 'guest-request';
+
+export interface FrameSetting {
+  id: string;
+  enabled: boolean;
+}
+
+/** M02 "Xoá toàn bộ dữ liệu sau sự kiện · cần 2 Admin xác nhận". */
+export interface DeletionSchedule {
+  atMs: number;
+  requestedBy: string;
+  confirmedBy: string | null;
+  executedAtMs: number | null;
+}
+
+/** `config/app` — M02 settings. Fields other than the first two are filled with defaults. */
 export interface AppConfig {
   uploadsOpen: boolean;
   eventName: string;
+  /** When uploadsOpen last flipped — E03 "Đã đóng lúc 17:30". */
+  uploadsChangedAtMs?: number | null;
+  /** "Tự động đóng lúc". */
+  closesAtMs?: number | null;
+  /** "Giới hạn mỗi phiên" (1–20). */
+  maxSubmitsPerUser?: number;
+  /** "Cho phép chọn ảnh từ thư viện". */
+  allowGallery?: boolean;
+  /** "Giữ ảnh đã gỡ" in hours (1–168). */
+  removedRetentionHours?: number;
+  /** "Tốc độ trượt" px/s; null = the default 70 s per loop. */
+  marqueePxPerSec?: number | null;
+  /** "Hiện tên người gửi" on the big screen. */
+  showNames?: boolean;
+  /** "Card 'Vừa lên Wall'". */
+  arrivalCard?: boolean;
+  /** "Link trong mã QR". */
+  qrUrl?: string;
+  /** "Trạng thái khung": order and on/off; empty = frames.json as is. */
+  frames?: FrameSetting[];
+  /** "Làm mới màn lớn": big screens reload when this changes. */
+  displayReloadAtMs?: number | null;
+  deletionSchedule?: DeletionSchedule | null;
 }
+
+/** Fields an admin can write from M02 (the rest are stamped by the backend). */
+export type ConfigPatch = Partial<
+  Omit<AppConfig, 'uploadsChangedAtMs' | 'displayReloadAtMs' | 'deletionSchedule'>
+>;
 
 export type SubmitErrorCode =
   | 'invalid-input'
@@ -63,6 +114,8 @@ export interface SubmitInput {
   image: Blob;
   displayName: string;
   frameVariant: string;
+  /** S02 "Hiện tên trên màn hình lớn". */
+  showName?: boolean;
 }
 
 export type Unsubscribe = () => void;
@@ -71,6 +124,35 @@ export type Unsubscribe = () => void;
 
 export interface ModeratorProfile {
   email: string;
+}
+
+/**
+ * Board 07 · Phân quyền. `moderator` (AWS SC · Đoàn hội): duyệt, gỡ, khôi phục.
+ * `admin` (GDGoC): additionally M02 — uploads switch, settings, frames, moderators,
+ * export and the scheduled wipe. The rules enforce this; the UI should hide what
+ * a role cannot do.
+ */
+export type ModeratorRole = 'admin' | 'moderator';
+
+/** An allowlist entry — "Lan Phạm · lan@gdgoc.dev · Admin · GDGoC". */
+export interface ModeratorAccount {
+  email: string;
+  role: ModeratorRole;
+  name?: string;
+  org?: string;
+}
+
+/** Result of a bulk action: which ids succeeded, lost to another moderator, or failed. */
+export interface BulkResult {
+  ok: string[];
+  conflicts: string[];
+  failed: string[];
+}
+
+/** One strip for "Tải toàn bộ dải ảnh (.zip)": its file name inside the ZIP. */
+export interface ZipEntry {
+  photoId: string;
+  fileName: string;
 }
 
 /**
@@ -94,22 +176,62 @@ export interface ModeratorApi {
   signOut(): Promise<void>;
   /** Whether the signed-in user is on the moderators allowlist. */
   isModerator(): Promise<boolean>;
+  /** The signed-in user's allowlist entry (role, name, org), or null if not allowed. */
+  getMyModerator(): Promise<ModeratorAccount | null>;
 
   /** Photos for one queue tab. `pending` is oldest-submitted first; the others newest-reviewed first. */
   watchTab(tab: ModTab, cb: (photos: Photo[]) => void, max?: number): Unsubscribe;
+  /** Exact tab size for the badge — watchTab lists are capped at `max`. */
+  countTab(tab: ModTab): Promise<number>;
 
   approve(photoId: string): Promise<void>;
-  /** `pending -> rejected`. */
-  reject(photoId: string): Promise<void>;
-  /** `approved -> removed`. */
-  remove(photoId: string): Promise<void>;
+  /** `pending -> rejected`. Kept `removedRetentionHours`, restorable. */
+  reject(photoId: string, reason?: ReviewReason): Promise<void>;
+  /** `approved -> removed`. Kept `removedRetentionHours`, restorable. */
+  remove(photoId: string, reason?: ReviewReason): Promise<void>;
+  /** "Khôi phục" on the Đã gỡ tab. Refused after the retention window or for a guest's own removal. */
+  restore(photoId: string): Promise<void>;
+  /** Bulk bar "Duyệt N ảnh" / "Gỡ N ảnh" — one at a time, never in parallel. */
+  approveMany(photoIds: string[]): Promise<BulkResult>;
+  rejectMany(photoIds: string[], reason?: ReviewReason): Promise<BulkResult>;
+  removeMany(photoIds: string[], reason?: ReviewReason): Promise<BulkResult>;
+  /** Deletes strips past the retention window. Call once when the console opens. */
+  purgeExpired(): Promise<number>;
 
   /** Download URL for a photo the caller may read (any status, moderators can read all). */
   photoUrl(photoId: string): Promise<string>;
 
   watchConfig(cb: (config: AppConfig | null) => void): Unsubscribe;
+  /** Admin only — the rules refuse moderators. */
   setUploadsOpen(open: boolean): Promise<void>;
+  /** Admin only. */
   setEventName(name: string): Promise<void>;
+  /** Admin only. M02 "Lưu": one write for every changed field. */
+  updateConfig(patch: ConfigPatch): Promise<void>;
+  /** Admin only. "Làm mới màn lớn". */
+  requestDisplayReload(): Promise<void>;
+
+  /** M02 "Người kiểm duyệt". Readable by any moderator. */
+  watchModerators(cb: (list: ModeratorAccount[]) => void): Unsubscribe;
+  /** Admin only. "Thêm" / change role. */
+  saveModerator(email: string, data: { role: ModeratorRole; name?: string; org?: string }): Promise<void>;
+  /** Admin only; an admin cannot remove themselves. */
+  deleteModerator(email: string): Promise<void>;
+
+  /** Admin. "Xuất danh sách tham gia (.csv)" — CSV text (UTF-8 BOM), wall photos only. */
+  exportParticipantsCsv(): Promise<string>;
+  /** Admin. "Tải toàn bộ dải ảnh (.zip)" — wall photos in moment order with their ZIP file names. */
+  listZipEntries(): Promise<ZipEntry[]>;
+  /** One strip's bytes for the ZIP. */
+  fetchStripBlob(photoId: string): Promise<Blob>;
+
+  /** Admin. "Lên lịch xoá" — a second admin must confirm. */
+  scheduleDeletion(at: Date): Promise<void>;
+  /** Admin other than the one who scheduled it. */
+  confirmDeletion(): Promise<void>;
+  cancelDeletion(): Promise<void>;
+  /** Admin. Runs a confirmed, due wipe (call when the console opens); null if nothing ran. */
+  runDueDeletion(): Promise<{ photos: number; users: number } | null>;
 }
 
 export interface GuestApi {
@@ -146,7 +268,8 @@ export interface GuestApi {
   photoUrl(photoId: string): Promise<string>;
 
   /**
-   * "Gỡ dải ảnh này" on S07 / S07b. Final: off the big screen and deleted, not restorable.
+   * "Gỡ dải ảnh này" on S07 / S07b. Final: off the big screen at once, never restorable
+   * (the strip is kept 24 h for the organisers, then deleted).
    * Only while the photo is pending or approved.
    */
   removeMyPhoto(photoId: string): Promise<void>;

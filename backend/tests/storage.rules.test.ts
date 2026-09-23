@@ -2,7 +2,8 @@ import { afterAll, beforeAll, beforeEach, describe, it } from 'vitest';
 import { assertFails, assertSucceeds, type RulesTestEnvironment } from '@firebase/rules-unit-testing';
 import { deleteObject, getBytes, ref, uploadBytes, type FirebaseStorage } from 'firebase/storage';
 import { LIMITS, paths } from '../src/schema';
-import { createEnv, guest, moderator, reviewedPhoto, seed, storedPhoto } from './helpers';
+import { Timestamp } from 'firebase/firestore';
+import { ADMIN2_EMAIL, createEnv, guest, MOD2_EMAIL, MOD_EMAIL, moderator, reviewedPhoto, seed, storedPhoto } from './helpers';
 
 let env: RulesTestEnvironment;
 const st = (ctx: { storage(): unknown }) => ctx.storage() as FirebaseStorage;
@@ -95,12 +96,22 @@ describe('reading and deleting', () => {
     await assertFails(deleteObject(ref(st(moderator(env)), paths.photoObject('p1'))));
   });
 
-  it('a guest deletes their own strip right after removing it', async () => {
+  it('a guest cannot delete the file even after removing their own strip', async () => {
     await seed(env, {
       docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'removed', 1, { reviewedBy: 'owner' }) },
     });
     await seedObject();
-    await assertFails(deleteObject(ref(st(guest(env, 'bob')), paths.photoObject('p1'))));
-    await assertSucceeds(deleteObject(ref(st(guest(env, 'alice')), paths.photoObject('p1'))));
+    await assertFails(deleteObject(ref(st(guest(env, 'alice')), paths.photoObject('p1'))));
+  });
+
+  it('an admin deletes any strip during a confirmed, due wipe', async () => {
+    const wipe = { at: Timestamp.fromMillis(Date.now() - 60_000), requestedBy: MOD_EMAIL, confirmedBy: ADMIN2_EMAIL, executedAt: null };
+    await seed(env, {
+      config: { deletionSchedule: wipe },
+      docs: { [paths.photo('p1')]: reviewedPhoto('alice', 'p1', 'approved', 60) },
+    });
+    await seedObject();
+    await assertFails(deleteObject(ref(st(moderator(env, MOD2_EMAIL)), paths.photoObject('p1'))));
+    await assertSucceeds(deleteObject(ref(st(moderator(env)), paths.photoObject('p1'))));
   });
 });

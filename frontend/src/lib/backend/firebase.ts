@@ -11,33 +11,56 @@
  *  - App Check blocks localhost: use the emulator, or register a debug token.
  */
 import { GoogleAuthProvider, onAuthStateChanged, signInWithPopup, signOut as authSignOut } from 'firebase/auth';
+import { Timestamp } from 'firebase/firestore';
 import {
   AlreadyReviewedError,
   SubmitError,
   approve as clientApprove,
+  approveMany as clientApproveMany,
+  cancelDeletion as clientCancelDeletion,
+  confirmDeletion as clientConfirmDeletion,
+  countPhotos as clientCountPhotos,
+  deleteModerator as clientDeleteModerator,
   ensureGuest as clientEnsureGuest,
+  fetchStripBlob as clientFetchStripBlob,
+  getMyModerator as clientGetMyModerator,
   isModerator as clientIsModerator,
+  listApprovedForExport as clientListApprovedForExport,
   photoUrl as clientPhotoUrl,
+  purgeExpired as clientPurgeExpired,
   reject as clientReject,
+  rejectMany as clientRejectMany,
   remove as clientRemove,
+  removeMany as clientRemoveMany,
   removeMyPhoto as clientRemoveMyPhoto,
+  requestDisplayReload as clientRequestDisplayReload,
+  restore as clientRestore,
   resumeSubmission as clientResumeSubmission,
+  runDueDeletion as clientRunDueDeletion,
+  saveModerator as clientSaveModerator,
+  scheduleDeletion as clientScheduleDeletion,
   setEventName as clientSetEventName,
   setUploadsOpen as clientSetUploadsOpen,
   submitPhoto as clientSubmitPhoto,
+  updateConfig as clientUpdateConfig,
   watchByStatus as clientWatchByStatus,
   watchConfig as clientWatchConfig,
+  watchModerators as clientWatchModerators,
   watchMyPhotos as clientWatchMyPhotos,
   watchPending as clientWatchPending,
   watchStats as clientWatchStats,
   type Backend,
   type Photo as ClientPhoto,
 } from '@backend/client';
+import { stripFileName, toParticipantsCsv } from '@backend/export';
 import { initBackend } from '@backend/init';
+import type { ResolvedConfig } from '@backend/schema';
 
 import {
   ReviewConflict,
   SubmitFailure,
+  type AppConfig,
+  type ConfigPatch,
   type GuestApi,
   type ModeratorApi,
   type ModTab,
@@ -47,7 +70,7 @@ import {
 } from './types';
 
 /** Firestore Timestamp | undefined -> epoch ms. */
-function ms(value: { toMillis?: () => number } | undefined): number | undefined {
+function ms(value: { toMillis?: () => number } | null | undefined): number | undefined {
   return typeof value?.toMillis === 'function' ? value.toMillis() : undefined;
 }
 
@@ -64,6 +87,48 @@ function toPhoto(p: ClientPhoto): Photo {
     reviewedAtMs: ms(p.reviewedAt),
     reviewedBy: p.reviewedBy,
     momentNo: p.momentNo,
+    showName: p.showName !== false,
+    reviewReason: p.reviewReason,
+    purgedAtMs: ms(p.purgedAt),
+  };
+}
+
+function toConfig(c: ResolvedConfig | null): AppConfig | null {
+  if (!c) return null;
+  const s = c.deletionSchedule;
+  return {
+    uploadsOpen: c.uploadsOpen,
+    eventName: c.eventName,
+    uploadsChangedAtMs: ms(c.uploadsChangedAt) ?? null,
+    closesAtMs: ms(c.closesAt) ?? null,
+    maxSubmitsPerUser: c.maxSubmitsPerUser,
+    allowGallery: c.allowGallery,
+    removedRetentionHours: c.removedRetentionHours,
+    marqueePxPerSec: c.marqueePxPerSec,
+    showNames: c.showNames,
+    arrivalCard: c.arrivalCard,
+    qrUrl: c.qrUrl,
+    frames: c.frames,
+    displayReloadAtMs: ms(c.displayReloadAt) ?? null,
+    deletionSchedule: s
+      ? {
+          atMs: s.at.toMillis(),
+          requestedBy: s.requestedBy,
+          confirmedBy: s.confirmedBy,
+          executedAtMs: ms(s.executedAt) ?? null,
+        }
+      : null,
+  };
+}
+
+/** The port speaks ms; the backend stores Timestamps. */
+function fromPatch(patch: ConfigPatch) {
+  const { closesAtMs, ...rest } = patch;
+  return {
+    ...rest,
+    ...(closesAtMs !== undefined
+      ? { closesAt: closesAtMs === null ? null : Timestamp.fromMillis(closesAtMs) }
+      : {}),
   };
 }
 
@@ -78,6 +143,20 @@ function asFailure(e: unknown): SubmitFailure {
     );
   }
   return new SubmitFailure('unknown', undefined, undefined, e);
+}
+
+/** AlreadyReviewedError -> the port's ReviewConflict. */
+async function reviewing(photoId: string, run: () => Promise<void>) {
+  try {
+    await run();
+  } catch (e) {
+    if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
+    throw e;
+  }
+}
+
+function tabStatuses(tab: ModTab) {
+  return tab === 'pending' ? (['pending'] as const) : tab === 'approved' ? (['approved'] as const) : (['rejected', 'removed'] as const);
 }
 
 export function createFirebaseBackend(): GuestApi {
@@ -98,6 +177,7 @@ export function createFirebaseBackend(): GuestApi {
           image: input.image,
           displayName: input.displayName,
           frameVariant: input.frameVariant,
+          showName: input.showName,
         });
       } catch (e) {
         throw asFailure(e);
@@ -115,7 +195,7 @@ export function createFirebaseBackend(): GuestApi {
 
     watchMyPhotos: (cb) => clientWatchMyPhotos(backend, (photos) => cb(photos.map(toPhoto))),
 
-    watchConfig: (cb) => clientWatchConfig(backend, cb),
+    watchConfig: (cb) => clientWatchConfig(backend, (c) => cb(toConfig(c))),
 
     watchStats: (cb) => clientWatchStats(backend, cb),
 
@@ -145,45 +225,60 @@ export function createFirebaseModeratorBackend(): ModeratorApi {
 
     isModerator: () => clientIsModerator(backend),
 
+    getMyModerator: () => clientGetMyModerator(backend),
+
     watchTab(tab: ModTab, cb, max = 200) {
       if (tab === 'pending') return clientWatchPending(backend, (photos) => cb(photos.map(toPhoto)));
-      const statuses = tab === 'approved' ? (['approved'] as const) : (['rejected', 'removed'] as const);
-      return clientWatchByStatus(backend, [...statuses], (photos) => cb(photos.map(toPhoto)), max);
+      return clientWatchByStatus(backend, [...tabStatuses(tab)], (photos) => cb(photos.map(toPhoto)), max);
     },
 
-    async approve(photoId) {
-      try {
-        await clientApprove(backend, photoId);
-      } catch (e) {
-        if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
-        throw e;
-      }
-    },
+    countTab: (tab) => clientCountPhotos(backend, [...tabStatuses(tab)]),
 
-    async reject(photoId) {
-      try {
-        await clientReject(backend, photoId);
-      } catch (e) {
-        if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
-        throw e;
-      }
-    },
+    approve: (photoId) => reviewing(photoId, () => clientApprove(backend, photoId)),
+    reject: (photoId, reason) => reviewing(photoId, () => clientReject(backend, photoId, reason)),
+    remove: (photoId, reason) => reviewing(photoId, () => clientRemove(backend, photoId, reason)),
+    restore: (photoId) => reviewing(photoId, () => clientRestore(backend, photoId)),
 
-    async remove(photoId) {
-      try {
-        await clientRemove(backend, photoId);
-      } catch (e) {
-        if (e instanceof AlreadyReviewedError) throw new ReviewConflict(photoId);
-        throw e;
-      }
-    },
+    approveMany: (ids) => clientApproveMany(backend, ids),
+    rejectMany: (ids, reason) => clientRejectMany(backend, ids, reason),
+    removeMany: (ids, reason) => clientRemoveMany(backend, ids, reason),
+
+    purgeExpired: () => clientPurgeExpired(backend),
 
     photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
 
-    watchConfig: (cb) => clientWatchConfig(backend, cb),
+    watchConfig: (cb) => clientWatchConfig(backend, (c) => cb(toConfig(c))),
 
     setUploadsOpen: (open) => clientSetUploadsOpen(backend, open),
 
     setEventName: (name) => clientSetEventName(backend, name),
+
+    updateConfig: (patch) => clientUpdateConfig(backend, fromPatch(patch)),
+
+    requestDisplayReload: () => clientRequestDisplayReload(backend),
+
+    watchModerators: (cb) =>
+      clientWatchModerators(backend, (list) =>
+        cb(list.map(({ email, role, name, org }) => ({ email, role, name, org }))),
+      ),
+
+    saveModerator: (email, data) => clientSaveModerator(backend, email, data),
+
+    deleteModerator: (email) => clientDeleteModerator(backend, email),
+
+    exportParticipantsCsv: async () => toParticipantsCsv(await clientListApprovedForExport(backend)),
+
+    listZipEntries: async () =>
+      (await clientListApprovedForExport(backend)).map((row) => ({ photoId: row.id, fileName: stripFileName(row) })),
+
+    fetchStripBlob: (photoId) => clientFetchStripBlob(backend, photoId),
+
+    scheduleDeletion: (at) => clientScheduleDeletion(backend, at),
+
+    confirmDeletion: () => clientConfirmDeletion(backend),
+
+    cancelDeletion: () => clientCancelDeletion(backend),
+
+    runDueDeletion: () => clientRunDueDeletion(backend),
   };
 }

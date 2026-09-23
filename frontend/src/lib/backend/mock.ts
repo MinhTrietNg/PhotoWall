@@ -8,15 +8,19 @@
  *
  * Selected with VITE_BACKEND=mock (the default in development).
  */
+import { stripFileName } from '@backend/export';
 import {
   ReviewConflict,
   SubmitFailure,
   type AppConfig,
+  type BulkResult,
   type GuestApi,
+  type ModeratorAccount,
   type ModeratorApi,
   type ModTab,
   type Photo,
   type PhotoStatus,
+  type ReviewReason,
   type SubmitInput,
   type Unsubscribe,
 } from './types';
@@ -25,7 +29,7 @@ import {
 const SUBMIT_INTERVAL_SECONDS = 60;
 const MAX_SUBMITS_PER_USER = 3; // config.maxSubmitsPerUser default
 const MAX_UPLOAD_BYTES = 2 * 1024 * 1024;
-const DISPLAY_NAME_MAX = 40;
+const DISPLAY_NAME_MAX = 24;
 
 /** How long a mock photo sits in `pending` before it auto-approves. */
 const MOCK_REVIEW_MS = 6000;
@@ -117,6 +121,7 @@ export function createMockBackend(): GuestApi {
         id,
         ownerUid: store.uid ?? 'mock',
         displayName,
+        showName: input.showName !== false,
         frameVariant: input.frameVariant,
         status: 'uploading',
         storagePath: `photos/${id}/strip.jpg`,
@@ -198,12 +203,15 @@ export function createMockBackend(): GuestApi {
 
 // ------------------------------------------------------------ moderators
 
-const MODERATOR_ALLOWLIST = new Set([
-  'lan@gdgoc.dev',
-  'huy@gdgoc.dev',
-  'mai@aws-sc.vn',
-  'duc@doanhoi.sgu',
-]);
+/** Board M02 "Người kiểm duyệt". GDGoC are admins; AWS SC and Đoàn hội moderate. */
+const mockModerators: ModeratorAccount[] = [
+  { email: 'lan@gdgoc.dev', role: 'admin', name: 'Lan Phạm', org: 'GDGoC' },
+  { email: 'huy@gdgoc.dev', role: 'admin', name: 'Huy Trần', org: 'GDGoC' },
+  { email: 'mai@aws-sc.vn', role: 'moderator', name: 'Mai Lê', org: 'AWS SC' },
+  { email: 'duc@doanhoi.sgu', role: 'moderator', name: 'Đức Nguyễn', org: 'Đoàn hội' },
+];
+
+const RETENTION_MS = 24 * 3_600_000;
 
 /** Sample queue content so M01/M02 are demoable with no emulator — DESIGN-D21. */
 function seedModerationDemo() {
@@ -224,6 +232,7 @@ function seedModerationDemo() {
       id,
       ownerUid: `mock-guest-${id}`,
       displayName,
+      showName: true,
       frameVariant,
       status,
       storagePath: `photos/${id}/strip.jpg`,
@@ -235,10 +244,39 @@ function seedModerationDemo() {
   }
 }
 
-function requireReviewable(photoId: string, from: PhotoStatus): Photo {
+function requireReviewable(photoId: string, ...from: PhotoStatus[]): Photo {
   const photo = store.photos.find((p) => p.id === photoId);
-  if (!photo || photo.status !== from) throw new ReviewConflict(photoId);
+  if (!photo || !from.includes(photo.status)) throw new ReviewConflict(photoId);
   return photo;
+}
+
+function me(): ModeratorAccount | null {
+  return mockModerators.find((m) => m.email === store.moderatorEmail) ?? null;
+}
+
+/** The mock enforces the same role split as the rules, so the UI can be tried as either role. */
+function requireAdmin() {
+  if (me()?.role !== 'admin') throw new Error('permission-denied: admin only');
+}
+
+function markReviewed(photo: Photo, status: PhotoStatus, reason?: ReviewReason) {
+  photo.status = status;
+  photo.reviewedAtMs = Date.now();
+  photo.reviewedBy = store.moderatorEmail ?? undefined;
+  photo.reviewReason = reason;
+}
+
+async function bulk(ids: string[], run: (id: string) => Promise<void>): Promise<BulkResult> {
+  const result: BulkResult = { ok: [], conflicts: [], failed: [] };
+  for (const id of ids) {
+    try {
+      await run(id);
+      result.ok.push(id);
+    } catch (e) {
+      (e instanceof ReviewConflict ? result.conflicts : result.failed).push(id);
+    }
+  }
+  return result;
 }
 
 function tabStatuses(tab: ModTab): PhotoStatus[] {
@@ -256,8 +294,14 @@ export function createMockModeratorBackend(): ModeratorApi {
     async signIn() {
       await wait(300);
       // ?mockFail=denied reproduces the M00 "not on the allowlist" error with no real Google account.
-      const denied = new URLSearchParams(location.search).get('mockFail') === 'denied';
-      store.moderatorEmail = denied ? 'khach@gmail.com' : 'lan@gdgoc.dev';
+      // ?mockRole=moderator signs in as a moderator (no M02) instead of an admin.
+      const params = new URLSearchParams(location.search);
+      store.moderatorEmail =
+        params.get('mockFail') === 'denied'
+          ? 'khach@gmail.com'
+          : params.get('mockRole') === 'moderator'
+            ? 'mai@aws-sc.vn'
+            : 'lan@gdgoc.dev';
       emit();
     },
 
@@ -267,7 +311,16 @@ export function createMockModeratorBackend(): ModeratorApi {
     },
 
     async isModerator() {
-      return store.moderatorEmail !== null && MODERATOR_ALLOWLIST.has(store.moderatorEmail);
+      return me() !== null;
+    },
+
+    async getMyModerator() {
+      return me();
+    },
+
+    async countTab(tab) {
+      const statuses = tabStatuses(tab);
+      return store.photos.filter((p) => statuses.includes(p.status)).length;
     },
 
     watchTab(tab, cb, max = 200) {
@@ -288,30 +341,60 @@ export function createMockModeratorBackend(): ModeratorApi {
     async approve(photoId) {
       await wait(200);
       const photo = requireReviewable(photoId, 'pending');
-      photo.status = 'approved';
-      photo.reviewedAtMs = Date.now();
-      photo.reviewedBy = store.moderatorEmail ?? undefined;
+      markReviewed(photo, 'approved');
       store.approvedCount++;
+      photo.momentNo ??= store.approvedCount;
       emit();
     },
 
-    async reject(photoId) {
+    async reject(photoId, reason) {
       await wait(200);
-      const photo = requireReviewable(photoId, 'pending');
-      photo.status = 'rejected';
-      photo.reviewedAtMs = Date.now();
-      photo.reviewedBy = store.moderatorEmail ?? undefined;
+      markReviewed(requireReviewable(photoId, 'pending'), 'rejected', reason);
       emit();
     },
 
-    async remove(photoId) {
+    async remove(photoId, reason) {
       await wait(200);
-      const photo = requireReviewable(photoId, 'approved');
-      photo.status = 'removed';
-      photo.reviewedAtMs = Date.now();
-      photo.reviewedBy = store.moderatorEmail ?? undefined;
+      markReviewed(requireReviewable(photoId, 'approved'), 'removed', reason);
       store.approvedCount--;
       emit();
+    },
+
+    async restore(photoId) {
+      await wait(200);
+      const photo = requireReviewable(photoId, 'rejected', 'removed');
+      if (photo.reviewedBy === 'owner' || photo.purgedAtMs || Date.now() - (photo.reviewedAtMs ?? 0) > RETENTION_MS) {
+        throw new Error('permission-denied: not restorable');
+      }
+      markReviewed(photo, 'approved');
+      store.approvedCount++;
+      photo.momentNo ??= store.approvedCount;
+      emit();
+    },
+
+    approveMany(ids) {
+      return bulk(ids, (id) => this.approve(id));
+    },
+
+    rejectMany(ids, reason) {
+      return bulk(ids, (id) => this.reject(id, reason));
+    },
+
+    removeMany(ids, reason) {
+      return bulk(ids, (id) => this.remove(id, reason));
+    },
+
+    async purgeExpired() {
+      let n = 0;
+      for (const p of store.photos) {
+        if ((p.status === 'rejected' || p.status === 'removed') && !p.purgedAtMs
+          && Date.now() - (p.reviewedAtMs ?? 0) > RETENTION_MS) {
+          p.purgedAtMs = Date.now();
+          n++;
+        }
+      }
+      if (n) emit();
+      return n;
     },
 
     async photoUrl(photoId) {
@@ -329,13 +412,105 @@ export function createMockModeratorBackend(): ModeratorApi {
     },
 
     async setUploadsOpen(open) {
-      store.config = { ...store.config, uploadsOpen: open };
+      requireAdmin();
+      store.config = { ...store.config, uploadsOpen: open, uploadsChangedAtMs: Date.now() };
       emit();
     },
 
     async setEventName(eventName) {
+      requireAdmin();
       store.config = { ...store.config, eventName };
       emit();
+    },
+
+    async updateConfig(patch) {
+      requireAdmin();
+      const flipped = patch.uploadsOpen !== undefined && patch.uploadsOpen !== store.config.uploadsOpen;
+      store.config = { ...store.config, ...patch, ...(flipped ? { uploadsChangedAtMs: Date.now() } : {}) };
+      emit();
+    },
+
+    async requestDisplayReload() {
+      requireAdmin();
+      store.config = { ...store.config, displayReloadAtMs: Date.now() };
+      emit();
+    },
+
+    watchModerators(cb) {
+      return subscribe(() => cb([...mockModerators]));
+    },
+
+    async saveModerator(email, data) {
+      requireAdmin();
+      const e = email.trim().toLowerCase();
+      const i = mockModerators.findIndex((m) => m.email === e);
+      const next = { email: e, ...data };
+      if (i >= 0) mockModerators[i] = next;
+      else mockModerators.push(next);
+      emit();
+    },
+
+    async deleteModerator(email) {
+      requireAdmin();
+      const e = email.trim().toLowerCase();
+      if (e === store.moderatorEmail) throw new Error('permission-denied: cannot remove yourself');
+      const i = mockModerators.findIndex((m) => m.email === e);
+      if (i >= 0) mockModerators.splice(i, 1);
+      emit();
+    },
+
+    async exportParticipantsCsv() {
+      requireAdmin();
+      const rows = store.photos.filter((p) => p.status === 'approved');
+      const lines = rows.map((p) => [p.momentNo ?? '', p.displayName, p.showName ? 'có' : 'không', p.frameVariant].join(','));
+      return `\uFEFFKhoảnh khắc,Tên,Hiện tên,Khung\r\n${lines.join('\r\n')}\r\n`;
+    },
+
+    async listZipEntries() {
+      requireAdmin();
+      return store.photos
+        .filter((p) => p.status === 'approved')
+        .map((p) => ({ photoId: p.id, fileName: stripFileName(p) }));
+    },
+
+    async fetchStripBlob(photoId) {
+      const blob = store.blobs.get(photoId);
+      if (!blob) throw new Error('not found');
+      return blob;
+    },
+
+    async scheduleDeletion(at) {
+      requireAdmin();
+      store.config = {
+        ...store.config,
+        deletionSchedule: { atMs: at.getTime(), requestedBy: store.moderatorEmail!, confirmedBy: null, executedAtMs: null },
+      };
+      emit();
+    },
+
+    async confirmDeletion() {
+      requireAdmin();
+      const s = store.config.deletionSchedule;
+      if (!s || s.requestedBy === store.moderatorEmail) throw new Error('permission-denied: needs a second admin');
+      store.config = { ...store.config, deletionSchedule: { ...s, confirmedBy: store.moderatorEmail } };
+      emit();
+    },
+
+    async cancelDeletion() {
+      requireAdmin();
+      store.config = { ...store.config, deletionSchedule: null };
+      emit();
+    },
+
+    async runDueDeletion() {
+      const s = store.config.deletionSchedule;
+      if (me()?.role !== 'admin' || !s?.confirmedBy || s.executedAtMs || Date.now() < s.atMs) return null;
+      const photos = store.photos.length;
+      store.photos = [];
+      store.approvedCount = 0;
+      store.config = { ...store.config, deletionSchedule: { ...s, executedAtMs: Date.now() } };
+      emit();
+      return { photos, users: 0 };
     },
   };
 }
