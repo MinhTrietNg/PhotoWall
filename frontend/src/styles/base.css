@@ -317,6 +317,11 @@ a {
 .input::placeholder {
   color: var(--pw-ink-3);
 }
+/*
+ * The field's own focus state, as S02 draws it, and its only one. A text field
+ * matches :focus-visible on a tap as well as from the keyboard, so leaving it
+ * in the ring rule below stacked a 3px outline around this halo on every tap.
+ */
 .input:focus {
   outline: none;
   border-color: var(--pw-blue-700);
@@ -336,7 +341,6 @@ a {
 
 .btn:focus-visible,
 .ibtn:focus-visible,
-.input:focus-visible,
 .pill:focus-visible,
 [data-focus-ring]:focus-visible {
   outline: 3px solid var(--pw-blue-700);
