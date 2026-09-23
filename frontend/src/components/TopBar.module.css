@@ -1,8 +1,14 @@
+/*
+ * The artboards lay the three parts out with space-between and no gap of their
+ * own, so a long title ("Hoàn thiện dải ảnh" beside a 4 / 4 pill) runs close
+ * to the slots. 4px keeps them apart and still fits that title on one line at
+ * 390; narrower phones let it wrap.
+ */
 .bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pw-space-2);
+  gap: var(--pw-space-1);
   height: 76px;
   /* 20 top, nothing below: the 76px box centres the 48px control with 8 to spare. */
   padding: var(--pw-space-5) var(--pw-gutter) 0;
