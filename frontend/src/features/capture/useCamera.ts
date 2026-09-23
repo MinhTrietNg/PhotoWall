@@ -37,8 +37,9 @@ export function useCamera(): UseCameraResult {
   const streamRef = useRef<MediaStream | null>(null);
 
   const [facing, setFacing] = useState<CameraFacing>('user');
-  // Front camera reads as a mirror to the person holding it, so default on.
-  const [mirrored, setMirrored] = useState(true);
+  // Off by default, as every camera artboard draws it (aria-pressed="false"):
+  // what the guest frames is then exactly what the strip will show.
+  const [mirrored, setMirrored] = useState(false);
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<CameraError>(null);
   const [canSwitch, setCanSwitch] = useState(false);
