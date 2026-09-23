@@ -94,6 +94,7 @@ export function FrameSelect() {
               key={frame.id}
               frame={frame}
               selected={frame.id === session.selectedFrameId}
+              photos={photos}
               onSelect={selectFrame}
             />
           ))}
