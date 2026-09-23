@@ -422,8 +422,13 @@ a {
  * the fixed content of the text-heavy screens fills on its own. Here the
  * shared chrome gives up its air first, before any screen hides its own
  * content.
+ *
+ * It starts just under 640, not at 620. Swept a pixel at a time, S01 and S02
+ * scroll between 621 and 639 at 390 and 414 wide — up to 13px on S02, whose
+ * subtitle wraps to two lines at every width under 430 — while 640 itself
+ * (a Galaxy A in Chrome) still fits without this.
  */
-@media (max-height: 620px) {
+@media (max-height: 639px) {
   .screen__cta {
     --pw-cta-pad-top: var(--pw-space-3);
     --pw-cta-pad-bottom: calc(var(--pw-space-5) + env(safe-area-inset-bottom, 0px));

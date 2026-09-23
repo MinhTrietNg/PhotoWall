@@ -71,8 +71,11 @@
  * Then the subtitle. The label, the placeholder and the helper line below the
  * field already say what the name is for, so this sentence is the last thing
  * on the screen that can go without losing meaning.
+ *
+ * Same step as the shared CTA compaction in base.css, for the same measured
+ * reason: with the subtitle on two lines this screen needs about 637px.
  */
-@media (max-height: 620px) {
+@media (max-height: 639px) {
   .sub {
     display: none;
   }
