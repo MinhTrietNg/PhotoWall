@@ -57,8 +57,16 @@ button {
 a {
   color: var(--pw-blue-700);
 }
-a:hover {
-  color: var(--pw-blue-900);
+
+/*
+ * Hover only where there is a pointer that hovers. On a phone :hover sticks to
+ * whatever was last tapped, and because the next screen puts its CTA in the
+ * same spot, the new button arrived already painted in its hover shade.
+ */
+@media (hover: hover) {
+  a:hover {
+    color: var(--pw-blue-900);
+  }
 }
 
 /* Display face. Headings only — never body copy, never buttons. */
@@ -122,16 +130,20 @@ a:hover {
   color: #fff;
   box-shadow: var(--pw-shadow-1);
 }
-.btn--primary:hover:not(:disabled) {
-  background: var(--pw-blue-900);
-}
 
 .btn--secondary {
   background: var(--pw-surface);
   color: var(--pw-ink);
 }
-.btn--secondary:hover:not(:disabled) {
-  background: var(--pw-surface-2);
+
+/* Pointer devices only, for the reason given at a:hover. */
+@media (hover: hover) {
+  .btn--primary:hover:not(:disabled) {
+    background: var(--pw-blue-900);
+  }
+  .btn--secondary:hover:not(:disabled) {
+    background: var(--pw-surface-2);
+  }
 }
 
 .btn--tonal {

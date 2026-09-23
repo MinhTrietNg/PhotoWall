@@ -20,8 +20,11 @@
     transform var(--pw-dur-1) var(--pw-ease-std);
 }
 
-.option:hover {
-  background: var(--pw-surface-2);
+/* Hover only with a hovering pointer — on a phone it sticks to the last tap. */
+@media (hover: hover) {
+  .option:hover {
+    background: var(--pw-surface-2);
+  }
 }
 
 .option:active {
