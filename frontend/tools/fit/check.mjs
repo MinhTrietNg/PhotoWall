@@ -245,6 +245,9 @@ function measure(page) {
       };
       const reach = touchMin / 2 - 0.5;
       const scrolled = { screen: screen.scrollTop, page: window.scrollY };
+      // Gaps are read from one layout, before any probe scrolls: scrolling a
+      // list between two reads makes neighbours in it look closer than they are.
+      const drawn = new Map([...candidates].map((node) => [node, node.getBoundingClientRect()]));
       const targets = [];
       const small = [];
       for (const node of candidates) {
@@ -255,7 +258,7 @@ function measure(page) {
         const cx = rect.left + rect.width / 2;
         const cy = rect.top + rect.height / 2;
         if (!lands(node, cx, cy)) continue;
-        targets.push({ what: label(node), rect });
+        targets.push({ what: label(node), rect: drawn.get(node) });
 
         const across =
           rect.width >= touchMin || (lands(node, cx - reach, cy) && lands(node, cx + reach, cy));

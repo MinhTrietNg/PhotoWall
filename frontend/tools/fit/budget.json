@@ -2,13 +2,9 @@
   "note": "Số pixel mỗi màn được phép tràn ra ngoài viewport. Không có tên trong danh sách nghĩa là ngân sách 0: màn phải vừa khít. Mỗi mục phải kèm một câu 'why'; check sẽ đỏ nếu để trống. Nới ngân sách là lựa chọn cuối, sau khi đã thử co phần không mang thông tin.",
   "allowed": {
     "360x500": {
-      "S02 Nhập tên": {
-        "overflow": 18,
-        "why": "360x500 thấp hơn mọi điện thoại thật — SE trong Safari đã là 553. Ở sàn này ô nhập, khối đồng ý và nút Tiếp tục cuộn trong lòng màn; giấu bớt chữ để vừa khít sẽ đổi một màn hình không tồn tại lấy một màn hình có thật."
-      },
       "S07b Đã nhận, đang duyệt": {
-        "overflow": 31,
-        "why": "Dải màu đã hạ tới sàn 176px, phần dư còn lại là hai nút CTA. Cho cuộn trong lòng màn còn hơn giấu nút Tải dải ảnh về."
+        "overflow": 12,
+        "why": "Dải màu đã hạ tới sàn 176px; phần dư còn lại là cụm CTA ba nút. Cho cuộn trong lòng màn còn hơn giấu nút Tải dải ảnh về hay Gỡ dải ảnh này."
       }
     },
     "320x454": {
@@ -21,7 +17,7 @@
         "why": "320x454 là iPhone SE đời đầu trong Safari: hẹp hơn dải 360–430 mà bảng Motion · Responsive cam kết và thấp hơn cả sàn 500. Viewport này có mặt để bắt lỗi theo bề ngang — tràn ngang, khối bị cắt, vùng chạm — và ở đó màn này sạch; phần dư theo chiều cao cuộn trong lòng màn. Màn này đã bỏ ô minh hoạ, phụ đề và chip bước; còn lại chỉ là ô nhập, hai khối cài đặt và nút Tiếp tục."
       },
       "S07b Đã nhận, đang duyệt": {
-        "overflow": 96,
+        "overflow": 58,
         "why": "320x454 là iPhone SE đời đầu trong Safari: hẹp hơn dải 360–430 mà bảng Motion · Responsive cam kết và thấp hơn cả sàn 500. Viewport này có mặt để bắt lỗi theo bề ngang — tràn ngang, khối bị cắt, vùng chạm — và ở đó màn này sạch; phần dư theo chiều cao cuộn trong lòng màn. Dải màu đã xuống sàn 132px; phần dư là các nút CTA, cuộn còn hơn giấu nút Tải dải ảnh về."
       },
       "S07 Thành công": {
