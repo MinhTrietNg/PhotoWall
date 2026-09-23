@@ -76,8 +76,7 @@ export function EnterName() {
           onChange={setConsent}
           label="Đồng ý hiển thị ảnh trên Photo Wall"
         >
-          Tôi đồng ý cho ảnh hiển thị trên Photo Wall và màn hình lớn tại sự kiện; tôi có thể gỡ
-          bất cứ lúc nào.
+          Tôi đồng ý hiển thị ảnh trên màn hình lớn tại sự kiện và có thể gỡ sau khi gửi.
         </CheckRow>
       </div>
 
