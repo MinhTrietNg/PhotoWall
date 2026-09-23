@@ -38,7 +38,7 @@ export const CANVAS_H = 3400;
 export const STRIP_ASPECT = `${CANVAS_W} / ${CANVAS_H}`;
 
 /** A slot rect expressed as CSS percentages of the canvas. */
-export interface SlotPercent {
+interface SlotPercent {
   left: string;
   top: string;
   width: string;

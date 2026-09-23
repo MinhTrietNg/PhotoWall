@@ -6,7 +6,7 @@
  * and are dropped in production. Swap `send` for gtag/firebase-analytics later.
  */
 
-export type AnalyticsEvent =
+type AnalyticsEvent =
   | { name: 'pw_start'; params: { utm_source: 'display' | 'qr' | 'direct' } }
   | { name: 'pw_name_done'; params?: undefined }
   | {
@@ -20,7 +20,6 @@ export type AnalyticsEvent =
 
 export function track<E extends AnalyticsEvent>(name: E['name'], params?: E['params']): void {
   if (import.meta.env.DEV) {
-    // eslint-disable-next-line no-console
     console.debug('[analytics]', name, params ?? {});
   }
 }
