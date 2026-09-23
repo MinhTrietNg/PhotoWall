@@ -132,7 +132,7 @@ export function Done() {
           {approved && canShare ? (
             <Button
               variant="text"
-              iconStart={<Icon name="share" />}
+              iconStart={<Icon name="shareIos" />}
               onClick={() => void shareStrip(submission.blob, name).catch(() => undefined)}
             >
               Chia sẻ

@@ -141,11 +141,27 @@
   color: var(--pw-yellow-700);
 }
 
+/*
+ * "Chia sẻ" and "Dải ảnh của tôi" share one row, pushed to its two ends as S08
+ * draws them. At the buttons' usual 24px padding the pair came to 366px at 390
+ * wide, over the 350 inside the gutter, so they stacked into a fourth row. 8px
+ * each plus 12 on the row puts the icons where the artboard has them and still
+ * fits at 360. A link on its own — S08b, or no Web Share — sits in the middle.
+ */
 .textActions {
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   gap: var(--pw-space-2);
   flex-wrap: wrap;
+  padding: 0 var(--pw-space-3);
+}
+
+.textActions > :global(.btn) {
+  padding: 0 var(--pw-space-2);
+}
+
+.textActions > :only-child {
+  margin: 0 auto;
 }
 
 /* ------------------------------------------------------------- confetti */
