@@ -3,8 +3,8 @@
 /** Pixel rectangle on the canonical 1080 x 3400 canvas: [x, y, w, h]. */
 export type SlotRect = readonly [x: number, y: number, w: number, h: number];
 
-/** The three ids come from the design; `string & {}` keeps F04+ open. */
-export type FrameId = 'f01-gdgoc' | 'f02-aws' | 'f03-partners' | (string & {});
+/** The four ids come from the design; `string & {}` keeps F05+ open. */
+export type FrameId = 'f01-gdgoc' | 'f02-aws' | 'f03-isf' | 'f04-tpl' | (string & {});
 
 export interface FrameTemplate {
   id: FrameId;

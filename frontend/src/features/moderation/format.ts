@@ -15,7 +15,7 @@ export function formatWaiting(sinceMs: number, nowMs: number): string {
 
 export const WAITING_OVERDUE_MS = 3 * 60_000;
 
-/** "f03-partners" -> "F03" — the row meta shows the short id, not the full title. */
+/** "f03-isf" -> "F03" — the row meta shows the short id, not the full title. */
 export function frameShortLabel(frameVariant: string): string {
   return /^f\d+/i.exec(frameVariant)?.[0].toUpperCase() ?? frameVariant;
 }

@@ -8,10 +8,10 @@
       "title": "GDGoC · Build Together",
       "overlay": "frame-f01-gdgoc.png",
       "slots": [
-        [174, 341, 733, 553],
-        [174, 951, 734, 571],
-        [161, 1579, 746, 539],
-        [174, 2178, 734, 545]
+        [171, 338, 735, 549],
+        [171, 948, 739, 572],
+        [165, 1580, 741, 540],
+        [170, 2181, 735, 538]
       ],
       "r": 36
     },
@@ -30,11 +30,25 @@
       "r": 36
     },
     {
-      "id": "f03-partners",
-      "name": "Frame / F03 Partners",
+      "id": "f03-isf",
+      "name": "Frame / F03 ISF",
       "label": "Khung 03",
-      "title": "Đoàn hội · GDGoC · AWS",
-      "overlay": "frame-f03-partners.png",
+      "title": "ISF · Khoa CNTT",
+      "overlay": "frame-f03-isf.png",
+      "slots": [
+        [182, 399, 709, 514],
+        [182, 975, 710, 525],
+        [181, 1562, 710, 521],
+        [182, 2147, 710, 518]
+      ],
+      "r": 36
+    },
+    {
+      "id": "f04-tpl",
+      "name": "Frame / F04",
+      "label": "Khung 04",
+      "title": "Chờ artwork BTC",
+      "overlay": "frame-f04-tpl.png",
       "slots": [
         [74, 314, 932, 702],
         [74, 1034, 932, 702],

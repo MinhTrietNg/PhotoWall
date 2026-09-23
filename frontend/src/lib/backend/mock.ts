@@ -210,11 +210,11 @@ function seedModerationDemo() {
   if (store.photos.length > 0) return;
   const now = Date.now();
   const demo: Array<[string, string, PhotoStatus, string, number]> = [
-    ['mock-131', 'Đức Huy', 'pending', 'f03-partners', 1],
+    ['mock-131', 'Đức Huy', 'pending', 'f03-isf', 1],
     ['mock-130', 'Minh Triết', 'pending', 'f01-gdgoc', 4],
     ['mock-129', 'Lan Anh', 'pending', 'f02-aws', 6],
     ['mock-128', 'Hải Đăng', 'approved', 'f01-gdgoc', 20],
-    ['mock-127', 'Thu Hà', 'approved', 'f03-partners', 40],
+    ['mock-127', 'Thu Hà', 'approved', 'f03-isf', 40],
     ['mock-126', 'Quang Huy', 'removed', 'f02-aws', 90],
     ['mock-125', 'Bảo Ngọc', 'rejected', 'f01-gdgoc', 120],
   ];
