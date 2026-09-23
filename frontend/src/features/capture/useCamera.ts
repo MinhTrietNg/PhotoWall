@@ -7,8 +7,8 @@
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
 
-export type CameraFacing = 'user' | 'environment';
-export type CameraError = 'denied' | 'unavailable' | null;
+type CameraFacing = 'user' | 'environment';
+type CameraError = 'denied' | 'unavailable' | null;
 
 /**
  * Cap the stored shot's long edge. The widest slot on any frame is 932px, so
@@ -17,7 +17,7 @@ export type CameraError = 'denied' | 'unavailable' | null;
 const MAX_SHOT_EDGE = 1600;
 const SHOT_QUALITY = 0.92;
 
-export interface UseCameraResult {
+interface UseCameraResult {
   videoRef: React.RefObject<HTMLVideoElement | null>;
   ready: boolean;
   error: CameraError;

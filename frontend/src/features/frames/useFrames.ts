@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import type { FrameRegistry } from '@/types/frame';
 import { loadFrames, preloadOverlays } from './frameRegistry';
 
-export interface FramesState {
+interface FramesState {
   registry: FrameRegistry | null;
   error: Error | null;
 }

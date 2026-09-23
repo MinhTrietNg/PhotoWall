@@ -21,9 +21,9 @@ import { STRIP_ASPECT, slotRadiusAt, slotToPercent, type FrameTemplate } from '@
 import { overlayUrl } from './frameRegistry';
 import styles from './PhotoWallFrame.module.css';
 
-export type SlotPhoto = BlobLike;
+type SlotPhoto = BlobLike;
 
-export interface PhotoWallFrameProps {
+interface PhotoWallFrameProps {
   frame: FrameTemplate;
   /** Up to four entries: a Blob, an already-resolved URL, or null for empty. */
   photos?: readonly SlotPhoto[];

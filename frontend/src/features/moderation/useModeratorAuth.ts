@@ -6,7 +6,7 @@
 import { useEffect, useState } from 'react';
 import type { ModeratorApi, ModeratorProfile } from '@/lib/backend';
 
-export type ModeratorAuthState =
+type ModeratorAuthState =
   | { status: 'loading' }
   | { status: 'signed-out' }
   | { status: 'denied'; email: string }

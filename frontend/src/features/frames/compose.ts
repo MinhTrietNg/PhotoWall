@@ -17,7 +17,7 @@ const TARGET_BYTES = 600 * 1024;
 /** storage.rules requires strictly less than 2 MB. */
 const MAX_BYTES = 2 * 1024 * 1024;
 
-export class ComposeError extends Error {}
+class ComposeError extends Error {}
 
 /** object-fit: cover with a centre crop. */
 function drawCover(
@@ -81,7 +81,7 @@ function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
   });
 }
 
-export interface ComposeResult {
+interface ComposeResult {
   blob: Blob;
   width: number;
   height: number;

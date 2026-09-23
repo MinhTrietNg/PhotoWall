@@ -10,7 +10,7 @@ import { CANVAS_H, CANVAS_W, type FrameRegistry, type FrameTemplate } from '@/ty
 const FRAMES_BASE = '/frames';
 const REGISTRY_URL = `${FRAMES_BASE}/frames.json`;
 
-export class FrameRegistryError extends Error {}
+class FrameRegistryError extends Error {}
 
 function fail(message: string): never {
   throw new FrameRegistryError(`frames.json: ${message}`);

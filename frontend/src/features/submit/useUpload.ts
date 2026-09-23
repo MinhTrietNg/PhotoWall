@@ -14,9 +14,9 @@ import { SubmitFailure, useBackend, type SubmitErrorCode } from '@/lib/backend';
 import type { FrameTemplate } from '@/types/frame';
 import { attachPhotoId, getSubmission, setSubmission } from './submission';
 
-export type UploadPhase = 'idle' | 'composing' | 'uploading' | 'done' | 'failed';
+type UploadPhase = 'idle' | 'composing' | 'uploading' | 'done' | 'failed';
 
-export interface UploadState {
+interface UploadState {
   phase: UploadPhase;
   /** 0..1, or null for the indeterminate variant. */
   progress: number | null;
