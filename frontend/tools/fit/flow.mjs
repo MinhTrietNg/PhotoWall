@@ -14,6 +14,10 @@
  * pass a screen that scrolls in the hand.
  */
 export const VIEWPORTS = [
+  // --- height stress -------------------------------------------------------
+  // The design draws at 390 and asks for a QA pass at 360 and 430 ("05 Motion ·
+  // Responsive"). These walk that band down to where the page runs out of room.
+
   // Below any phone we expect at the booth. Kept as the floor: here a screen
   // is allowed to scroll inside itself, and the point of measuring it is that
   // it degrades that way instead of clipping or pushing the CTA out of reach.
@@ -24,6 +28,15 @@ export const VIEWPORTS = [
   { name: 'iPhone 14 · Safari', w: 390, h: 745 },
   { name: 'iPhone 15 Pro Max · Safari', w: 430, h: 833 },
   { name: 'artboard', w: 390, h: 844 },
+
+  // --- width stress --------------------------------------------------------
+  // Heights here are the browser's, not the device's. These widths exist
+  // because a fixed-size row — the 4-cell tray, a two-button CTA — breaks on
+  // width, not on height, and the band above only ever sees 360/375/390/430.
+  { name: 'iPhone SE (2016)', w: 320, h: 454 },
+  { name: 'Pixel 8 · Chrome', w: 393, h: 727 },
+  { name: 'Pixel 7 Pro · Chrome', w: 412, h: 740 },
+  { name: 'iPhone 8 Plus · Safari', w: 414, h: 628 },
 ];
 
 const settle = (page, ms = 250) => page.waitForTimeout(ms);

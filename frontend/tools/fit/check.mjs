@@ -176,36 +176,128 @@ function routeMatcher(route) {
 
 /* -------------------------------------------------------------- measuring */
 
+/** The design's rule, from board "05 Motion · Responsive": >= 48px, >= 8px apart. */
+const TOUCH_MIN = 48;
+const TOUCH_GAP = 8;
+
 function measure(page) {
-  return page.evaluate(() => {
-    const screen = document.querySelector('.screen');
-    if (!screen) return null;
+  return page.evaluate(
+    ({ touchMin, touchGap }) => {
+      const screen = document.querySelector('.screen');
+      if (!screen) return null;
 
-    // Two ways a guest ends up scrolling: the document grows past the viewport,
-    // or the screen scrolls inside its own box. Both move a thumb, so both count.
-    const docOver = document.documentElement.scrollHeight - window.innerHeight;
-    const inner = screen.scrollHeight - screen.clientHeight;
+      const label = (node) =>
+        `${node.tagName.toLowerCase()}.${String(node.className || '').slice(0, 32)}`;
 
-    // A definite height lets flex shrink things, which stops the scrolling but
-    // can squash a block instead. Only a box that actually clips can hide
-    // content, so an overflow:visible child is not a finding.
-    const clipped = [];
-    let worst = null;
-    for (const node of screen.querySelectorAll('*')) {
-      const name = `${node.tagName.toLowerCase()}.${String(node.className || '').slice(0, 32)}`;
-      const rect = node.getBoundingClientRect();
-      if ((rect.width || rect.height) && (!worst || rect.bottom > worst.bottom)) {
-        worst = { bottom: Math.round(rect.bottom), what: name };
+      // Two ways a guest ends up scrolling: the document grows past the viewport,
+      // or the screen scrolls inside its own box. Both move a thumb, so both count.
+      const docOver = document.documentElement.scrollHeight - window.innerHeight;
+      const inner = screen.scrollHeight - screen.clientHeight;
+
+      // A definite height lets flex shrink things, which stops the scrolling but
+      // can squash a block instead. Only a box that actually clips can hide
+      // content, so an overflow:visible child is not a finding.
+      const clipped = [];
+      // Sideways is a different failure: it is never intended here, and one
+      // fixed-size row is enough to cause it on a narrow phone.
+      const wide = [];
+      let worst = null;
+
+      for (const node of screen.querySelectorAll('*')) {
+        const rect = node.getBoundingClientRect();
+        if ((rect.width || rect.height) && (!worst || rect.bottom > worst.bottom)) {
+          worst = { bottom: Math.round(rect.bottom), what: label(node) };
+        }
+        if (node.scrollHeight > node.clientHeight + 1 && node.clientHeight > 0) {
+          const overflowY = getComputedStyle(node).overflowY;
+          if (overflowY === 'hidden' || overflowY === 'clip') {
+            clipped.push({ what: label(node), need: node.scrollHeight, got: node.clientHeight });
+          }
+        }
+        if (rect.width > 0 && (rect.right > window.innerWidth + 0.5 || rect.left < -0.5)) {
+          const over = Math.round(Math.max(rect.right - window.innerWidth, -rect.left));
+          wide.push({ what: label(node), over });
+        }
       }
-      if (node.scrollHeight > node.clientHeight + 1 && node.clientHeight > 0) {
-        const overflowY = getComputedStyle(node).overflowY;
-        if (overflowY !== 'hidden' && overflowY !== 'clip') continue;
-        clipped.push({ what: name, need: node.scrollHeight, got: node.clientHeight });
-      }
-    }
 
-    return { overflow: Math.max(docOver, inner, 0), docOver, inner, clipped, worst };
-  });
+      // Touch ergonomics, the design's numbers. Inline links inside prose cannot
+      // be 48px tall and are not what the rule is about, so they are skipped. A
+      // visually hidden input — the real control inside a toggle or a checkbox —
+      // is judged by the label that takes its taps.
+      const SELECTOR = 'button, [role="button"], a[href], input, select, textarea';
+      const candidates = new Set();
+      for (const node of screen.querySelectorAll(SELECTOR)) {
+        const box = node.getBoundingClientRect();
+        const target = box.width <= 1 && box.height <= 1 ? node.labels?.[0] : node;
+        if (!target) continue;
+        const style = getComputedStyle(target);
+        if (style.display === 'inline' || style.visibility === 'hidden') continue;
+        candidates.add(target);
+      }
+
+      // What a finger reaches is not always the drawn box: a 32px pill can carry
+      // a 48px hit area on a pseudo-element. So size is probed where taps land,
+      // half a target either side of the centre. A target whose centre already
+      // lands elsewhere is covered (a dialog on top) and cannot be tapped now.
+      const lands = (node, x, y) => {
+        const hit = document.elementFromPoint(x, y);
+        return Boolean(hit) && node.contains(hit);
+      };
+      const reach = touchMin / 2 - 0.5;
+      const scrolled = { screen: screen.scrollTop, page: window.scrollY };
+      const targets = [];
+      const small = [];
+      for (const node of candidates) {
+        // Probes only see the viewport; the floor viewport scrolls inside the screen.
+        node.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+        const rect = node.getBoundingClientRect();
+        if (rect.width < 1 || rect.height < 1) continue;
+        const cx = rect.left + rect.width / 2;
+        const cy = rect.top + rect.height / 2;
+        if (!lands(node, cx, cy)) continue;
+        targets.push({ what: label(node), rect });
+
+        const across =
+          rect.width >= touchMin || (lands(node, cx - reach, cy) && lands(node, cx + reach, cy));
+        const down =
+          rect.height >= touchMin || (lands(node, cx, cy - reach) && lands(node, cx, cy + reach));
+        if (!across || !down) {
+          small.push({ what: label(node), w: Math.round(rect.width), h: Math.round(rect.height) });
+        }
+      }
+      screen.scrollTop = scrolled.screen;
+      window.scrollTo(0, scrolled.page);
+
+      // Two controls closer than the gap invite a mis-tap. This is the drawn
+      // gap, what the guest aims by. Nested or overlapping boxes are not a pair.
+      const tight = [];
+      for (let i = 0; i < targets.length; i++) {
+        for (let j = i + 1; j < targets.length; j++) {
+          const a = targets[i].rect;
+          const b = targets[j].rect;
+          const dx = Math.max(a.left - b.right, b.left - a.right);
+          const dy = Math.max(a.top - b.bottom, b.top - a.bottom);
+          if (dx < 0 && dy < 0) continue; // overlapping, so not neighbours
+          const gap = Math.round(Math.max(dx, dy));
+          if (gap < touchGap) {
+            tight.push({ a: targets[i].what, b: targets[j].what, gap });
+          }
+        }
+      }
+
+      return {
+        overflow: Math.max(docOver, inner, 0),
+        docOver,
+        inner,
+        clipped,
+        wide,
+        small,
+        tight,
+        worst,
+      };
+    },
+    { touchMin: TOUCH_MIN, touchGap: TOUCH_GAP },
+  );
 }
 
 async function walk(browser, viewport, base) {
@@ -286,6 +378,18 @@ function report(rows, budget) {
 
       for (const clip of row.clipped ?? []) {
         failures.push(`${size} · ${screen}: ${clip.what} bị cắt, cần ${clip.need}px nhưng chỉ có ${clip.got}px`);
+      }
+      // Sideways overflow has no budget: it is never part of the design.
+      for (const box of row.wide ?? []) {
+        failures.push(`${size} · ${screen}: ${box.what} lòi ngang ${box.over}px`);
+      }
+      for (const target of row.small ?? []) {
+        failures.push(
+          `${size} · ${screen}: ${target.what} vẽ ${target.w}x${target.h}px, vùng chạm chưa tới ${TOUCH_MIN}px`,
+        );
+      }
+      for (const pair of row.tight ?? []) {
+        failures.push(`${size} · ${screen}: ${pair.a} và ${pair.b} cách nhau ${pair.gap}px, dưới ${TOUCH_GAP}px`);
       }
     }
     console.log(line);

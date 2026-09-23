@@ -10,10 +10,10 @@ npm run check:fit
 ```
 
 Lệnh tự dựng dev server (backend mock, cổng 5199), mở Chrome với camera giả,
-đi trọn luồng khách ở 7 viewport, rồi đối chiếu số đo với `budget.json`.
+đi trọn luồng khách ở 11 viewport, rồi đối chiếu số đo với `budget.json`.
 Vượt ngân sách thì exit code khác 0.
 
-## Ba lớp bảo đảm
+## Bốn lớp bảo đảm
 
 **1. Quy tắc tĩnh** — chạy trước, không cần trình duyệt, chưa tới một giây:
 
@@ -34,7 +34,19 @@ vuốt nên cả hai đều tính.
 co quá tay thì chữ bị giấu. Bất kỳ khối `overflow: hidden|clip` nào không chứa
 nổi nội dung của chính nó đều làm check đỏ, dù màn có vừa khít hay không.
 
-## Vì sao là bảy viewport đó
+**4. Không tràn ngang, vùng chạm đủ lớn** — ba luật không có ngân sách, vì
+thiết kế không bao giờ muốn chúng:
+
+- Không phần tử nào lòi ra ngoài mép trái hoặc phải của viewport.
+- Mọi thứ bấm được có vùng chạm 48px theo cả hai chiều (bảng "05 Motion ·
+  Responsive"). Vùng chạm đo bằng điểm chạm thật — `elementFromPoint` cách tâm
+  nửa ô 48px về mỗi phía — nên một pill vẽ 32px nhưng có lớp `tap-target` 48px
+  vẫn đạt. Input ẩn bên trong toggle hay checkbox được đo bằng `<label>` nhận
+  cú chạm của nó; thứ đang bị che (ví dụ dưới một hộp thoại) thì bỏ qua.
+- Hai thứ bấm được cách nhau ít nhất 8px, đo theo nét vẽ — khoảng mắt nhìn
+  thấy khi nhắm ngón tay.
+
+## Vì sao là mười một viewport đó
 
 Chiều cao ghi trong `flow.mjs` là phần trình duyệt **để lại cho trang**, không
 phải chiều cao thiết bị mà artboard vẽ theo. iPhone 14 là máy 844pt nhưng
@@ -44,6 +56,17 @@ Safari chỉ đưa cho document khoảng 745 khi còn đủ hai thanh. Đo 844 s
 `360x500` thấp hơn mọi điện thoại thật. Giữ nó làm sàn: ở đó màn **được phép**
 cuộn bên trong chính nó, và điều cần kiểm là nó xuống cấp theo kiểu đó chứ
 không cắt mất nội dung hay đẩy nút bấm ra khỏi tầm.
+
+Bảy viewport đầu đi dọc dải chiều cao. Bốn cái sau đo theo bề ngang: một hàng
+cố định kích thước — khay 4 ô, hai nút CTA cạnh nhau — vỡ theo chiều rộng chứ
+không theo chiều cao, mà dải đầu chỉ có 360/375/390/430. `320x454` (SE đời đầu)
+nằm dưới dải 360–430 thiết kế cam kết; nó có mặt để bắt lỗi ngang, và phần dư
+theo chiều cao ở đó có ngân sách như sàn.
+
+Viewport cố định vẫn bỏ sót được khe giữa hai bậc media query. Khi đổi một bậc,
+quét cả dải theo từng vài pixel: bậc nén thứ hai từng nằm ở 620 trong khi S02
+cần khoảng 637, nên màn cuộn ở cả dải 621–639. Danh sách chỉ bắt được nhờ có
+đúng 628 trong đó; lệch vài pixel là lọt.
 
 ## Khi check đỏ
 

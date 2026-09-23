@@ -9,10 +9,24 @@
       "S08b Đã nhận, đang duyệt": {
         "overflow": 31,
         "why": "Dải màu đã hạ tới sàn 176px, phần dư còn lại là hai nút CTA. Cho cuộn trong lòng màn còn hơn giấu nút Tải dải ảnh về."
+      }
+    },
+    "320x454": {
+      "S01 Welcome": {
+        "overflow": 35,
+        "why": "320x454 là iPhone SE đời đầu trong Safari: hẹp hơn dải 360–430 mà bảng Motion · Responsive cam kết và thấp hơn cả sàn 500. Viewport này có mặt để bắt lỗi theo bề ngang — tràn ngang, khối bị cắt, vùng chạm — và ở đó màn này sạch; phần dư theo chiều cao cuộn trong lòng màn. Cụm trang trí đã co về 0,46; phần còn lại là tiêu đề, lời hứa và nút Bắt đầu chụp ảnh, không thứ nào nên giấu."
+      },
+      "S02 Nhập tên": {
+        "overflow": 103,
+        "why": "320x454 là iPhone SE đời đầu trong Safari: hẹp hơn dải 360–430 mà bảng Motion · Responsive cam kết và thấp hơn cả sàn 500. Viewport này có mặt để bắt lỗi theo bề ngang — tràn ngang, khối bị cắt, vùng chạm — và ở đó màn này sạch; phần dư theo chiều cao cuộn trong lòng màn. Màn này đã bỏ ô minh hoạ, phụ đề và chip bước; còn lại chỉ là ô nhập, hai khối cài đặt và nút Tiếp tục."
+      },
+      "S08b Đã nhận, đang duyệt": {
+        "overflow": 96,
+        "why": "320x454 là iPhone SE đời đầu trong Safari: hẹp hơn dải 360–430 mà bảng Motion · Responsive cam kết và thấp hơn cả sàn 500. Viewport này có mặt để bắt lỗi theo bề ngang — tràn ngang, khối bị cắt, vùng chạm — và ở đó màn này sạch; phần dư theo chiều cao cuộn trong lòng màn. Dải màu đã xuống sàn 132px; phần dư là các nút CTA, cuộn còn hơn giấu nút Tải dải ảnh về."
       },
       "S08 Thành công": {
-        "overflow": 31,
-        "why": "Cùng lý do với S08b: dải màu đã chạm sàn, phần dư là hai nút CTA."
+        "overflow": 111,
+        "why": "320x454 là iPhone SE đời đầu trong Safari: hẹp hơn dải 360–430 mà bảng Motion · Responsive cam kết và thấp hơn cả sàn 500. Viewport này có mặt để bắt lỗi theo bề ngang — tràn ngang, khối bị cắt, vùng chạm — và ở đó màn này sạch; phần dư theo chiều cao cuộn trong lòng màn. Cùng lý do với S08b ở viewport này: dải màu đã xuống sàn, phần dư là các nút CTA."
       }
     }
   }
