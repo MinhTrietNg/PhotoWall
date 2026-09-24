@@ -1,5 +1,7 @@
 /**
- * pw-tabs — DESIGN-D02. h40, selected bg ink, count badge tinted per tab.
+ * pw-tabs — DESIGN-D02 / M01. h40, selected bg ink. Only the tab that needs
+ * attention carries a count badge ("Chờ duyệt ③", yellow); the others read
+ * their count inline — "Đã duyệt · 325", "Đã gỡ · 2".
  * Full `role="tablist"` semantics — Claude-Plan.md §17.
  */
 import styles from './Tabs.module.css';
@@ -8,7 +10,7 @@ export interface TabItem<T extends string> {
   value: T;
   label: string;
   count: number;
-  /** Tints the count badge, e.g. yellow for "Chờ duyệt". */
+  /** Shows the count as the yellow badge instead of " · N". */
   tone?: 'pending';
 }
 
@@ -32,10 +34,16 @@ export function Tabs<T extends string>({
           className={`${styles.tab} ${item.value === value ? styles.selected : ''}`}
           onClick={() => onChange(item.value)}
         >
-          <span>{item.label}</span>
-          <span className={`${styles.badge} ${item.tone === 'pending' ? styles.pending : ''}`}>
-            {item.count}
-          </span>
+          {item.tone === 'pending' ? (
+            <>
+              <span>{item.label}</span>
+              <span className={styles.badge}>{item.count}</span>
+            </>
+          ) : (
+            <span>
+              {item.label} · {item.count}
+            </span>
+          )}
         </button>
       ))}
     </div>
