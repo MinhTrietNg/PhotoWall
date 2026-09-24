@@ -43,6 +43,16 @@
   transform: translateX(20px);
 }
 
+/* M02 frame rows: 44 x 24, knob 16 — same 20 of travel. */
+.trackS {
+  width: 44px;
+  height: 24px;
+}
+.trackS .knob {
+  width: 16px;
+  height: 16px;
+}
+
 .srOnly:focus-visible + .track {
   outline: 3px solid var(--pw-blue-700);
   outline-offset: 3px;

@@ -14,11 +14,14 @@ export function Toggle({
   onChange,
   label,
   disabled,
+  size = 'm',
 }: {
   checked: boolean;
   onChange: (next: boolean) => void;
   label: string;
   disabled?: boolean;
+  /** m = 48 x 28 (02a); s = 44 x 24 with a 16 knob, as M02's frame rows draw it. */
+  size?: 'm' | 's';
 }) {
   return (
     <>
@@ -30,7 +33,12 @@ export function Toggle({
         aria-label={label}
         onChange={(e) => onChange(e.target.checked)}
       />
-      <span aria-hidden="true" className={`${styles.track} ${checked ? styles.trackOn : ''}`}>
+      <span
+        aria-hidden="true"
+        className={[styles.track, size === 's' ? styles.trackS : '', checked ? styles.trackOn : '']
+          .filter(Boolean)
+          .join(' ')}
+      >
         <span className={styles.knob} />
       </span>
     </>
