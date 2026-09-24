@@ -43,6 +43,7 @@ import {
   setUploadsOpen as clientSetUploadsOpen,
   submitPhoto as clientSubmitPhoto,
   updateConfig as clientUpdateConfig,
+  watchApproved as clientWatchApproved,
   watchByStatus as clientWatchByStatus,
   watchConfig as clientWatchConfig,
   watchModerators as clientWatchModerators,
@@ -54,13 +55,15 @@ import {
 } from '@backend/client';
 import { stripFileName, toParticipantsCsv } from '@backend/export';
 import { initBackend } from '@backend/init';
-import type { ResolvedConfig } from '@backend/schema';
+import { CONFIG_DEFAULTS, type ResolvedConfig } from '@backend/schema';
 
 import {
   ReviewConflict,
   SubmitFailure,
   type AppConfig,
   type ConfigPatch,
+  type DisplayApi,
+  type DisplayConfig,
   type GuestApi,
   type ModeratorApi,
   type ModTab,
@@ -280,5 +283,46 @@ export function createFirebaseModeratorBackend(): ModeratorApi {
     cancelDeletion: () => clientCancelDeletion(backend),
 
     runDueDeletion: () => clientRunDueDeletion(backend),
+  };
+}
+
+// ------------------------------------------------------------ big screen
+
+/** config/app may not exist yet; the screen then runs on the design's defaults. */
+function toDisplayConfig(config: ResolvedConfig | null): DisplayConfig {
+  const c = config ?? CONFIG_DEFAULTS;
+  return {
+    showNames: c.showNames,
+    arrivalCard: c.arrivalCard,
+    marqueePxPerSec: c.marqueePxPerSec,
+    qrUrl: c.qrUrl,
+    reloadRequestedAtMs: ms(c.displayReloadAt ?? undefined) ?? null,
+  };
+}
+
+export function createFirebaseDisplayBackend(): DisplayApi {
+  // No sign-in: the rules let anyone read approved photos, stats/public and config/app.
+  const backend: Backend = initBackend({
+    emulators: import.meta.env.DEV && import.meta.env.VITE_EMULATORS === '1',
+  });
+
+  return {
+    watchApproved: (cb, max) =>
+      clientWatchApproved(
+        backend,
+        (u) =>
+          cb({
+            photos: u.photos.map(toPhoto),
+            added: u.added.map(toPhoto),
+            removedIds: u.removedIds,
+          }),
+        max,
+      ),
+
+    watchStats: (cb) => clientWatchStats(backend, ({ approvedCount }) => cb({ approvedCount })),
+
+    watchConfig: (cb) => clientWatchConfig(backend, (c) => cb(toDisplayConfig(c))),
+
+    photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
   };
 }

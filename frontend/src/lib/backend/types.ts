@@ -274,3 +274,37 @@ export interface GuestApi {
    */
   removeMyPhoto(photoId: string): Promise<void>;
 }
+
+// ------------------------------------------------------------ big screen
+
+export interface ApprovedUpdate {
+  /** The latest approved photos, newest-approved first (up to `max`). */
+  photos: Photo[];
+  /** Entered the list since the previous callback. Always empty on the first one. */
+  added: Photo[];
+  /** Left the list since the previous callback — removed, or pushed out of the window. */
+  removedIds: string[];
+}
+
+/** The "Màn hình lớn" section of config/app (DESIGN-D22), defaults filled in. */
+export interface DisplayConfig {
+  /** "Hiện tên người gửi". */
+  showNames: boolean;
+  /** "Card 'Vừa lên Wall'". Off: a new strip goes straight into the track. */
+  arrivalCard: boolean;
+  /** "Tốc độ trượt". null = the design's pace. */
+  marqueePxPerSec: number | null;
+  /** "Link trong mã QR". */
+  qrUrl: string;
+  /** "Làm mới màn lớn": every big screen reloads when this changes. */
+  reloadRequestedAtMs: number | null;
+}
+
+/** The kiosk at /display/. Read-only, and signed out: approved strips are public. */
+export interface DisplayApi {
+  watchApproved(cb: (update: ApprovedUpdate) => void, max?: number): Unsubscribe;
+  /** approvedCount = strips on the wall right now. */
+  watchStats(cb: (stats: { approvedCount: number }) => void): Unsubscribe;
+  watchConfig(cb: (config: DisplayConfig) => void): Unsubscribe;
+  photoUrl(photoId: string): Promise<string>;
+}
