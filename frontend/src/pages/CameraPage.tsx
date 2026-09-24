@@ -109,7 +109,9 @@ export function CameraPage() {
       <TopBar
         tone="dark"
         title={`Ảnh ${slot} / ${SHOT_COUNT}`}
-        backTo={slot === 1 ? '/name' : `/camera/${slot - 1}/review`}
+        // Out of the camera, home. The shots stay in the session and the name
+        // is remembered, so "Bắt đầu chụp ảnh" picks up at the first empty slot.
+        backTo="/"
         right={
           <>
             <button
