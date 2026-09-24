@@ -28,7 +28,8 @@ export function Dialog({
   open: boolean;
   title: string;
   body?: ReactNode;
-  icon?: IconName;
+  /** A token icon name, or a ready glyph for icons outside the shared set. */
+  icon?: IconName | ReactNode;
   tone?: 'destructive' | 'default';
   confirmLabel: string;
   cancelLabel?: string;
@@ -93,7 +94,7 @@ export function Dialog({
         onClick={(e) => e.stopPropagation()}
       >
         <span className={`${styles.disc} ${tone === 'destructive' ? styles.discDanger : ''}`}>
-          <Icon name={icon} size={24} />
+          {typeof icon === 'string' ? <Icon name={icon as IconName} size={24} /> : icon}
         </span>
 
         <h2 id={titleId} className={`u ${styles.title}`}>
