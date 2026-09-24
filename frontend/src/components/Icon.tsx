@@ -143,30 +143,6 @@ export function SwitchCameraGlyph({ size = 24 }: { size?: number }) {
   );
 }
 
-/** (design) M00 "Đăng nhập bằng Google" — the four-colour G mark, using the brand tokens. */
-export function GoogleGlyph({ size = 20 }: { size?: number }) {
-  return (
-    <svg width={size} height={size} viewBox="0 0 24 24" aria-hidden="true" style={{ display: 'block', flexShrink: 0 }}>
-      <path
-        fill="var(--pw-blue-500)"
-        d="M23.04 12.27c0-.79-.07-1.54-.2-2.27H12v4.3h6.19a5.3 5.3 0 0 1-2.3 3.48v2.9h3.72c2.18-2 3.43-4.96 3.43-8.41Z"
-      />
-      <path
-        fill="var(--pw-green-500)"
-        d="M12 24c3.1 0 5.7-1.03 7.61-2.79l-3.72-2.9c-1.03.7-2.35 1.1-3.89 1.1-2.99 0-5.52-2.02-6.43-4.73H1.74v2.98A12 12 0 0 0 12 24Z"
-      />
-      <path
-        fill="var(--pw-yellow-500)"
-        d="M5.57 14.68A7.2 7.2 0 0 1 5.2 12c0-.93.16-1.83.37-2.68V6.34H1.74A12 12 0 0 0 0 12c0 1.94.46 3.77 1.74 5.66l3.83-2.98Z"
-      />
-      <path
-        fill="var(--pw-red-500)"
-        d="M12 4.75c1.68 0 3.19.58 4.38 1.71l3.29-3.29C17.7 1.19 15.1 0 12 0 7.31 0 3.26 2.69 1.74 6.34l3.83 2.98C6.48 6.6 9 4.75 12 4.75Z"
-      />
-    </svg>
-  );
-}
-
 /** (design) S03 "Lật gương" — flip_camera_android. */
 export function MirrorGlyph({ size = 16 }: { size?: number }) {
   return (

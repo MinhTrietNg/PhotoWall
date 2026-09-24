@@ -1,30 +1,71 @@
+/*
+ * M00 is drawn at 1280 x 800: one 520-wide card centred on the cream ground,
+ * a yellow disc bleeding off the top-left corner and a blue tile off the
+ * bottom-right. Both shapes are anchored to their corner, so any window keeps
+ * the same composition.
+ */
 .page {
+  position: relative;
   min-height: 100dvh;
   display: flex;
   align-items: center;
   justify-content: center;
   padding: var(--pw-space-7);
+  overflow: hidden;
   background: var(--pw-bg);
 }
 
+.circle,
+.square {
+  position: absolute;
+  pointer-events: none;
+  border: var(--pw-outline-strong);
+}
+
+.circle {
+  top: -60px;
+  left: -60px;
+  width: 220px;
+  height: 220px;
+  border-radius: 50%;
+  background: var(--pw-yellow-500);
+}
+
+.square {
+  right: calc(2 * var(--pw-space-8));
+  bottom: calc(-1 * var(--pw-space-8));
+  width: 160px;
+  height: 160px;
+  border-radius: var(--pw-radius-7);
+  background: var(--pw-blue-500);
+  transform: rotate(12deg);
+}
+
 .card {
-  width: 100%;
-  max-width: 420px;
+  position: relative;
+  width: 520px;
+  max-width: 100%;
   display: flex;
   flex-direction: column;
-  align-items: center;
   gap: var(--pw-space-4);
-  text-align: center;
-  padding: var(--pw-space-8) var(--pw-space-7);
+  /* 36, measured on the artboard — it sits between the 32 and 40 steps. */
+  padding: calc(var(--pw-space-7) + var(--pw-space-1));
   background: var(--pw-surface);
   border: var(--pw-outline);
-  border-radius: var(--pw-radius-6);
+  border-radius: var(--pw-radius-5);
   box-shadow: var(--pw-shadow-2);
 }
 
-.logo {
-  width: var(--pw-ctl-l);
-  height: var(--pw-ctl-l);
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-4);
+}
+
+.tile {
+  width: var(--pw-ctl-m);
+  height: var(--pw-ctl-m);
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -36,13 +77,30 @@
 .title {
   margin: 0;
   font: var(--pw-type-h2);
+  font-weight: 800;
+  line-height: 1.1;
 }
 
 .sub {
-  margin: calc(-1 * var(--pw-space-2)) 0 0;
-  font: var(--pw-type-body);
-  font-weight: 600;
+  margin: 0;
+  font: var(--pw-type-body-s);
   color: var(--pw-ink-2);
+}
+
+/* The "G" on the sign-in button: a white 22 disc with the letter in blue. */
+.gBadge {
+  width: 22px;
+  height: 22px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: var(--pw-surface);
+  color: var(--pw-blue-700);
+  font: var(--pw-type-body);
+  font-weight: 700;
+  line-height: 1;
 }
 
 .body {
@@ -52,18 +110,34 @@
 }
 
 .error {
-  width: 100%;
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pw-space-3);
   padding: var(--pw-space-3) var(--pw-space-4);
   border: var(--pw-outline);
   border-radius: var(--pw-radius-4);
   background: var(--pw-red-100);
-  color: var(--pw-red-700);
+  color: var(--pw-ink);
   font: var(--pw-type-body-s);
-  text-align: left;
+}
+
+.error p {
+  margin: 0;
+}
+
+.error b {
+  font-weight: 700;
+}
+
+.errorIcon {
+  color: var(--pw-red-700);
 }
 
 .footer {
-  margin: 0;
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--pw-space-4);
   font: var(--pw-type-body-s);
   color: var(--pw-ink-2);
 }

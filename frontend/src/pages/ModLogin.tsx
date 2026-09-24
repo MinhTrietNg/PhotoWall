@@ -5,7 +5,7 @@
  */
 import { useState } from 'react';
 import { Button } from '@/components/Button';
-import { GoogleGlyph, Icon } from '@/components/Icon';
+import { ConsoleIcon } from '@/features/moderation/ConsoleIcon';
 import styles from './ModLogin.module.css';
 
 export function ModLogin({
@@ -25,7 +25,7 @@ export function ModLogin({
     try {
       await onSignIn();
     } catch {
-      setError('Đăng nhập thất bại, thử lại nhé.');
+      setError('Đăng nhập chưa xong, thử lại nhé.');
     } finally {
       setSigningIn(false);
     }
@@ -33,40 +33,59 @@ export function ModLogin({
 
   return (
     <div className={styles.page}>
-      <div className={styles.card}>
-        <span className={styles.logo} aria-hidden="true">
-          <Icon name="photoCamera" size={24} />
-        </span>
+      <span className={styles.circle} aria-hidden="true" />
+      <span className={styles.square} aria-hidden="true" />
 
-        <h1 className={`u ${styles.title}`}>Kiểm duyệt Photo Wall</h1>
-        <p className={styles.sub}>Chỉ dành cho ban tổ chức</p>
+      <main className={styles.card}>
+        <div className={styles.head}>
+          <span className={styles.tile} aria-hidden="true">
+            <ConsoleIcon name="adminPanelSettings" size={24} />
+          </span>
+          <div>
+            <h1 className={`u ${styles.title}`}>Kiểm duyệt Photo Wall</h1>
+            <p className={styles.sub}>Chỉ dành cho ban tổ chức</p>
+          </div>
+        </div>
+
         <p className={styles.body}>
           Đăng nhập bằng tài khoản Google đã được GDGoC thêm vào danh sách kiểm duyệt. Khách tham
           gia không cần đăng nhập.
         </p>
 
-        {deniedEmail ? (
-          <p className={styles.error}>
-            <b>{deniedEmail}</b> chưa có quyền kiểm duyệt. Nhờ Admin GDGoC thêm bạn trong Cài đặt
-            → Người kiểm duyệt.
-          </p>
-        ) : null}
-        {error ? <p className={styles.error}>{error}</p> : null}
-
         <Button
-          variant="secondary"
           block
           disabled={signingIn}
-          iconStart={<GoogleGlyph />}
+          iconStart={
+            <span className={styles.gBadge} aria-hidden="true">
+              G
+            </span>
+          }
           onClick={handleSignIn}
         >
           {signingIn ? 'Đang đăng nhập…' : 'Đăng nhập bằng Google'}
         </Button>
 
-        <p className={styles.footer}>
-          Phiên hết hạn sau 12 giờ · <a href="/">Về trang khách →</a>
-        </p>
-      </div>
+        {deniedEmail ? (
+          <div className={styles.error} role="alert">
+            <ConsoleIcon name="block" size={20} className={styles.errorIcon} />
+            <p>
+              <b>{deniedEmail}</b> chưa có quyền kiểm duyệt. Nhờ Admin GDGoC thêm bạn trong Cài đặt
+              → Người kiểm duyệt.
+            </p>
+          </div>
+        ) : null}
+        {error ? (
+          <div className={styles.error} role="alert">
+            <ConsoleIcon name="block" size={20} className={styles.errorIcon} />
+            <p>{error}</p>
+          </div>
+        ) : null}
+
+        <div className={styles.footer}>
+          <span>Phiên hết hạn sau 12 giờ</span>
+          <a href="/">Về trang khách →</a>
+        </div>
+      </main>
     </div>
   );
 }

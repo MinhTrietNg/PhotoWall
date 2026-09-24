@@ -218,20 +218,26 @@ const mockModerators: ModeratorAccount[] = [
 
 const RETENTION_MS = 24 * 3_600_000;
 
-/** Sample queue content so M01/M02 are demoable with no emulator — DESIGN-D21. */
+/**
+ * Sample queue content so M01/M02 are demoable with no emulator — DESIGN-D21.
+ * The three pending rows are the artboard's: Đức Huy #131 on F03, Bảo Trân
+ * #130 and Gia Hân #127 on F02, waiting 1, 2 and 6 minutes.
+ */
 function seedModerationDemo() {
   if (store.photos.length > 0) return;
   const now = Date.now();
-  const demo: Array<[string, string, PhotoStatus, string, number]> = [
-    ['mock-131', 'Đức Huy', 'pending', 'f03-isf', 1],
-    ['mock-130', 'Minh Triết', 'pending', 'f01-gdgoc', 4],
-    ['mock-129', 'Lan Anh', 'pending', 'f02-aws', 6],
-    ['mock-128', 'Hải Đăng', 'approved', 'f01-gdgoc', 20],
-    ['mock-127', 'Thu Hà', 'approved', 'f03-isf', 40],
-    ['mock-126', 'Quang Huy', 'removed', 'f02-aws', 90],
-    ['mock-125', 'Bảo Ngọc', 'rejected', 'f01-gdgoc', 120],
+  const demo: Array<[number, string, PhotoStatus, string, number]> = [
+    [131, 'Đức Huy', 'pending', 'f03-isf', 1],
+    [130, 'Bảo Trân', 'pending', 'f02-aws', 2],
+    [127, 'Gia Hân', 'pending', 'f02-aws', 6],
+    [129, 'Minh Triết', 'approved', 'f01-gdgoc', 12],
+    [128, 'Thu Hà', 'approved', 'f01-gdgoc', 30],
+    [126, 'Quốc Bảo', 'approved', 'f02-aws', 45],
+    [121, 'Khánh Vy', 'removed', 'f02-aws', 50],
+    [118, 'Hải Đăng', 'rejected', 'f01-gdgoc', 80],
   ];
-  for (const [id, displayName, status, frameVariant, minutesAgo] of demo) {
+  for (const [n, displayName, status, frameVariant, minutesAgo] of demo) {
+    const id = String(n);
     const createdAtMs = now - minutesAgo * 60_000;
     store.photos.push({
       id,
