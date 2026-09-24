@@ -47,7 +47,7 @@ export function App() {
   return (
     <Routes>
       <Route path="/" element={<ModQueue account={auth.account} onSignOut={() => void backend.signOut()} />} />
-      {isAdmin ? <Route path="/settings" element={<ModSettings email={auth.email} />} /> : null}
+      {isAdmin ? <Route path="/settings" element={<ModSettings account={auth.account} />} /> : null}
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
   );

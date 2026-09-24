@@ -1,30 +1,34 @@
+/*
+ * M02, 1280 wide. Header (back · title · Huỷ thay đổi · Lưu), then six cards in
+ * two 598 columns with a 20 gap; the two cards of a row share its height.
+ */
 .page {
-  min-height: 100dvh;
-  max-width: 860px;
+  max-width: 1280px;
   margin: 0 auto;
-  padding: var(--pw-space-6) var(--pw-space-8) var(--pw-space-9);
+  padding: var(--pw-space-6) var(--pw-space-7) var(--pw-space-8);
   display: flex;
   flex-direction: column;
-  gap: var(--pw-space-6);
+  gap: var(--pw-space-5);
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--pw-space-4);
-  flex-wrap: wrap;
+  min-height: var(--pw-ctl-m);
 }
 
 .headerText {
   display: flex;
-  align-items: flex-start;
-  gap: var(--pw-space-3);
+  align-items: center;
+  gap: var(--pw-space-4);
 }
 
 .title {
   margin: 0;
   font: var(--pw-type-h2);
+  line-height: 1.1;
 }
 
 .sub {
@@ -35,79 +39,173 @@
 
 .headerActions {
   display: flex;
-  gap: var(--pw-space-2);
-}
-
-.section {
-  display: flex;
-  flex-direction: column;
   gap: var(--pw-space-3);
 }
 
-.sectionTitle {
-  display: block;
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--pw-space-5);
+  align-items: stretch;
 }
 
-.rows {
+/* ------------------------------------------------------------------ card */
+
+.card {
   display: flex;
   flex-direction: column;
-  gap: var(--pw-space-2);
-}
-
-.rowTitleWithTag {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--pw-space-2);
-}
-
-.staticRow {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--pw-space-3);
-  padding: var(--pw-space-3) var(--pw-space-4);
-  border: var(--pw-outline);
-  border-radius: var(--pw-radius-4);
-  background: var(--pw-surface);
-}
-
-.staticValue {
-  font: var(--pw-type-body-s);
-  color: var(--pw-ink-2);
-  text-align: right;
-}
-
-.frameList {
-  display: flex;
-  flex-direction: column;
-  gap: var(--pw-space-2);
-}
-
-.frameRow {
-  display: flex;
-  align-items: center;
-  gap: var(--pw-space-3);
-  padding: var(--pw-space-2) var(--pw-space-4);
-  border: var(--pw-outline);
-  border-radius: var(--pw-radius-4);
-  background: var(--pw-surface);
-}
-
-.frameThumb {
-  border-radius: var(--pw-radius-1);
-  border: var(--pw-outline);
-}
-
-.frameName {
-  flex: 1;
   min-width: 0;
-  font: var(--pw-type-body-s);
+  padding: var(--pw-space-5) var(--pw-space-6);
+  background: var(--pw-surface);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-5);
+}
+
+.cardHead {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
+  /* The rows carry their own 16 of padding; the artboard leaves 2 more. */
+  margin-bottom: 2px;
+}
+
+.tile {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  background: var(--pw-blue-100);
+  color: var(--pw-ink);
+}
+
+.cardTitle {
+  margin: 0;
+  font: var(--pw-type-title);
   font-weight: 700;
 }
 
-.frameFile {
+/* ------------------------------------------------------------------ lines */
+
+/* One setting — 02a's setting row laid flat: title Body 700, sub Body S ink-2 (M02 sets it at 13). */
+.line {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pw-space-4);
+  padding: var(--pw-space-4) 0;
+  border-bottom: 1px solid var(--pw-line);
+}
+
+label.line {
+  cursor: pointer;
+}
+
+.lineDisabled {
+  cursor: default;
+}
+
+.lineText {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-1);
+  min-width: 0;
+}
+
+/* Body 700 set solid (1.2), as the artboard's rows measure — 73 tall with a sub line. */
+.lineTitle {
+  display: inline-flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: var(--pw-space-2);
+  font: var(--pw-type-body);
+  font-weight: 700;
+  line-height: 1.2;
+  color: var(--pw-ink);
+}
+
+.lineDesc {
   font: var(--pw-type-body-s);
   color: var(--pw-ink-2);
+}
+
+.lineError {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-1);
+  font: var(--pw-type-caption);
+  color: var(--pw-red-700);
+}
+
+/* 02a "Tag 24 · admin": lock + word, ink outline. */
+.adminTag {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-1);
+  height: 24px;
+  padding: 0 var(--pw-space-2);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  font: var(--pw-type-caption);
+  font-weight: 700;
+}
+
+.fieldGroup {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  flex-shrink: 0;
+}
+
+/* S input — h40, radius 12, pad-x 12, 160 wide on the artboard. */
+.input {
+  width: 160px;
+  height: var(--pw-ctl-s);
+  padding: 0 var(--pw-space-3);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-body);
+  font-weight: 500;
+}
+
+.input::placeholder {
+  color: var(--pw-ink-3);
+}
+
+.input:focus {
+  outline: none;
+  border-color: var(--pw-blue-700);
+  box-shadow: 0 0 0 3px var(--pw-blue-100);
+}
+
+.input[aria-invalid='true'] {
+  border-color: var(--pw-red-700);
+  box-shadow: 0 0 0 3px var(--pw-red-100);
+}
+
+.input:disabled {
+  background: var(--pw-surface-2);
+  border-color: var(--pw-line);
+  color: var(--pw-ink-3);
+  cursor: not-allowed;
+}
+
+.suffix {
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+  white-space: nowrap;
+}
+
+.buttonsRow {
+  display: flex;
+  gap: var(--pw-space-3);
+  padding-top: var(--pw-space-4);
 }
 
 .note {
@@ -116,19 +214,283 @@
   color: var(--pw-ink-2);
 }
 
-.qrRow {
+/* A card that opens on a note rather than a row gets the row's own top air. */
+.cardHead + .note {
+  margin-top: var(--pw-space-2);
+}
+
+/* ------------------------------------------------------------------ frames */
+
+.frameHead {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: var(--pw-space-3);
-  flex-wrap: wrap;
+  padding: var(--pw-space-4) 0;
+  border-bottom: 1px solid var(--pw-line);
+}
+
+.lockedBadge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--pw-space-3);
+  border: 2px solid var(--pw-green-700);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-green-100);
+  color: var(--pw-green-700);
+  font: var(--pw-type-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.frameGrid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  column-gap: var(--pw-space-4);
+  margin-bottom: var(--pw-space-4);
+}
+
+.frameRow {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  min-width: 0;
+  padding: var(--pw-space-2) 0;
+  border-bottom: 1px solid var(--pw-line);
+  cursor: pointer;
+}
+
+/* The 18 thumb of 02a: a 14 strip inside a 2px ink, radius 4 wrapper. */
+.frameThumb {
+  flex-shrink: 0;
+  display: inline-block;
+  line-height: 0;
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-1);
+  overflow: hidden;
+}
+
+.frameText {
+  flex: 1;
+  min-width: 0;
+  margin-right: var(--pw-space-1);
+  display: flex;
+  flex-direction: column;
+}
+
+.frameName {
+  font: var(--pw-type-body-s);
+  font-weight: 700;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.frameFile {
+  font: var(--pw-type-caption);
+  font-weight: 400;
+  color: var(--pw-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+/* ------------------------------------------------------------------ data */
+
+.exports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-3);
+  margin-top: var(--pw-space-3);
+}
+
+/* Full-width M buttons, content on the left. */
+.exportButton {
+  justify-content: flex-start;
+  padding: 0 var(--pw-space-5);
+}
+
+.danger {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pw-space-3);
+  margin-top: var(--pw-space-4);
   padding: var(--pw-space-3) var(--pw-space-4);
   border: var(--pw-outline);
   border-radius: var(--pw-radius-4);
-  background: var(--pw-surface);
+  background: var(--pw-red-100);
 }
 
-.qrLink {
+.dangerTitle {
+  margin: 0;
   font: var(--pw-type-body-s);
+  font-weight: 700;
+}
+
+.dangerLine {
+  margin: 0;
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink);
+}
+
+.dangerActions {
+  display: flex;
+  gap: var(--pw-space-2);
+  flex-shrink: 0;
+}
+
+/* ------------------------------------------------------------------ people */
+
+.people {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.person {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
+  padding: var(--pw-space-3) 0;
+  border-bottom: 1px solid var(--pw-line);
+}
+
+.avatar {
+  width: 36px;
+  height: 36px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: var(--pw-outline);
+  border-radius: 50%;
+  color: #fff;
+  font: var(--pw-type-body);
+  font-weight: 700;
+}
+
+.avatarBlue {
+  background: var(--pw-blue-700);
+}
+.avatarGreen {
+  background: var(--pw-green-700);
+}
+.avatarRed {
+  background: var(--pw-red-700);
+}
+.avatarYellow {
+  background: var(--pw-yellow-700);
+}
+
+.personText {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.personName {
+  font: var(--pw-type-body);
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.personEmail {
+  font: var(--pw-type-caption);
+  font-weight: 400;
   color: var(--pw-ink-2);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.role {
+  display: inline-flex;
+  align-items: center;
+  height: 28px;
+  padding: 0 var(--pw-space-3);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  font: var(--pw-type-caption);
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.roleAdmin {
+  background: var(--pw-ink);
+  color: #fff;
+}
+
+.removePerson {
+  width: 36px;
+  height: 36px;
+  color: var(--pw-red-700);
+}
+
+.removePerson:disabled {
+  color: var(--pw-ink-3);
+  border-color: var(--pw-line);
+  cursor: not-allowed;
+}
+
+.addRow {
+  display: flex;
+  gap: var(--pw-space-3);
+  margin-top: var(--pw-space-4);
+}
+
+.addEmail,
+.addRole {
+  height: var(--pw-ctl-m);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-body);
+}
+
+.addEmail {
+  flex: 1;
+  min-width: 0;
+  padding: 0 var(--pw-space-4);
+  font-weight: 500;
+}
+
+.addEmail::placeholder {
+  color: var(--pw-ink-3);
+}
+
+.addEmail:focus {
+  outline: none;
+  border-color: var(--pw-blue-700);
+  box-shadow: 0 0 0 3px var(--pw-blue-100);
+}
+
+.addRole {
+  width: 130px;
+  padding: 0 var(--pw-space-3);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.addRole:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+/* ------------------------------------------------------------------ dialog */
+
+.dialogField {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+}
+
+.dialogField .input {
+  width: 100%;
 }
