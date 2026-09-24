@@ -1,0 +1,25 @@
+/*
+ * The moderation console's shell (M00 · M01 · M02).
+ *
+ * Board 06: "Kiểm duyệt cố định 1280, không mobile." It paints the flat cream
+ * ground — the dotted pattern base.css draws beside the guest column from
+ * 768px up is the phone flow's, not the console's.
+ */
+body {
+  background: var(--pw-bg);
+}
+
+/* The keycap on M01's helper line: "Phím tắt: A duyệt · R gỡ · ↑↓ chọn dòng". */
+.kbd {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  height: 20px;
+  padding: 0 var(--pw-space-1);
+  border-radius: var(--pw-radius-1);
+  background: var(--pw-surface-2);
+  color: var(--pw-ink-2);
+  font: var(--pw-type-caption);
+  font-weight: 700;
+}

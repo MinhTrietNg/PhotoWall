@@ -5,6 +5,7 @@ import { Splash } from '@/components/Splash';
 import { ModeratorBackendProvider } from '@/lib/backend';
 import '@/styles/tokens.css';
 import '@/styles/base.css';
+import '@/styles/admin.css';
 import { App } from './App';
 
 const root = document.getElementById('root');
