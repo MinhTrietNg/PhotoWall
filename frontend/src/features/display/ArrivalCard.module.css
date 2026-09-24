@@ -1,0 +1,190 @@
+/*
+ * DESIGN-D19 .pw-arrive: centred on the marquee viewport, standing on its
+ * bottom edge, 600 x 690, top corners 32, yellow, border 4, a hard shadow to
+ * the right only, content bottom-aligned with gap 32 and side padding 32.
+ */
+.card {
+  position: absolute;
+  left: 50%;
+  bottom: 0;
+  z-index: 2;
+  width: 600px;
+  height: 690px;
+  margin-left: -300px;
+  display: flex;
+  align-items: flex-end;
+  gap: var(--pw-space-7);
+  padding: 0 var(--pw-space-7);
+  border: 4px solid var(--pw-ink);
+  border-radius: var(--pw-radius-7) var(--pw-radius-7) 0 0;
+  background: var(--pw-yellow-500);
+  box-shadow: 8px 0 0 var(--pw-ink);
+  overflow: hidden;
+  overflow: clip;
+  color: var(--pw-ink);
+  animation: rise 700ms cubic-bezier(0.2, 0.8, 0.2, 1) both;
+}
+
+@keyframes rise {
+  from {
+    transform: translateY(112%);
+  }
+  to {
+    transform: translateY(0);
+  }
+}
+
+/* The strip has left for the track; the card shrinks away behind it. */
+.leaving {
+  animation: leave 600ms var(--pw-ease-accel) both;
+}
+
+@keyframes leave {
+  from {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(6%) scale(0.86);
+    opacity: 0;
+  }
+}
+
+.chip {
+  position: absolute;
+  border: var(--pw-outline-strong);
+}
+
+/*
+ * The strip, sunk 40 below the card's edge, tilted -3deg, and tall enough to
+ * fill the card: at 208 wide its top clears the card's by ~60, so the card has
+ * no empty band above it.
+ */
+.stack {
+  position: relative;
+  bottom: -40px;
+  flex-shrink: 0;
+  display: grid;
+}
+
+/* Ink behind the image and 1px of bleed, for the hairline StripTile explains. */
+.strip {
+  position: relative;
+  grid-area: 1 / 1;
+  display: inline-flex;
+  width: calc(208px + 8px);
+  height: calc(655px + 8px);
+  border: 4px solid var(--pw-ink);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-ink);
+  box-shadow: var(--pw-shadow-2);
+  overflow: hidden;
+  overflow: clip;
+  transform: rotate(-3deg);
+}
+
+.stripLoading {
+  background: var(--pw-surface-2);
+}
+
+.strip img {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  max-width: none;
+  object-fit: cover;
+}
+
+/* The fan behind a merged card's front strip. */
+.behind1 {
+  transform: translate(-18px, -10px) rotate(-8deg);
+}
+.behind2 {
+  transform: translate(-34px, -18px) rotate(-13deg);
+}
+
+/* The front strip is in the air now; Wall draws it. */
+.flown .strip:last-child {
+  visibility: hidden;
+}
+
+/* Centred beside the strip, not stood on the card's bottom edge. */
+.text {
+  position: relative;
+  align-self: center;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: var(--pw-space-4);
+  min-width: 0;
+}
+
+.livePill {
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--pw-space-5);
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-green-700);
+  color: #fff;
+  font: 700 20px / 1 var(--pw-font-body);
+  white-space: nowrap;
+}
+
+/* Unbounded 52 / 1.05, 800. Four lines hold any 24-character name, whole. */
+.name {
+  margin: 0;
+  max-width: 100%;
+  font-size: 52px;
+  font-weight: 800;
+  line-height: 1.05;
+  overflow-wrap: anywhere;
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 4;
+  line-clamp: 4;
+  overflow: hidden;
+}
+
+.body {
+  margin: 0;
+  font: 600 24px / 1.35 var(--pw-font-body);
+  text-wrap: pretty;
+}
+
+.momentPill {
+  display: inline-flex;
+  align-items: center;
+  height: 40px;
+  padding: 0 var(--pw-space-4);
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  font: 700 18px / 1 var(--pw-font-body);
+  white-space: nowrap;
+}
+
+/* Reduced motion: no rise, no shrink — a 150 ms fade each way. */
+@media (prefers-reduced-motion: reduce) {
+  .card {
+    animation: fadeIn 150ms linear both !important;
+  }
+  .leaving {
+    animation: fadeOut 150ms linear both !important;
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes fadeOut {
+  to {
+    opacity: 0;
+  }
+}

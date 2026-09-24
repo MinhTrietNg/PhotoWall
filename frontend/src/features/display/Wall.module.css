@@ -1,0 +1,184 @@
+/*
+ * DESIGN-D18 marquee viewport: 1236 x 760, radius 24, border 3 ink, white.
+ * 1236 is its width on a 16:9 screen; on a wider window it takes the extra.
+ */
+.viewport {
+  position: relative;
+  flex: 1 0 auto;
+  width: 1236px;
+  height: 760px;
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-6);
+  background: var(--pw-surface);
+  overflow: hidden;
+  overflow: clip;
+}
+
+/* Placed by the conveyor, one transform per frame. */
+.tile {
+  position: absolute;
+  left: 0;
+  top: 8px;
+  will-change: transform;
+}
+
+/* A strip that went straight in, with the arrival card switched off. */
+.appear {
+  animation: appear 600ms var(--pw-ease-decel) both;
+}
+
+@keyframes appear {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Reduced motion: the slideshow page, as many whole tiles as fit, crossfading 150 ms. */
+.page {
+  position: absolute;
+  inset: 8px 0 auto;
+  display: flex;
+  justify-content: center;
+  gap: var(--pw-space-6);
+  padding: 0 var(--pw-space-3);
+  animation: pageIn 150ms linear both !important;
+}
+
+@keyframes pageIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* 80px white edge fades, left 90deg and right 270deg. */
+.fade {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  z-index: 1;
+  width: 80px;
+  pointer-events: none;
+}
+
+.fadeLeft {
+  left: 0;
+  background: linear-gradient(90deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+}
+
+.fadeRight {
+  right: 0;
+  background: linear-gradient(270deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0));
+}
+
+/* DESIGN-D19 .pw-dim: the viewport only, never the whole screen. */
+.dim {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  border-radius: var(--pw-radius-6);
+  background: rgba(250, 247, 242, 0.55);
+  animation: dimIn 400ms ease-out both;
+}
+
+.dimOut {
+  animation: dimOut 600ms ease-out both;
+}
+
+@keyframes dimIn {
+  from {
+    opacity: 0;
+  }
+}
+
+@keyframes dimOut {
+  to {
+    opacity: 0;
+  }
+}
+
+/* Ink behind the image and 1px of bleed, for the hairline StripTile explains. */
+.flyer {
+  position: absolute;
+  left: 0;
+  top: 0;
+  z-index: 3;
+  display: inline-flex;
+  border: 4px solid var(--pw-ink);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-ink);
+  color: var(--pw-ink);
+  overflow: hidden;
+  overflow: clip;
+  transform-origin: center;
+  will-change: transform;
+}
+
+.flyerLoading {
+  background: var(--pw-surface-2);
+}
+
+.flyer img {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  max-width: none;
+  object-fit: cover;
+}
+
+/* DESIGN-D03 empty / loading, scaled for a screen read from metres away. */
+.state {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pw-space-5);
+  padding: 0 120px;
+  text-align: center;
+  text-wrap: balance;
+}
+
+.stateDisc {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 112px;
+  height: 112px;
+  border: var(--pw-outline-strong);
+  border-radius: 50%;
+}
+
+.empty {
+  background: var(--pw-yellow-100);
+  color: var(--pw-yellow-700);
+}
+
+.loading {
+  background: var(--pw-blue-100);
+  color: var(--pw-blue-700);
+}
+
+.stateTitle {
+  margin: 0;
+  font-size: 48px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+.stateBody {
+  margin: 0;
+  color: var(--pw-ink-2);
+  font: 600 28px / 1.35 var(--pw-font-body);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .dim {
+    animation: dimIn 150ms linear both !important;
+  }
+  .dimOut {
+    animation: dimOut 150ms linear both !important;
+  }
+}
