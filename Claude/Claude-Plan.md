@@ -888,6 +888,26 @@ Root 1920x1080  bg #FAF7F2  overflow clip
   The smallest text actually drawn is **18 px** (name pill). Use **18 px** as the floor. **[C]**
 - Hide the cursor; self-reload every 6 hours. **[C]**
 
+> **As built** (`features/display/conveyor.ts`). A track rendered twice and animated to `-50%`
+> cannot take an insertion or a removal without its width, and so its `-50%`, changing — the
+> jump this contract forbids. The marquee is therefore a conveyor: tiles in numbered slots on
+> an endless tape moving left, the next photo laid just past the right edge, a strip landing at
+> the head or leaving making room by an eased one-slot shift. Same seamless loop, read one tile
+> at a time. Pace: `marqueePxPerSec`, else **40 px/s** (D29/D30). **[I]**
+>
+> The decor square is **not drawn**: at `left 1232; bottom -60` it sits on top of the AWS disc in
+> the footer, or wholly under the footer if the footer is stacked above it. Pending a decision
+> from design. **[I]**
+>
+> The stage takes the window's shape instead of letterboxing (`features/display/stage.ts`): a
+> 16:9 window shows the artboard exactly; a wider one (a browser with its toolbar) widens the
+> marquee while the 516 column keeps its size; a taller one splits the extra height above the
+> header and above the footer. The footer strip always runs edge to edge. **[I]**
+>
+> D02 card, as built: the strip is **208 wide** so it fills the card's height, the text column is
+> centred beside it, names get up to four lines at 52 px, and three confetti chips moved off the
+> text — (540, 150) → (540, 84), (520, 380) → (536, 596), (470, 560) → (462, 636). **[I]**
+
 ---
 
 ### DESIGN-D19 — D02 Màn hình lớn · ảnh vừa lên
@@ -2877,21 +2897,21 @@ the browser throttling animation in a background tab (the kiosk must stay foregr
 **Files to modify.** `backend/src/client.ts` (add `watchByStatus`).
 
 **Tasks.**
-- [ ] **P10.1** M00: sign-in screen plus the "not on the allowlist" error banner naming the email. `signInWithPopup` + `isModerator()`.
-- [ ] **P10.2** M01 header: logo tile 44, title block, and the pill cluster (count · uploads-open toggle · settings · user · sign out), all h36.
-- [ ] **P10.3** `pw-tabs` with live counts for `Chờ duyệt` / `Đã duyệt` / `Đã gỡ`.
-- [ ] **P10.4** Add `watchByStatus(b, status, max)` to `backend/src/client.ts` for the approved and removed tabs (the `status+reviewedAt` index already exists).
-- [ ] **P10.5** `pw-mod-table` with the exact grid `44px 96px minmax(0,1fr) 170px 330px 220px`, gap 16, pad `10 20`, 2 px `--pw-line` dividers, `surface-2` header with `.lbl` columns.
-- [ ] **P10.6** `pw-mod-row`: 44 px `pw-photowall-frame` thumb, name Body 700, meta Body S (`#131 · khung F03 · …`), time + waiting line that **turns red past 3 minutes**, status pill 32, S action buttons.
-- [ ] **P10.7** Per-mode actions: pending → `Duyệt` + `Gỡ`; approved → `Gỡ`; removed → `Khôi phục` (**gated on §20.5 #9**).
-- [ ] **P10.8** Confirm dialog for every destructive action, with the reason radio group (**persist it or drop it — §20.5 #16**).
-- [ ] **P10.9** Swallow `AlreadyReviewedError` silently; the row disappears via the snapshot anyway.
-- [ ] **P10.10** Keyboard: `A` approve, `R` remove, `↑ / ↓` move the row cursor, with a visible cursor state.
-- [ ] **P10.11** Bulk selection: checkbox 24, blue row tint, bulk bar with `Bỏ chọn` / `Duyệt N ảnh` / `Gỡ N ảnh`.
-- [ ] **P10.12** Empty / loading / error states via `pw-state`.
-- [ ] **P10.13** M02 tier 1: `Đang nhận ảnh` (wired to `setUploadsOpen`) and `eventName`. Everything else rendered **visibly disabled** with a note, until the config schema is widened.
-- [ ] **P10.14** M02 frame section: read the registry, show the `Đã khoá · duyệt 24.09` badge and each file name. Enable/disable is **frontend-only config** until there is somewhere to store it (§31 Q10).
-- [ ] **P10.15** Moderator list: read-only (`moderators/{email}` is console-managed and not client-listable).
+- [x] **P10.1** M00: sign-in screen plus the "not on the allowlist" error banner naming the email. `signInWithPopup` + `isModerator()`.
+- [x] **P10.2** M01 header: logo tile 44, title block, and the pill cluster (count · uploads-open toggle · settings · user · sign out), all h36.
+- [x] **P10.3** `pw-tabs` with live counts for `Chờ duyệt` / `Đã duyệt` / `Đã gỡ`.
+- [x] **P10.4** Add `watchByStatus(b, status, max)` to `backend/src/client.ts` for the approved and removed tabs (the `status+reviewedAt` index already exists).
+- [x] **P10.5** `pw-mod-table` with the exact grid `44px 96px minmax(0,1fr) 170px 330px 220px`, gap 16, pad `10 20`, 2 px `--pw-line` dividers, `surface-2` header with `.lbl` columns.
+- [x] **P10.6** `pw-mod-row`: 44 px `pw-photowall-frame` thumb, name Body 700, meta Body S (`#131 · khung F03 · …`), time + waiting line that **turns red past 3 minutes**, status pill 32, S action buttons.
+- [x] **P10.7** Per-mode actions: pending → `Duyệt` + `Gỡ`; approved → `Gỡ`; removed → `Khôi phục` (**gated on §20.5 #9**).
+- [x] **P10.8** Confirm dialog for every destructive action, with the reason radio group (**persist it or drop it — §20.5 #16**).
+- [x] **P10.9** Swallow `AlreadyReviewedError` silently; the row disappears via the snapshot anyway.
+- [x] **P10.10** Keyboard: `A` approve, `R` remove, `↑ / ↓` move the row cursor, with a visible cursor state.
+- [x] **P10.11** Bulk selection: checkbox 24, blue row tint, bulk bar with `Bỏ chọn` / `Duyệt N ảnh` / `Gỡ N ảnh`.
+- [x] **P10.12** Empty / loading / error states via `pw-state`.
+- [x] **P10.13** M02 tier 1: `Đang nhận ảnh` (wired to `setUploadsOpen`) and `eventName`. Everything else rendered **visibly disabled** with a note, until the config schema is widened. *Superseded by `8fe65e9`: the schema now takes every M02 field, so all are live; only SafeSearch stays disabled.*
+- [x] **P10.14** M02 frame section: read the registry, show the `Đã khoá · duyệt 24.09` badge and each file name. Enable/disable is **frontend-only config** until there is somewhere to store it (§31 Q10).
+- [x] **P10.15** Moderator list: read-only (`moderators/{email}` is console-managed and not client-listable). *Superseded by `8fe65e9`: `watchModerators` / `saveModerator` / `deleteModerator` exist, so the list is editable as drawn.*
 
 **Validation.** Two moderators acting on the same photo: one succeeds, the other sees nothing
 break. Approving puts the photo on the big screen within ~1 s. Removing takes it off and

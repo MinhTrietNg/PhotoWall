@@ -1,0 +1,99 @@
+/* The window: no scroll, no cursor. The stage covers all of it. */
+.screen {
+  position: fixed;
+  inset: 0;
+  overflow: hidden;
+  background: var(--pw-bg);
+  cursor: none;
+}
+
+/*
+ * DESIGN-D18 root: cream, clipped. 1920 x 1080 on a 16:9 screen; the size is
+ * set inline from the window (stage.ts), then scaled down onto it.
+ */
+.stage {
+  position: absolute;
+  left: 0;
+  top: 0;
+  display: flex;
+  flex-direction: column;
+  background: var(--pw-bg);
+  overflow: hidden;
+  overflow: clip;
+  transform: scale(var(--pw-stage-scale, 1));
+  transform-origin: 0 0;
+}
+
+/*
+ * pad 44 64 0. The right side is empty on the artboard. A window taller than
+ * 16:9 splits its extra height above the header and above the footer, so the
+ * header and the marquee stay one group in the middle.
+ */
+.header {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-6);
+  padding: calc(44px + var(--pw-stage-extra-y, 0px)) var(--pw-space-10) 0;
+}
+
+/* Unbounded 84 / 1, 800, -.01em. */
+.title {
+  margin: 0;
+  font-size: 84px;
+  font-weight: 800;
+  line-height: 1;
+  letter-spacing: -0.01em;
+  white-space: nowrap;
+}
+
+/* Unlike S01, the big screen's chip has a border. pad 0 16 6, radius 16, border 3. */
+.wall {
+  display: inline-block;
+  padding: 0 var(--pw-space-4) 6px;
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-4);
+  background: var(--pw-yellow-500);
+}
+
+/* Four 18px dots, gap 10, dropped 6px: blue · red · yellow · green. */
+.dots {
+  display: flex;
+  gap: 10px;
+  transform: translateY(6px);
+}
+
+.dots span {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+}
+
+/* pad 32 64 0, gap 40: the 1236 marquee and the 516 column. */
+.body {
+  display: flex;
+  gap: var(--pw-space-8);
+  padding: var(--pw-space-7) var(--pw-space-10) 0;
+}
+
+.side {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-6);
+  width: 516px;
+}
+
+.side > :last-child {
+  flex: 1;
+}
+
+/* h112, pad 0 64, centred, white, border-top 3. */
+.footer {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 112px;
+  margin-top: auto;
+  padding: 0 var(--pw-space-10);
+  border-top: var(--pw-outline-strong);
+  background: var(--pw-surface);
+}
