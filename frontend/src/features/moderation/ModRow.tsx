@@ -1,13 +1,27 @@
 /**
- * pw-mod-row — DESIGN-D21. One photo: thumb, sender, time (+ waiting, red past
- * 3 min on the pending tab), status, and the S-size actions for its tab.
+ * pw-mod-row — DESIGN-D21 (M01) and the "Table row · kiểm duyệt" pattern on 02b.
+ * One photo: checkbox, 44 strip, sender, time (+ waiting, red past 3 min on the
+ * pending tab), status pill with its reason chip, and the S-size actions for
+ * its tab — pending: Duyệt · Gỡ, on the wall: Gỡ, removed: Khôi phục.
  */
 import { useEffect, useState } from 'react';
 import { Button } from '@/components/Button';
-import { Icon } from '@/components/Icon';
-import type { ModeratorApi, ModTab, Photo } from '@/lib/backend';
-import { formatClock, formatWaiting, frameShortLabel, WAITING_OVERDUE_MS } from './format';
+import { IconButton } from '@/components/IconButton';
+import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
+import type { ModeratorAccount, ModeratorApi, ModTab, Photo } from '@/lib/backend';
+import type { FrameTemplate } from '@/types/frame';
+import { ConsoleIcon, type ConsoleIconName } from './ConsoleIcon';
+import {
+  formatClock,
+  formatRetention,
+  formatWaiting,
+  reviewerName,
+  rowMeta,
+  WAITING_OVERDUE_MS,
+} from './format';
 import styles from './ModTable.module.css';
+
+const THUMB_WIDTH = 44;
 
 function useThumb(backend: ModeratorApi, photoId: string): string | null {
   const [url, setUrl] = useState<string | null>(null);
@@ -16,7 +30,7 @@ function useThumb(backend: ModeratorApi, photoId: string): string | null {
     setUrl(null);
     backend.photoUrl(photoId).then(
       (u) => alive && setUrl(u),
-      () => undefined, // demo rows with no uploaded blob — show the fallback tile
+      () => undefined, // not uploaded (demo rows) or already purged — keep the frame tile
     );
     return () => {
       alive = false;
@@ -25,19 +39,68 @@ function useThumb(backend: ModeratorApi, photoId: string): string | null {
   return url;
 }
 
-function StatusPill({ photo }: { photo: Photo }) {
-  if (photo.status === 'pending') {
-    return <span className={`pill ${styles.pillPending}`}>Chờ duyệt</span>;
-  }
-  if (photo.status === 'approved') {
-    return <span className={`pill ${styles.pillApproved}`}>Đang hiển thị</span>;
-  }
-  // rejected vs removed is internal bookkeeping only — guests are never told which. §20.5 #2.
+/** The strip at 44, in the same 2px ink / radius 8 wrapper the artboard draws. */
+export function StripThumb({
+  url,
+  frame,
+  width = THUMB_WIDTH,
+}: {
+  url: string | null;
+  frame: FrameTemplate | undefined;
+  width?: number;
+}) {
   return (
-    <span className={`pill ${styles.pillGone}`}>
-      {photo.status === 'rejected' ? 'Gỡ trước khi duyệt' : 'Gỡ khỏi Wall'}
+    <span className={styles.thumb}>
+      {url ? (
+        <img src={url} alt="" style={{ width }} className={styles.thumbImg} />
+      ) : frame ? (
+        // The uploaded JPEG already carries its frame; until it arrives (or if
+        // it never will) the row shows that frame with its four slots empty.
+        <PhotoWallFrame frame={frame} width={width} />
+      ) : (
+        <span className={styles.thumbImg} style={{ width }} />
+      )}
     </span>
   );
+}
+
+type Tone = 'pending' | 'approved' | 'removed' | 'manual';
+
+const PILL: Record<ModTab, { tone: Tone; icon: ConsoleIconName; label: string }> = {
+  pending: { tone: 'pending', icon: 'hourglassTop', label: 'Chờ duyệt' },
+  approved: { tone: 'approved', icon: 'visibility', label: 'Đang hiển thị' },
+  removed: { tone: 'removed', icon: 'visibilityOff', label: 'Đã gỡ' },
+};
+
+export function isRestorable(photo: Photo, retentionHours: number, now: number): boolean {
+  if (photo.reviewedBy === 'owner' || photo.purgedAtMs) return false;
+  return now - (photo.reviewedAtMs ?? 0) < retentionHours * 3_600_000;
+}
+
+/**
+ * The line under the status pill. The artboard shows SafeSearch flags here;
+ * this backend has no SafeSearch, so every pending strip is waiting for a
+ * person — which is exactly what the "Chế độ duyệt tay" chip says.
+ */
+function reasonChip(
+  photo: Photo,
+  tab: ModTab,
+  now: number,
+  retentionHours: number,
+  moderators: readonly ModeratorAccount[],
+): { tone: Tone; icon: ConsoleIconName; text: string } {
+  if (tab === 'pending') return { tone: 'manual', icon: 'backHand', text: 'Chế độ duyệt tay' };
+  const at = photo.reviewedAtMs ?? photo.createdAtMs;
+  if (tab === 'approved') {
+    return {
+      tone: 'approved',
+      icon: 'check',
+      text: `${reviewerName(photo.reviewedBy, moderators)} duyệt · ${formatClock(at)}`,
+    };
+  }
+  const who = photo.reviewedBy === 'owner' ? 'Người gửi tự gỡ' : `${reviewerName(photo.reviewedBy, moderators)} gỡ`;
+  const left = photo.purgedAtMs ? 'đã xoá hẳn' : formatRetention(at, retentionHours, now);
+  return { tone: 'removed', icon: 'delete', text: `${who} · ${formatClock(at)} · ${left}` };
 }
 
 export function ModRow({
@@ -45,6 +108,9 @@ export function ModRow({
   tab,
   now,
   backend,
+  frame,
+  moderators,
+  retentionHours,
   selectable,
   selected,
   isCursor,
@@ -52,11 +118,16 @@ export function ModRow({
   onToggleSelect,
   onApprove,
   onRequestRemove,
+  onRestore,
+  onPreview,
 }: {
   photo: Photo;
   tab: ModTab;
   now: number;
   backend: ModeratorApi;
+  frame: FrameTemplate | undefined;
+  moderators: readonly ModeratorAccount[];
+  retentionHours: number;
   selectable: boolean;
   selected: boolean;
   isCursor: boolean;
@@ -64,10 +135,14 @@ export function ModRow({
   onToggleSelect: (id: string) => void;
   onApprove: (id: string) => void;
   onRequestRemove: (id: string) => void;
+  onRestore: (id: string) => void;
+  onPreview: (photo: Photo, url: string | null) => void;
 }) {
   const url = useThumb(backend, photo.id);
-  const waitingSince = photo.submittedAtMs ?? photo.createdAtMs;
-  const overdue = tab === 'pending' && now - waitingSince > WAITING_OVERDUE_MS;
+  const submittedAt = photo.submittedAtMs ?? photo.createdAtMs;
+  const overdue = tab === 'pending' && now - submittedAt > WAITING_OVERDUE_MS;
+  const pill = PILL[tab];
+  const chip = reasonChip(photo, tab, now, retentionHours, moderators);
 
   return (
     <div
@@ -75,7 +150,7 @@ export function ModRow({
         .filter(Boolean)
         .join(' ')}
     >
-      <div className={styles.checkboxCell}>
+      <div className={styles.checkCell}>
         {selectable ? (
           <input
             type="checkbox"
@@ -87,59 +162,74 @@ export function ModRow({
         ) : null}
       </div>
 
-      {url ? (
-        <img className={styles.thumb} src={url} alt="" />
-      ) : (
-        <div className={styles.thumbFallback} aria-hidden="true">
-          <Icon name="photoCamera" size={16} />
-        </div>
-      )}
+      <div>
+        <StripThumb url={url} frame={frame} />
+      </div>
 
       <div className={styles.who}>
         <span className={styles.name}>{photo.displayName}</span>
-        <span className={styles.meta}>
-          #{photo.id.slice(-4)} · khung {frameShortLabel(photo.frameVariant)}
-        </span>
+        <span className={styles.meta}>{rowMeta(photo)}</span>
       </div>
 
       <div className={styles.time}>
-        <span className={styles.clock}>{formatClock(waitingSince)}</span>
+        <span className={styles.clock}>{formatClock(submittedAt)}</span>
         {tab === 'pending' ? (
           <span className={`${styles.waiting} ${overdue ? styles.waitingOverdue : ''}`}>
-            {formatWaiting(waitingSince, now)}
+            {formatWaiting(submittedAt, now)}
           </span>
-        ) : photo.reviewedBy ? (
-          <span className={styles.reviewer}>bởi {photo.reviewedBy}</span>
         ) : null}
       </div>
 
-      <div className={styles.statusCell}>
-        <StatusPill photo={photo} />
+      <div className={styles.status}>
+        <span className={`${styles.pill} ${styles[pill.tone]}`}>
+          <ConsoleIcon name={pill.icon} size={16} />
+          {pill.label}
+        </span>
+        <span className={`${styles.chip} ${styles[`chip-${chip.tone}`]}`}>
+          <ConsoleIcon name={chip.icon} size={16} />
+          {chip.text}
+        </span>
       </div>
 
       <div className={styles.actions}>
+        <IconButton
+          size="s"
+          label={`Xem lớn dải ảnh của ${photo.displayName}`}
+          onClick={() => onPreview(photo, url)}
+        >
+          <ConsoleIcon name="zoomIn" size={20} />
+        </IconButton>
         {tab === 'pending' ? (
-          <>
-            <Button
-              variant="success"
-              size="s"
-              disabled={busy}
-              onClick={() => onApprove(photo.id)}
-            >
-              Duyệt
-            </Button>
-            <Button
-              variant="destructive"
-              size="s"
-              disabled={busy}
-              onClick={() => onRequestRemove(photo.id)}
-            >
-              Gỡ
-            </Button>
-          </>
-        ) : tab === 'approved' ? (
-          <Button variant="destructive" size="s" disabled={busy} onClick={() => onRequestRemove(photo.id)}>
+          <Button
+            variant="success"
+            size="s"
+            disabled={busy}
+            iconStart={<ConsoleIcon name="check" size={16} />}
+            onClick={() => onApprove(photo.id)}
+          >
+            Duyệt
+          </Button>
+        ) : null}
+        {tab !== 'removed' ? (
+          <Button
+            variant="secondary"
+            size="s"
+            className={styles.remove}
+            disabled={busy}
+            iconStart={<ConsoleIcon name="delete" size={16} />}
+            onClick={() => onRequestRemove(photo.id)}
+          >
             Gỡ
+          </Button>
+        ) : isRestorable(photo, retentionHours, now) ? (
+          <Button
+            variant="tonal"
+            size="s"
+            disabled={busy}
+            iconStart={<ConsoleIcon name="history" size={16} />}
+            onClick={() => onRestore(photo.id)}
+          >
+            Khôi phục
           </Button>
         ) : null}
       </div>

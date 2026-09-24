@@ -1,5 +1,15 @@
+/*
+ * M01's table. Columns 44 · 96 · 1fr · 170 · 330 · 220 with a 16 gap; the
+ * checkbox sits centred in the first 44, which is why the row's left padding
+ * is 10 against 20 on the right — the numbers the artboard measures to.
+ */
 .table {
   --mod-grid: 44px 96px minmax(0, 1fr) 170px 330px 220px;
+  --mod-pad: 10px var(--pw-space-5) 10px 10px;
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
   border: var(--pw-outline);
   border-radius: var(--pw-radius-5);
   background: var(--pw-surface);
@@ -12,26 +22,65 @@
   grid-template-columns: var(--mod-grid);
   align-items: center;
   gap: var(--pw-space-4);
-  padding: 10px var(--pw-space-5);
+  padding: var(--mod-pad);
 }
 
+/* 60 tall around the 24 select-all box. */
 .head {
+  padding-block: 18px;
   background: var(--pw-surface-2);
+  border-bottom: var(--pw-outline);
+}
+
+.headActions {
+  justify-self: end;
+}
+
+.helper {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--pw-space-2);
+  margin: 0;
+  padding: var(--pw-space-2) var(--pw-space-5);
+  border-bottom: 2px solid var(--pw-line);
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+.helper b {
+  color: var(--pw-ink);
+  font-weight: 700;
+}
+
+.helperIcon {
+  margin-top: 1px;
+  color: var(--pw-blue-700);
+}
+
+.body {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
 }
 
 .row {
-  border-top: 2px solid var(--pw-line);
+  border-bottom: 2px solid var(--pw-line);
 }
 
-.rowSelected {
-  background: var(--pw-blue-100);
+@media (hover: hover) {
+  .row:hover {
+    background: var(--pw-bg);
+  }
 }
 
-.row:hover {
-  background: var(--pw-surface-2);
-}
+/*
+ * "chọn: checkbox 24 + nền blue-0". There is no blue-0 in the token block; the
+ * artboard's tint (#E8F0FD) is blue-100 half-way to white, so it is mixed from
+ * the two tokens rather than typed in.
+ */
+.rowSelected,
 .rowSelected:hover {
-  background: var(--pw-blue-100);
+  background: color-mix(in srgb, var(--pw-blue-100) 50%, var(--pw-surface));
 }
 
 .rowCursor {
@@ -39,9 +88,11 @@
   outline-offset: -3px;
 }
 
-.checkboxCell {
+.checkCell {
   display: flex;
   justify-content: center;
+  /* Holds the header at 60 on the removed tab too, which has nothing to select. */
+  min-height: 24px;
 }
 
 .checkbox {
@@ -57,7 +108,8 @@
   display: grid;
   place-items: center;
 }
-.checkbox:checked {
+.checkbox:checked,
+.checkbox:indeterminate {
   background: var(--pw-blue-700);
   border-color: var(--pw-blue-700);
 }
@@ -69,31 +121,33 @@
   border-bottom: 2px solid #fff;
   transform: rotate(-45deg) translateY(-1px);
 }
+.checkbox:indeterminate::after {
+  content: '';
+  width: 12px;
+  height: 3px;
+  border-radius: 2px;
+  background: #fff;
+}
 .checkbox:focus-visible {
   outline: 3px solid var(--pw-blue-700);
   outline-offset: 3px;
 }
 
+/* The strip at 44 inside a 2px ink, radius 8 wrapper — 48 wide overall. */
 .thumb {
-  width: 44px;
-  border-radius: var(--pw-radius-2);
+  display: inline-block;
+  vertical-align: top;
   border: var(--pw-outline);
-  display: block;
-  aspect-ratio: var(--pw-strip-ratio);
-  object-fit: cover;
+  border-radius: var(--pw-radius-2);
+  overflow: hidden;
+  line-height: 0;
   background: var(--pw-surface-2);
 }
 
-.thumbFallback {
-  width: 44px;
+.thumbImg {
+  display: block;
   aspect-ratio: var(--pw-strip-ratio);
-  border-radius: var(--pw-radius-2);
-  border: var(--pw-outline);
-  background: var(--pw-surface-2);
-  color: var(--pw-ink-3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  object-fit: cover;
 }
 
 .who {
@@ -127,53 +181,104 @@
 
 .clock {
   font: var(--pw-type-body);
-  font-weight: 600;
+  font-weight: 700;
 }
 
 .waiting {
   font: var(--pw-type-body-s);
+  font-weight: 600;
   color: var(--pw-ink-2);
 }
 
 .waitingOverdue {
   color: var(--pw-red-700);
-  font-weight: 700;
 }
 
-.statusCell {
+.status {
   display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 6px;
+  min-width: 0;
+}
+
+/* Status pill 32 — tint-100 ground, tone-700 border and text. */
+.pill {
+  display: inline-flex;
   align-items: center;
-  gap: var(--pw-space-2);
+  gap: 6px;
+  height: 32px;
+  padding: 0 var(--pw-space-3);
+  border: 2px solid currentColor;
+  border-radius: var(--pw-radius-full);
+  font: var(--pw-type-caption);
+  white-space: nowrap;
+}
+.pending {
+  background: var(--pw-yellow-100);
+  color: var(--pw-yellow-700);
+}
+.approved {
+  background: var(--pw-green-100);
+  color: var(--pw-green-700);
+}
+.removed {
+  background: var(--pw-surface-2);
+  color: var(--pw-ink-2);
+}
+
+/* Reason chip 22, no outline. */
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-1);
+  max-width: 100%;
+  height: 22px;
+  padding: 0 var(--pw-space-2);
+  border-radius: var(--pw-radius-full);
+  font: var(--pw-type-caption);
+  font-weight: 700;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+.chip-manual {
+  background: var(--pw-blue-100);
+  color: var(--pw-blue-700);
+}
+.chip-approved {
+  background: var(--pw-green-100);
+  color: var(--pw-green-700);
+}
+.chip-removed {
+  background: var(--pw-surface-2);
+  color: var(--pw-ink-2);
 }
 
 .actions {
   display: flex;
+  justify-content: flex-end;
+  align-items: center;
   gap: var(--pw-space-2);
 }
 
-.pillPending {
-  background: var(--pw-yellow-100);
-  color: var(--pw-yellow-700);
-  border-color: var(--pw-yellow-100);
-}
-.pillApproved {
-  background: var(--pw-green-100);
-  color: var(--pw-green-700);
-  border-color: var(--pw-green-100);
-}
-.pillGone {
-  background: var(--pw-surface-2);
-  color: var(--pw-ink-2);
-  border-color: var(--pw-line);
-}
-.reviewer {
-  font: var(--pw-type-body-s);
-  color: var(--pw-ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+/* M01 draws its S buttons with an 8 icon gap, wider than 02a's 6. */
+.actions :global(.btn) {
+  gap: var(--pw-space-2);
 }
 
-.empty {
-  padding: var(--pw-space-9) var(--pw-space-5);
+/* "Gỡ" in a row is the secondary button in red — the filled red is kept for the dialog. */
+.remove {
+  color: var(--pw-red-700);
+}
+
+.end {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pw-space-2);
+  margin: 0;
+  padding: var(--pw-space-4) var(--pw-space-5);
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
 }

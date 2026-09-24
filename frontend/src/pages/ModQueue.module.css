@@ -1,25 +1,33 @@
+/*
+ * M01, 1280 x 1080. Header (pad 24 32 0) · toolbar (pad 20 32 0) · the table
+ * card, which takes the rest of the window down to a 24 bottom margin and
+ * scrolls its own rows.
+ */
 .page {
-  min-height: 100dvh;
+  height: 100dvh;
+  min-height: 640px;
   max-width: 1280px;
   margin: 0 auto;
-  padding: var(--pw-space-6) var(--pw-space-8) var(--pw-space-8);
   display: flex;
   flex-direction: column;
-  gap: var(--pw-space-5);
 }
 
 .header {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   justify-content: space-between;
   gap: var(--pw-space-5);
-  flex-wrap: wrap;
+  /* The 44 tile sets the row; the title block (45.25) is centred on it, not below it. */
+  height: calc(var(--pw-space-6) + 44px);
+  flex-shrink: 0;
+  padding: var(--pw-space-6) var(--pw-space-7) 0;
 }
 
 .brand {
   display: flex;
   align-items: center;
-  gap: var(--pw-space-3);
+  gap: var(--pw-space-4);
+  min-width: 0;
 }
 
 .logoTile {
@@ -37,6 +45,8 @@
 .title {
   margin: 0;
   font: var(--pw-type-h2);
+  line-height: 1.1;
+  white-space: nowrap;
 }
 
 .sub {
@@ -48,68 +58,234 @@
 .pills {
   display: flex;
   align-items: center;
-  gap: var(--pw-space-2);
-  flex-wrap: wrap;
+  gap: var(--pw-space-3);
+  flex-shrink: 0;
 }
 
-.uploadsPill {
-  border: none;
-  cursor: pointer;
-  font: var(--pw-type-caption);
+/* Every header control is 36 tall — DESIGN-D21; pill gap 6 per 02a. */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  height: 36px;
+  padding: 0 var(--pw-space-3);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-body-s);
+  font-weight: 600;
+  white-space: nowrap;
 }
-.uploadsOpen {
+
+button.pill {
+  cursor: pointer;
+}
+button.pill:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+.open {
   background: var(--pw-green-100);
+  border-color: var(--pw-green-700);
   color: var(--pw-green-700);
 }
-.uploadsClosed {
+
+.closed {
   background: var(--pw-red-100);
+  border-color: var(--pw-red-700);
   color: var(--pw-red-700);
 }
 
-.tabsRow {
+.user {
+  background: var(--pw-ink);
+  border-color: var(--pw-ink);
+  color: #fff;
+}
+
+.ibtn {
+  width: 36px;
+  height: 36px;
+}
+
+.toolbar {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
+  gap: var(--pw-space-4);
+  padding: var(--pw-space-5) var(--pw-space-7) 0;
+}
+
+.filters {
+  display: flex;
+  align-items: center;
   gap: var(--pw-space-3);
 }
 
-.sort {
-  height: 40px;
+/* M input with a 20 prefix icon — DESIGN-D02 "M · 48 · Tìm theo tên…". */
+.search {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
+  width: 280px;
+  height: var(--pw-ctl-m);
   padding: 0 var(--pw-space-3);
   border: var(--pw-outline);
-  border-radius: var(--pw-radius-4);
+  border-radius: var(--pw-radius-3);
   background: var(--pw-surface);
-  font: var(--pw-type-body-s);
-  font-weight: 600;
+  cursor: text;
 }
 
-.helper {
-  margin: calc(-1 * var(--pw-space-2)) 0 0;
-  font: var(--pw-type-body-s);
+.search:focus-within {
+  border-color: var(--pw-blue-700);
+  box-shadow: 0 0 0 3px var(--pw-blue-100);
+}
+
+.searchIcon {
   color: var(--pw-ink-2);
 }
 
-.bulkBar {
-  position: sticky;
-  bottom: var(--pw-space-5);
+.search input {
+  flex: 1;
+  min-width: 0;
+  height: 100%;
+  padding: 0;
+  border: 0;
+  outline: none;
+  background: transparent;
+  color: var(--pw-ink);
+  font: var(--pw-type-body);
+  font-weight: 500;
+}
+
+.search input::placeholder {
+  color: var(--pw-ink-3);
+}
+
+.search input::-webkit-search-cancel-button {
+  cursor: pointer;
+}
+
+.sort {
+  width: 170px;
+  height: var(--pw-ctl-m);
+  padding: 0 var(--pw-space-3);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-3);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: var(--pw-type-body);
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.sort:focus-visible {
+  outline: 3px solid var(--pw-blue-700);
+  outline-offset: 3px;
+}
+
+/* The table card: 16 under the toolbar, 24 above the window's bottom edge. */
+.page > section {
+  margin: var(--pw-space-4) var(--pw-space-7) var(--pw-space-6);
+}
+
+/* ---------------------------------------------------------- bulk bar */
+
+.bulk {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: var(--pw-space-3);
-  padding: var(--pw-space-3) var(--pw-space-5);
+  gap: var(--pw-space-4);
+  height: 64px;
+  padding: 0 var(--pw-space-5);
   background: var(--pw-ink);
   color: #fff;
-  border-radius: var(--pw-radius-5);
-  box-shadow: var(--pw-shadow-2);
 }
 
 .bulkLabel {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
   font: var(--pw-type-body);
   font-weight: 700;
+}
+
+.bulkIcon {
+  color: var(--pw-yellow-500);
+}
+
+.bulkClear {
+  margin-left: var(--pw-space-2);
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--pw-yellow-500);
+  font: var(--pw-type-body-s);
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  cursor: pointer;
+}
+
+.bulkClear:focus-visible {
+  outline: 3px solid var(--pw-yellow-500);
+  outline-offset: 3px;
 }
 
 .bulkActions {
   display: flex;
   gap: var(--pw-space-2);
+}
+
+.bulkRemove {
+  color: var(--pw-red-700);
+}
+
+/* ---------------------------------------------------------- remove dialog */
+
+.dialogMeta {
+  margin: calc(-1 * var(--pw-space-2)) 0 0;
+  font: var(--pw-type-caption);
+  color: var(--pw-ink-2);
+}
+
+.dialogBody {
+  margin: 0;
+  font: var(--pw-type-body);
+  color: var(--pw-ink-2);
+}
+
+.reasons {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+  margin: 0;
+  padding: 0;
+  border: 0;
+}
+
+.reasonsLegend {
+  padding: 0;
+  margin-bottom: var(--pw-space-2);
+  font: var(--pw-type-body-s);
+  font-weight: 700;
+  color: var(--pw-ink);
+}
+
+.reason {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  font: var(--pw-type-body-s);
+  cursor: pointer;
+}
+
+.reason input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--pw-blue-700);
+  cursor: pointer;
 }
