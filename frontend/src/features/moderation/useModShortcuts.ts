@@ -6,6 +6,13 @@
 import { useEffect } from 'react';
 
 const TYPING_TAGS = new Set(['INPUT', 'TEXTAREA', 'SELECT']);
+/** A row's checkbox keeps focus after a click; the letters must still work there. */
+const NON_TEXT_INPUTS = new Set(['checkbox', 'radio', 'button']);
+
+function isTyping(el: HTMLElement): boolean {
+  if (el instanceof HTMLInputElement) return !NON_TEXT_INPUTS.has(el.type);
+  return TYPING_TAGS.has(el.tagName) || el.isContentEditable;
+}
 
 export function useModShortcuts({
   rowIds,
@@ -20,7 +27,8 @@ export function useModShortcuts({
   setCursor: (next: number) => void;
   /** Omit on tabs with no approve action (e.g. "Đã duyệt"). */
   onApprove?: (id: string) => void;
-  onRemove: (id: string) => void;
+  /** Omit on tabs with nothing to remove ("Đã gỡ"). */
+  onRemove?: (id: string) => void;
   enabled?: boolean;
 }) {
   useEffect(() => {
@@ -28,7 +36,9 @@ export function useModShortcuts({
 
     function onKeyDown(e: KeyboardEvent) {
       const target = e.target as HTMLElement | null;
-      if (target && TYPING_TAGS.has(target.tagName)) return;
+      if (target && isTyping(target)) return;
+      // Ctrl/⌘+R is the browser's reload, not "gỡ".
+      if (e.ctrlKey || e.metaKey || e.altKey) return;
 
       const id = rowIds[cursor];
       if (e.key === 'ArrowDown') {
@@ -39,7 +49,7 @@ export function useModShortcuts({
         setCursor(Math.max(cursor - 1, 0));
       } else if ((e.key === 'a' || e.key === 'A') && onApprove && id) {
         onApprove(id);
-      } else if ((e.key === 'r' || e.key === 'R') && id) {
+      } else if ((e.key === 'r' || e.key === 'R') && onRemove && id) {
         onRemove(id);
       }
     }
