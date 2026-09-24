@@ -944,6 +944,13 @@ Everything from D01, plus an arrival sequence.
 
 The board is drawn **in its error state** — build both the clean and the error state. **[C]**
 
+> **As built** (`pages/ModLogin.tsx`). Measured off the 3x export: card **520** wide, pad **36**,
+> radius 20, shadow-2; tile 48 / radius 12 with `admin_panel_settings`; title Unbounded **24/800**;
+> sub Body S; the sign-in button is the screen's **one primary** (L, blue, white "G" disc 22);
+> banner red-100 / radius 16 with a red `block` icon and ink text; footer split left/right.
+> Decor: a yellow-500 disc 220 at `(-60, -60)` and a blue-500 tile 160 / radius 32 rotated
+> **12°** at `right 80, bottom -40`, both with a **3 px** ink outline. **[I]**
+
 ---
 
 ### DESIGN-D21 — M01 Kiểm duyệt · route `/mod`
@@ -999,6 +1006,17 @@ Dialog spec: `width 342` on mobile / centred on desktop, `pad 24`, `radius 20`,
 `shadow 4px 4px 0 #1C1B33`, scrim `rgba(28,27,51,.55)`, open `200 ms scale .96 → 1`,
 `Esc`/scrim = Cancel, focus trap, return focus to the opener, `aria-modal` + `aria-labelledby`. **[C]**
 
+> **As built** (`pages/ModQueue.tsx`, `features/moderation/*`). The M01 board supersedes a few
+> rows above: the header subtitle reads `Duyệt · gỡ · khôi phục — …`; only `Chờ duyệt` carries a
+> badge (yellow, 16 tall), the other tabs read `Đã duyệt · 325` inline; the toolbar has a search
+> field (280 × 48, name or #id, Vietnamese marks folded) before the sort select (170 × 48); the
+> table is one card filling the window with the helper line under its header; rows are 10 · 20 ·
+> 10 · 10 padded (the checkbox centred in the first 44), `Gỡ` in a row is the secondary button in
+> red, and every row has a 40 zoom button that opens the strip at reading size. The bulk bar is
+> the card's ink footer (64 tall). SafeSearch chips are replaced by `Chế độ duyệt tay` (§20.5 #3);
+> approved rows show `Lan duyệt · 14:32`, removed rows `Lan gỡ · 14:20 · còn 23 h`. The row cursor
+> appears only once the keyboard is used, and a first `A`/`R` only reveals it. **[I]**
+
 ---
 
 ### DESIGN-D22 — M02 Cài đặt sự kiện · route `/mod/settings`
@@ -1019,6 +1037,14 @@ lực ngay và được ghi log`, with `Huỷ thay đổi` and `Lưu`.
 > `config/app` document accepts **only** `{uploadsOpen, eventName}`, enforced by
 > `firestore.rules`. Of the ~18 settings above, exactly **one** (`Đang nhận ảnh`) is currently
 > writable. Build the screen in the order given in §22 Phase 9 and gate the rest.
+
+> **As built** (`pages/ModSettings.tsx`, after `8fe65e9` widened the schema). Six cards in two 598
+> columns (gap 20), pad 20 · 24, a 36 blue-100 tile per card; settings are one draft written by
+> `Lưu` as a single `updateConfig` of the changed fields, actions (ZIP, CSV, `Làm mới màn lớn`,
+> moderators, the wipe) run at once. `Tự động duyệt` and `Ngưỡng SafeSearch` are drawn **disabled**
+> — no server runs SafeSearch (§20.5 #8). `Tự động đóng lúc` stores the next time the clock reads
+> HH:MM. The last enabled frame cannot be switched off. The ZIP is written in the browser, stored
+> (JPEGs do not deflate), with the file names `listZipEntries()` gives. **[I]**
 
 ---
 ## 7. Design System Extraction
