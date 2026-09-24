@@ -1,0 +1,49 @@
+/* DESIGN-D18: `.card` radius 32, pad 32, shadow-2, centred, gap 20. */
+.card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: var(--pw-space-5);
+  padding: var(--pw-space-7);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-7);
+  background: var(--pw-surface);
+  box-shadow: var(--pw-shadow-2);
+}
+
+/* The white box the code sits in: pad 16, radius 16. */
+.codeBox {
+  padding: var(--pw-space-4);
+  border-radius: var(--pw-radius-4);
+  background: #fff;
+  color: var(--pw-ink);
+}
+
+.codeBox svg {
+  display: block;
+}
+
+.text {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--pw-space-2);
+}
+
+.title {
+  margin: 0;
+  font-size: 40px;
+  font-weight: 800;
+  line-height: 1.1;
+}
+
+/* 24/600 ink-2, with the scan icon, gap 12. */
+.hint {
+  display: flex;
+  align-items: center;
+  gap: var(--pw-space-3);
+  margin: 0;
+  color: var(--pw-ink-2);
+  font: 600 24px / 1.35 var(--pw-font-body);
+}
