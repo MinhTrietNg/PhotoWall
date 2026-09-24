@@ -9,11 +9,16 @@
  * Selected with VITE_BACKEND=mock (the default in development).
  */
 import { stripFileName } from '@backend/export';
+import { composeStrip } from '@/features/frames/compose';
+import { findFrame, loadFrames } from '@/features/frames/frameRegistry';
 import {
   ReviewConflict,
   SubmitFailure,
   type AppConfig,
+  type ApprovedUpdate,
   type BulkResult,
+  type DisplayApi,
+  type DisplayConfig,
   type GuestApi,
   type ModeratorAccount,
   type ModeratorApi,
@@ -511,6 +516,205 @@ export function createMockModeratorBackend(): ModeratorApi {
       store.config = { ...store.config, deletionSchedule: { ...s, executedAtMs: Date.now() } };
       emit();
       return { photos, users: 0 };
+    },
+  };
+}
+
+// ------------------------------------------------------------ big screen
+
+/**
+ * /display runs in its own tab, so it cannot see the guest or moderator mock
+ * above. It gets its own wall instead: the fourteen strips DESIGN-D18 draws,
+ * and a new approval every half minute so the arrival sequence (D19) plays on
+ * its own. `?mockBurst=5` lands five at once to show the queue merging, and the
+ * console has `photowallDisplay.arrive(n, name?)`, `.remove(id?)` and `.config({...})`.
+ */
+const MOCK_ARRIVAL_MS = 30_000;
+
+const DEMO_NAMES = [
+  'Minh Triết',
+  'Thu Hà',
+  'Quốc Bảo',
+  'Lan Anh',
+  'Gia Hân',
+  'Khánh Vy',
+  'Hải Đăng',
+  'Bảo Ngọc',
+  'Đức Huy',
+  'Mai Phương',
+  'Tuấn Kiệt',
+  'Ngọc Hân',
+  'Phúc An',
+  'Nguyễn Hoàng Thanh Tâm',
+];
+const DEMO_FRAMES = ['f01-gdgoc', 'f02-aws', 'f03-isf'];
+// The pastel slots of the strip tiles on DESIGN-D03: blue, yellow, green, red.
+const DEMO_TINTS = [
+  ['#d2e3fc', '#4285f4'],
+  ['#feefc3', '#fbbc04'],
+  ['#ceead6', '#34a853'],
+  ['#fad2cf', '#ea4335'],
+] as const;
+
+interface DisplayStore {
+  approved: Photo[];
+  approvedCount: number;
+  momentSeq: number;
+  config: DisplayConfig;
+}
+
+let displayStore: DisplayStore | null = null;
+let demoSeq = 0;
+
+function demoPhoto(momentNo: number, reviewedAtMs: number): Photo {
+  const n = demoSeq++;
+  return {
+    id: `mock-d${n}`,
+    ownerUid: `mock-guest-d${n}`,
+    displayName: DEMO_NAMES[n % DEMO_NAMES.length],
+    frameVariant: DEMO_FRAMES[n % DEMO_FRAMES.length],
+    status: 'approved',
+    storagePath: `photos/mock-d${n}/strip.jpg`,
+    createdAtMs: reviewedAtMs - 90_000,
+    submittedAtMs: reviewedAtMs - 88_000,
+    reviewedAtMs,
+    reviewedBy: 'mock-moderator@gdgoc.dev',
+    momentNo,
+    // One guest in five switched the name off on S02, so "Tân sinh viên" shows up too.
+    showName: n % 5 !== 3,
+  };
+}
+
+/** A 4:3 "shot": a tint with a head-and-shoulders silhouette, like the design's placeholders. */
+function demoShot(light: string, strong: string): Promise<Blob> {
+  const canvas = document.createElement('canvas');
+  canvas.width = 800;
+  canvas.height = 600;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return Promise.reject(new Error('no 2d canvas'));
+  ctx.fillStyle = light;
+  ctx.fillRect(0, 0, 800, 600);
+  ctx.fillStyle = strong;
+  ctx.globalAlpha = 0.55;
+  ctx.beginPath();
+  ctx.arc(400, 250, 105, 0, Math.PI * 2);
+  ctx.fill();
+  ctx.beginPath();
+  ctx.ellipse(400, 620, 230, 200, 0, Math.PI, 0);
+  ctx.fill();
+  return new Promise((resolve, reject) =>
+    canvas.toBlob((b) => (b ? resolve(b) : reject(new Error('toBlob failed'))), 'image/png'),
+  );
+}
+
+const demoStrips = new Map<string, Promise<string>>();
+
+/** One composed strip per frame and tint rotation, shared by every photo that maps to it. */
+function demoStripUrl(photo: Photo): Promise<string> {
+  const rotation = Number(photo.id.replace(/\D/g, '')) % DEMO_TINTS.length;
+  const key = `${photo.frameVariant}:${rotation}`;
+  let url = demoStrips.get(key);
+  if (!url) {
+    url = (async () => {
+      const registry = await loadFrames();
+      const frame = findFrame(registry, photo.frameVariant) ?? registry.frames[0];
+      const shots = await Promise.all(
+        [0, 1, 2, 3].map((i) => {
+          const [light, strong] = DEMO_TINTS[(rotation + i) % DEMO_TINTS.length];
+          return demoShot(light, strong);
+        }),
+      );
+      const { blob } = await composeStrip(shots, frame);
+      return URL.createObjectURL(blob);
+    })();
+    url.catch(() => demoStrips.delete(key));
+    demoStrips.set(key, url);
+  }
+  return url;
+}
+
+export function createMockDisplayBackend(): DisplayApi {
+  const now = Date.now();
+  const d: DisplayStore = (displayStore ??= {
+    // Newest first, three minutes apart, as watchApproved orders them.
+    approved: Array.from({ length: 14 }, (_, i) => demoPhoto(128 - i, now - i * 180_000)),
+    approvedCount: 128,
+    momentSeq: 128,
+    config: {
+      showNames: true,
+      arrivalCard: true,
+      marqueePxPerSec: null,
+      qrUrl: `${location.origin}/`,
+      reloadRequestedAtMs: null,
+    },
+  });
+
+  const approvedListeners = new Set<{ cb: (u: ApprovedUpdate) => void; max: number }>();
+  const statsListeners = new Set<(stats: { approvedCount: number }) => void>();
+  const configListeners = new Set<(config: DisplayConfig) => void>();
+
+  function publish(added: Photo[], removedIds: string[]) {
+    for (const l of approvedListeners) {
+      l.cb({ photos: d.approved.slice(0, l.max), added, removedIds });
+    }
+    for (const l of statsListeners) l({ approvedCount: d.approvedCount });
+  }
+
+  function arrive(count = 1, name?: string) {
+    const added = Array.from({ length: count }, () => {
+      const photo = demoPhoto(++d.momentSeq, Date.now());
+      return name ? { ...photo, displayName: name } : photo;
+    });
+    d.approved.unshift(...added.reverse());
+    d.approvedCount += count;
+    publish(added, []);
+  }
+
+  function remove(photoId = d.approved[0]?.id) {
+    const i = d.approved.findIndex((p) => p.id === photoId);
+    if (i < 0) return;
+    d.approved.splice(i, 1);
+    d.approvedCount--;
+    publish([], [photoId]);
+  }
+
+  setInterval(() => arrive(1), MOCK_ARRIVAL_MS);
+  const burst = Number(new URLSearchParams(location.search).get('mockBurst'));
+  if (burst > 0) setTimeout(() => arrive(burst), 4000);
+
+  (globalThis as { photowallDisplay?: unknown }).photowallDisplay = {
+    arrive,
+    remove,
+    config(patch: Partial<DisplayConfig>) {
+      d.config = { ...d.config, ...patch };
+      for (const l of configListeners) l({ ...d.config });
+    },
+  };
+
+  return {
+    watchApproved(cb, max = 200) {
+      const listener = { cb, max };
+      approvedListeners.add(listener);
+      queueMicrotask(() => cb({ photos: d.approved.slice(0, max), added: [], removedIds: [] }));
+      return () => approvedListeners.delete(listener);
+    },
+
+    watchStats(cb) {
+      statsListeners.add(cb);
+      queueMicrotask(() => cb({ approvedCount: d.approvedCount }));
+      return () => statsListeners.delete(cb);
+    },
+
+    watchConfig(cb) {
+      configListeners.add(cb);
+      queueMicrotask(() => cb({ ...d.config }));
+      return () => configListeners.delete(cb);
+    },
+
+    async photoUrl(photoId) {
+      const photo = d.approved.find((p) => p.id === photoId);
+      if (!photo) throw new Error('not found');
+      return demoStripUrl(photo);
     },
   };
 }

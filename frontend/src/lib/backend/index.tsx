@@ -3,7 +3,7 @@
  * tree through context, so `initBackend()` can only ever run once.
  */
 import { createContext, use, useEffect, useState, type ReactNode } from 'react';
-import type { GuestApi, ModeratorApi } from './types';
+import type { DisplayApi, GuestApi, ModeratorApi } from './types';
 
 const BackendContext = createContext<GuestApi | null>(null);
 
@@ -101,6 +101,56 @@ export function ModeratorBackendProvider({
 export function useModeratorBackend(): ModeratorApi {
   const api = use(ModeratorBackendContext);
   if (!api) throw new Error('useModeratorBackend must be used inside <ModeratorBackendProvider>');
+  return api;
+}
+
+const DisplayBackendContext = createContext<DisplayApi | null>(null);
+
+let pendingDisplay: Promise<DisplayApi> | null = null;
+
+/** Same rule as the guest app: Firebase in production builds, mock by default in dev. */
+function loadDisplayBackend(): Promise<DisplayApi> {
+  pendingDisplay ??= (async () => {
+    const useFirebase =
+      import.meta.env.VITE_BACKEND === 'firebase' ||
+      (import.meta.env.PROD && import.meta.env.VITE_BACKEND !== 'mock');
+    if (useFirebase) {
+      const { createFirebaseDisplayBackend } = await import('./firebase');
+      return createFirebaseDisplayBackend();
+    }
+    const { createMockDisplayBackend } = await import('./mock');
+    return createMockDisplayBackend();
+  })();
+  return pendingDisplay;
+}
+
+/** Same lazy-load shape as BackendProvider, for the big screen (display app). */
+export function DisplayBackendProvider({
+  children,
+  fallback = null,
+}: {
+  children: ReactNode;
+  fallback?: ReactNode;
+}) {
+  const [api, setApi] = useState<DisplayApi | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadDisplayBackend().then((b) => {
+      if (alive) setApi(b);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
+
+  if (!api) return <>{fallback}</>;
+  return <DisplayBackendContext value={api}>{children}</DisplayBackendContext>;
+}
+
+export function useDisplayBackend(): DisplayApi {
+  const api = use(DisplayBackendContext);
+  if (!api) throw new Error('useDisplayBackend must be used inside <DisplayBackendProvider>');
   return api;
 }
 
