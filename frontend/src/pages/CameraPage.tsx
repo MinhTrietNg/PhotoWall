@@ -20,6 +20,7 @@ import { IconButton } from '@/components/IconButton';
 import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { ShotTray } from '@/features/capture/ShotTray';
+import { useCameraPref } from '@/features/capture/cameraPrefs';
 import { setPendingShot } from '@/features/capture/pendingShot';
 import { ImageDecodeError, shotFromFile, useCamera } from '@/features/capture/useCamera';
 import { useSession } from '@/state/SessionContext';
@@ -40,7 +41,8 @@ export function CameraPage() {
   const { session } = useSession();
   const camera = useCamera();
 
-  const [timerOn, setTimerOn] = useState(true);
+  // Remembered across shots, like the mirror: turned off for shot 1, it stays off.
+  const [timerOn, setTimerOn] = useCameraPref('timerOn');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);
   const [busy, setBusy] = useState(false);
@@ -116,7 +118,7 @@ export function CameraPage() {
                 timerOn ? styles.toolOn : styles.toolOff
               }`}
               aria-pressed={timerOn}
-              onClick={() => setTimerOn((v) => !v)}
+              onClick={() => setTimerOn(!timerOn)}
             >
               <Icon name="timer" size={16} />
               {COUNTDOWN_FROM}s

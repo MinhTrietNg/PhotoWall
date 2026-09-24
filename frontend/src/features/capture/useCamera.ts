@@ -6,6 +6,7 @@
  * screen (E01) for the permission case with Safari-specific instructions.
  */
 import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCameraPref } from './cameraPrefs';
 
 type CameraFacing = 'user' | 'environment';
 type CameraError = 'denied' | 'unavailable' | null;
@@ -38,8 +39,9 @@ export function useCamera(): UseCameraResult {
 
   const [facing, setFacing] = useState<CameraFacing>('user');
   // Off by default, as every camera artboard draws it (aria-pressed="false"):
-  // what the guest frames is then exactly what the strip will show.
-  const [mirrored, setMirrored] = useState(false);
+  // what the guest frames is then exactly what the strip will show. After
+  // that, whatever the guest last chose, carried over from the previous shot.
+  const [mirrored, setMirrored] = useCameraPref('mirrored');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<CameraError>(null);
   const [canSwitch, setCanSwitch] = useState(false);

@@ -1719,8 +1719,8 @@ pw-app  (tokens at :root, router outlet, backend singleton)
 | `shots` | `(Shot \| null)[4]` | `shot-store` | session; persisted in **IndexedDB** | S03 capture, S04 accept, gallery pick | S03 tray, S06 grid, all `pw-photowall-frame`, compose |
 | `activeShotIndex` | `1..4` | URL (`/camera/:n`) | per navigation | router | S03, S04 |
 | `candidateShot` | `Blob \| null` | `page-camera` local | until accepted/discarded | shutter, timer, gallery | S04 |
-| `timerOn` | `boolean` (default `true`) | `page-camera` local, persisted **[I]** | session | timer pill | S03 |
-| `mirrored` | `boolean` (default `false`) | `page-camera` local | session | mirror pill | S03 video transform |
+| `timerOn` | `boolean` (default `true`) | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | timer pill | S03 |
+| `mirrored` | `boolean` (default `false`) | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | mirror pill | S03 video transform |
 | `facing` | `'user' \| 'environment'` | `page-camera` local | session | switch-camera | `getUserMedia` |
 | `cameraError` | `'denied' \| 'unavailable' \| null` | `page-camera` local | until resolved | `getUserMedia` rejection | E01 |
 | `selectedFrameId` | `FrameId` | `session` | session | S05 cards | S05, S06, compose, submit |
