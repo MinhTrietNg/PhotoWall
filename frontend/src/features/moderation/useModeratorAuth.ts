@@ -13,27 +13,31 @@ type ModeratorAuthState =
   | { status: 'ok'; email: string; account: ModeratorAccount };
 
 export function useModeratorAuth(backend: ModeratorApi): ModeratorAuthState {
-  const [user, setUser] = useState<ModeratorProfile | null | undefined>(undefined);
+  // undefined = still checking, null = signed out. Kept as the email, not the
+  // profile object: an adapter may report the same user again (the mock does
+  // on every change), and a new object must not send the console back through
+  // "loading" — that unmounts the page and drops whatever was being typed.
+  const [email, setEmail] = useState<string | null | undefined>(undefined);
   // undefined = still checking, null = not on the allowlist.
   const [account, setAccount] = useState<ModeratorAccount | null | undefined>(undefined);
 
-  useEffect(() => backend.watchAuthState(setUser), [backend]);
+  useEffect(
+    () => backend.watchAuthState((user: ModeratorProfile | null) => setEmail(user?.email ?? null)),
+    [backend],
+  );
 
   useEffect(() => {
-    if (!user) {
-      setAccount(undefined);
-      return;
-    }
-    let alive = true;
     setAccount(undefined);
+    if (!email) return;
+    let alive = true;
     backend.getMyModerator().then((a) => alive && setAccount(a));
     return () => {
       alive = false;
     };
-  }, [backend, user]);
+  }, [backend, email]);
 
-  if (user === undefined) return { status: 'loading' };
-  if (user === null) return { status: 'signed-out' };
+  if (email === undefined) return { status: 'loading' };
+  if (email === null) return { status: 'signed-out' };
   if (account === undefined) return { status: 'loading' };
-  return account ? { status: 'ok', email: user.email, account } : { status: 'denied', email: user.email };
+  return account ? { status: 'ok', email, account } : { status: 'denied', email };
 }
