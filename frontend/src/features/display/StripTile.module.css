@@ -1,0 +1,90 @@
+/*
+ * DESIGN-D18: tile radius 20, border 3 ink, PhotoWallFrame 230 x 724.
+ *
+ * Ink behind the strip rather than the drawn white. At a fractional scale — a
+ * 125 % Windows display, or the stage scaled to the window — the image's edge
+ * and the border's inner edge fall on different half-pixels, and whatever is
+ * behind the image shows through as a hairline: white under the navy foot of
+ * F02 and the blue of F01. Ink there just reads as border.
+ */
+.tile {
+  position: relative;
+  display: inline-flex;
+  flex-shrink: 0;
+  width: calc(230px + 6px);
+  height: calc(724px + 6px);
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-5);
+  background: var(--pw-ink);
+  overflow: hidden;
+  overflow: clip;
+  transition: opacity 150ms linear;
+}
+
+/* DESIGN-D03 "Loading": the tile's own box in surface-2, no shimmer. */
+.loading {
+  background: var(--pw-surface-2);
+}
+
+.hidden {
+  visibility: hidden;
+}
+
+.leaving {
+  opacity: 0;
+}
+
+/* 1px of bleed under the border on every side, clipped by the tile. */
+.strip {
+  position: absolute;
+  left: -1px;
+  top: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  max-width: none;
+  object-fit: cover;
+  user-select: none;
+}
+
+/* Name pill: inset 12, h38, border 3, 18/700, one line with an ellipsis. */
+.name {
+  position: absolute;
+  left: var(--pw-space-3);
+  right: var(--pw-space-3);
+  bottom: var(--pw-space-3);
+  display: flex;
+}
+
+.name span {
+  width: 100%;
+  height: 38px;
+  padding: 0 var(--pw-space-4);
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-surface);
+  color: var(--pw-ink);
+  font: 700 18px / 32px var(--pw-font-body);
+  text-align: center;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* MỚI: top 70, left 14, h36, yellow, border 3, 18/800, gap 8. Shown 6 s. */
+.newTag {
+  position: absolute;
+  top: 70px;
+  left: 14px;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--pw-space-2);
+  height: 36px;
+  padding: 0 var(--pw-space-4);
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-yellow-500);
+  color: var(--pw-ink);
+  font-size: 18px;
+  font-weight: 800;
+  line-height: 1;
+}

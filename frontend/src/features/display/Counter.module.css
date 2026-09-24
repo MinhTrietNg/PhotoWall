@@ -1,0 +1,88 @@
+/* DESIGN-D18 counter card: radius 32, green-500, border 3, shadow-2, pad 28 36. */
+.card {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-2);
+  padding: 28px 36px;
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-7);
+  background: var(--pw-green-500);
+  box-shadow: var(--pw-shadow-2);
+  color: #fff;
+}
+
+/* Unbounded 132 / .95, 800, -.02em. One line tall, so the roll clips. */
+.number {
+  position: relative;
+  height: calc(132px * 0.95);
+  overflow: hidden;
+  overflow: clip;
+  font-size: 132px;
+  font-weight: 800;
+  line-height: 0.95;
+  letter-spacing: -0.02em;
+  white-space: nowrap;
+}
+
+.number span {
+  display: block;
+}
+
+.out {
+  position: absolute;
+  inset: 0 auto auto 0;
+  animation: rollOut 400ms var(--pw-ease-decel) both;
+}
+
+.in {
+  animation: rollIn 400ms var(--pw-ease-decel) both;
+}
+
+.fade {
+  animation: fadeIn 150ms linear both;
+}
+
+@keyframes rollOut {
+  to {
+    transform: translateY(-100%);
+  }
+}
+
+@keyframes rollIn {
+  from {
+    transform: translateY(100%);
+  }
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+  }
+}
+
+/* Unbounded 32, 700, .06em. */
+.caption {
+  font-size: 32px;
+  font-weight: 700;
+  line-height: 1.2;
+  letter-spacing: 0.06em;
+}
+
+/* "+1": right -14, top -18, h44, yellow, border 3, Unbounded 24/800. 1.5 s. */
+.bump {
+  position: absolute;
+  right: -14px;
+  top: -18px;
+  display: inline-flex;
+  align-items: center;
+  height: 44px;
+  padding: 0 var(--pw-space-4);
+  border: var(--pw-outline-strong);
+  border-radius: var(--pw-radius-full);
+  background: var(--pw-yellow-500);
+  color: var(--pw-ink);
+  font-size: 24px;
+  font-weight: 800;
+  line-height: 1;
+}
