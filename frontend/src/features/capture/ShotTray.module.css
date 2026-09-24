@@ -36,6 +36,22 @@
   color: var(--pw-yellow-500);
 }
 
+/*
+ * Retaking a filled slot: the same 3px yellow as `current` — this is the slot
+ * the camera is pointed at — plus a soft ring, so it stands out from the green
+ * done cells beside it.
+ */
+.retake {
+  border: 3px solid var(--pw-yellow-500);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--pw-yellow-500) 40%, transparent);
+}
+
+/* Its camera badge in the same yellow, ink glyph for contrast. */
+.retake .check {
+  background: var(--pw-yellow-500);
+  color: var(--pw-ink);
+}
+
 /* S04 only: the shot on screen, not yet accepted into the strip. */
 .reviewing {
   border: 3px solid var(--pw-blue-500);
