@@ -1,0 +1,67 @@
+.scrim {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: var(--pw-space-6);
+  background: var(--pw-scrim);
+}
+
+.panel {
+  display: flex;
+  flex-direction: column;
+  gap: var(--pw-space-3);
+  padding: var(--pw-space-4);
+  background: var(--pw-surface);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-5);
+  box-shadow: var(--pw-shadow-2);
+  animation: pop 200ms var(--pw-ease-std) both;
+}
+
+/* Tall enough to read faces, never taller than the window allows. */
+.strip {
+  height: min(760px, calc(100dvh - 180px));
+  display: flex;
+  justify-content: center;
+}
+
+.img {
+  height: 100%;
+  width: auto;
+  aspect-ratio: var(--pw-strip-ratio);
+  border: var(--pw-outline);
+  border-radius: var(--pw-radius-2);
+}
+
+.caption {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--pw-space-3);
+}
+
+.name {
+  margin: 0;
+  font: var(--pw-type-body);
+  font-weight: 700;
+}
+
+.meta {
+  margin: 0;
+  font: var(--pw-type-body-s);
+  color: var(--pw-ink-2);
+}
+
+@keyframes pop {
+  from {
+    transform: scale(0.96);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
