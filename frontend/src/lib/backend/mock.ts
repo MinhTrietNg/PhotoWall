@@ -241,16 +241,18 @@ function seedModerationDemo() {
     const createdAtMs = now - minutesAgo * 60_000;
     store.photos.push({
       id,
-      ownerUid: `mock-guest-${id}`,
+      ownerUid: `a3f9c2e7b0d4e1${id}`,
       displayName,
       showName: true,
       frameVariant,
       status,
       storagePath: `photos/${id}/strip.jpg`,
       createdAtMs,
-      submittedAtMs: createdAtMs + 2_000,
+      submittedAtMs: createdAtMs,
       reviewedAtMs: status === 'pending' ? undefined : createdAtMs + 90_000,
       reviewedBy: status === 'pending' ? undefined : 'lan@gdgoc.dev',
+      momentNo: status === 'approved' || status === 'removed' ? n : undefined,
+      reviewReason: status === 'removed' || status === 'rejected' ? 'duplicate' : undefined,
     });
   }
 }
@@ -309,7 +311,7 @@ export function createMockModeratorBackend(): ModeratorApi {
       const params = new URLSearchParams(location.search);
       store.moderatorEmail =
         params.get('mockFail') === 'denied'
-          ? 'khach@gmail.com'
+          ? 'minhtriet@gmail.com'
           : params.get('mockRole') === 'moderator'
             ? 'mai@aws-sc.vn'
             : 'lan@gdgoc.dev';
