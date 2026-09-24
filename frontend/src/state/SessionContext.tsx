@@ -25,8 +25,14 @@ import {
   type CaptureSession,
   type Shot,
 } from '@/types/session';
+import { readRememberedName, rememberName } from './rememberedName';
 
 const STORAGE_KEY = 'capture-session';
+
+/** A new, empty session that still knows who this phone belongs to. */
+function freshSession(): CaptureSession {
+  return { ...emptySession(), displayName: readRememberedName() };
+}
 
 interface SessionContextValue {
   session: CaptureSession;
@@ -56,7 +62,7 @@ interface SessionContextValue {
 const Ctx = createContext<SessionContextValue | null>(null);
 
 export function SessionProvider({ children }: { children: ReactNode }) {
-  const [session, setSession] = useState<CaptureSession>(emptySession);
+  const [session, setSession] = useState<CaptureSession>(freshSession);
   const [ready, setReady] = useState(false);
   const [resumable, setResumable] = useState<CaptureSession | null>(null);
   // Skip the very first persist so we never write back what we just read.
@@ -73,7 +79,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         // Already on the Wall. Keep who they are, not the shots they sent.
         setSession({
           ...emptySession(),
-          displayName: stored.displayName,
+          displayName: stored.displayName || readRememberedName(),
           showName: stored.showName,
           consentGiven: stored.consentGiven,
         });
@@ -84,7 +90,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
         void idbDelete(STORAGE_KEY);
       } else if (stored) {
         // No shots yet, but the name/consent are worth keeping.
-        setSession(stored);
+        setSession({ ...stored, displayName: stored.displayName || readRememberedName() });
       }
       setReady(true);
     });
@@ -125,11 +131,15 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
       discard: () => {
         setResumable(null);
-        setSession(emptySession());
+        // "Bắt đầu lại" drops the shots, not the guest's name.
+        setSession(freshSession());
         void idbDelete(STORAGE_KEY);
       },
 
-      setName: (displayName) => update({ displayName }),
+      setName: (displayName) => {
+        rememberName(displayName);
+        update({ displayName });
+      },
       setShowName: (showName) => update({ showName }),
       setConsent: (consentGiven) => update({ consentGiven }),
 
