@@ -59,10 +59,6 @@
   flex: 1;
 }
 
-.label {
-  font-size: 10px;
-}
-
 .title {
   font: var(--pw-type-caption);
   font-weight: 700;

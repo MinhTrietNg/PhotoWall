@@ -36,7 +36,6 @@ export function FrameOption({
       </span>
 
       <span className={styles.text}>
-        <span className={`lbl ${styles.label}`}>{frame.label}</span>
         <span className={styles.title}>{frame.title}</span>
       </span>
 
