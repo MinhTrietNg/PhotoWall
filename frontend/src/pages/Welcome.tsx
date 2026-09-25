@@ -25,7 +25,7 @@ const FAN = [
   { id: 'f01-gdgoc', rotate: -16, top: 7 },
   { id: 'f02-aws', rotate: -7, top: 3 },
   { id: 'f03-isf', rotate: 3, top: 1 },
-  { id: 'f04-tpl', rotate: 13, top: 0 },
+  { id: 'f04-collab', rotate: 13, top: 0 },
 ] as const;
 
 export function Welcome() {

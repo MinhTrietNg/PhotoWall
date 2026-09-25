@@ -4,7 +4,7 @@
 export type SlotRect = readonly [x: number, y: number, w: number, h: number];
 
 /** The four ids come from the design; `string & {}` keeps F05+ open. */
-export type FrameId = 'f01-gdgoc' | 'f02-aws' | 'f03-isf' | 'f04-tpl' | (string & {});
+export type FrameId = 'f01-gdgoc' | 'f02-aws' | 'f03-isf' | 'f04-collab' | (string & {});
 
 export interface FrameTemplate {
   id: FrameId;

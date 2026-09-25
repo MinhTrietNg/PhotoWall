@@ -2,16 +2,16 @@
   "canvas": [1080, 3400],
   "frames": [
     {
-      "id": "f04-tpl",
-      "name": "Frame / F04",
+      "id": "f04-collab",
+      "name": "Frame / F04 Collab",
       "label": "Khung 04",
-      "title": "Chờ artwork BTC",
-      "overlay": "frame-f04-tpl.webp",
+      "title": "Collab: ISF x GDGoC x AWS",
+      "overlay": "frame-f04-collab-v2.webp",
       "slots": [
-        [74, 314, 932, 702],
-        [74, 1034, 932, 702],
-        [74, 1754, 932, 702],
-        [74, 2474, 932, 702]
+        [161, 397, 756, 551],
+        [161, 1016, 756, 546],
+        [161, 1623, 756, 545],
+        [161, 2221, 756, 543]
       ],
       "r": 36
     },
