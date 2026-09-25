@@ -288,14 +288,6 @@ label.line {
   white-space: nowrap;
 }
 
-.frameFile {
-  font: var(--pw-type-caption);
-  font-weight: 400;
-  color: var(--pw-ink-2);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
 
 /* ------------------------------------------------------------------ data */
 

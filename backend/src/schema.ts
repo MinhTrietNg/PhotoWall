@@ -16,6 +16,19 @@ export type ReviewReason = (typeof REVIEW_REASONS)[number];
 
 /** `reviewedBy` value when the guest removed their own photo. Such removals are final. */
 export const OWNER_REVIEWER = 'owner';
+/** `reviewedBy` value when the autoApprove function put the photo on the wall. */
+export const AUTO_REVIEWER = 'auto';
+
+/** Cloud Vision's likelihood scale, lowest first. */
+export const LIKELIHOODS = ['UNKNOWN', 'VERY_UNLIKELY', 'UNLIKELY', 'POSSIBLE', 'LIKELY', 'VERY_LIKELY'] as const;
+export type Likelihood = (typeof LIKELIHOODS)[number];
+/** "Ngưỡng SafeSearch": a strip rated at or above this on any category stays in Chờ duyệt. */
+export const SAFESEARCH_THRESHOLDS = ['POSSIBLE', 'LIKELY', 'VERY_LIKELY'] as const;
+export type SafeSearchThreshold = (typeof SAFESEARCH_THRESHOLDS)[number];
+/** The categories the design names: adult · violence · racy. */
+export const SAFESEARCH_CATEGORIES = ['adult', 'violence', 'racy'] as const;
+export type SafeSearchCategory = (typeof SAFESEARCH_CATEGORIES)[number];
+export type SafeSearchResult = Record<SafeSearchCategory, Likelihood>;
 
 export const MODERATOR_ROLES = ['admin', 'moderator'] as const;
 export type ModeratorRole = (typeof MODERATOR_ROLES)[number];
@@ -64,6 +77,10 @@ export interface AppConfig {
   allowGallery?: boolean;
   /** "Giữ ảnh đã gỡ": hours a removed/rejected strip can still be restored. */
   removedRetentionHours?: number;
+  /** "Tự động duyệt": the autoApprove function approves strips SafeSearch does not flag. */
+  autoApprove?: boolean;
+  /** "Ngưỡng SafeSearch". */
+  safeSearchThreshold?: SafeSearchThreshold;
   /** "Tốc độ trượt" in px/s; null = the design's 70 s per loop. */
   marqueePxPerSec?: number | null;
   /** "Hiện tên người gửi" on the big screen. */
@@ -97,6 +114,8 @@ export const CONFIG_DEFAULTS = {
   maxSubmitsPerUser: 3,
   allowGallery: true,
   removedRetentionHours: 24,
+  autoApprove: false,
+  safeSearchThreshold: 'POSSIBLE' as SafeSearchThreshold,
   marqueePxPerSec: null,
   showNames: true,
   arrivalCard: true,
@@ -148,8 +167,10 @@ export interface PhotoDoc {
   createdAt: Timestamp;
   submittedAt?: Timestamp;
   reviewedAt?: Timestamp;
-  /** Moderator email, or OWNER_REVIEWER when the guest removed it. */
+  /** Moderator email, OWNER_REVIEWER when the guest removed it, AUTO_REVIEWER when auto-approved. */
   reviewedBy?: string;
+  /** Written by the autoApprove function; only strips checked while it was on have one. */
+  safeSearch?: SafeSearchResult;
   /** "Khoảnh khắc #N", assigned at first approval. */
   momentNo?: number;
   reviewReason?: ReviewReason;

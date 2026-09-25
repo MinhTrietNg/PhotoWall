@@ -2,6 +2,34 @@
   "canvas": [1080, 3400],
   "frames": [
     {
+      "id": "f04-tpl",
+      "name": "Frame / F04",
+      "label": "Khung 04",
+      "title": "Chờ artwork BTC",
+      "overlay": "frame-f04-tpl.webp",
+      "slots": [
+        [74, 314, 932, 702],
+        [74, 1034, 932, 702],
+        [74, 1754, 932, 702],
+        [74, 2474, 932, 702]
+      ],
+      "r": 36
+    },
+    {
+      "id": "f03-isf",
+      "name": "Frame / F03 ISF",
+      "label": "Khung 03",
+      "title": "ISF · Khoa CNTT",
+      "overlay": "frame-f03-isf.webp",
+      "slots": [
+        [182, 399, 709, 514],
+        [182, 975, 710, 525],
+        [181, 1562, 710, 521],
+        [182, 2147, 710, 518]
+      ],
+      "r": 36
+    },
+    {
       "id": "f01-gdgoc",
       "name": "Frame / F01 GDGoC",
       "label": "Khung 01",
@@ -26,34 +54,6 @@
         [168, 1057, 743, 537],
         [165, 1655, 738, 512],
         [168, 2237, 742, 508]
-      ],
-      "r": 36
-    },
-    {
-      "id": "f03-isf",
-      "name": "Frame / F03 ISF",
-      "label": "Khung 03",
-      "title": "ISF · Khoa CNTT",
-      "overlay": "frame-f03-isf.webp",
-      "slots": [
-        [182, 399, 709, 514],
-        [182, 975, 710, 525],
-        [181, 1562, 710, 521],
-        [182, 2147, 710, 518]
-      ],
-      "r": 36
-    },
-    {
-      "id": "f04-tpl",
-      "name": "Frame / F04",
-      "label": "Khung 04",
-      "title": "Chờ artwork BTC",
-      "overlay": "frame-f04-tpl.webp",
-      "slots": [
-        [74, 314, 932, 702],
-        [74, 1034, 932, 702],
-        [74, 1754, 932, 702],
-        [74, 2474, 932, 702]
       ],
       "r": 36
     }

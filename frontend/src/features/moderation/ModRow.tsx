@@ -17,6 +17,7 @@ import {
   formatWaiting,
   reviewerName,
   rowMeta,
+  safeSearchFlag,
   WAITING_OVERDUE_MS,
 } from './format';
 import styles from './ModTable.module.css';
@@ -84,9 +85,9 @@ export function isRestorable(photo: Photo, retentionHours: number, now: number):
 }
 
 /**
- * The line under the status pill. The artboard shows SafeSearch flags here;
- * this backend has no SafeSearch, so every pending strip is waiting for a
- * person — which is exactly what the "Chế độ duyệt tay" chip says.
+ * The line under the status pill. A pending strip SafeSearch flagged says why
+ * ("SafeSearch: violence · LIKELY"); any other pending strip is waiting for a
+ * person — "Chế độ duyệt tay".
  */
 function reasonChip(
   photo: Photo,
@@ -95,7 +96,12 @@ function reasonChip(
   retentionHours: number,
   moderators: readonly ModeratorAccount[],
 ): { tone: Tone; icon: ConsoleIconName; text: string } {
-  if (tab === 'pending') return { tone: 'manual', icon: 'backHand', text: 'Chế độ duyệt tay' };
+  if (tab === 'pending') {
+    const flag = safeSearchFlag(photo.safeSearch);
+    return flag
+      ? { tone: 'removed', icon: 'warning', text: flag }
+      : { tone: 'manual', icon: 'backHand', text: 'Chế độ duyệt tay' };
+  }
   const at = photo.reviewedAtMs ?? photo.createdAtMs;
   if (tab === 'approved') {
     return {

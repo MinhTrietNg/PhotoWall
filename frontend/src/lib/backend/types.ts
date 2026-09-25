@@ -8,6 +8,10 @@
  * Signatures mirror backend/src/client.ts. See Claude/Claude-Plan.md §12, §13.2.
  */
 
+import type { SafeSearchResult, SafeSearchThreshold } from '@backend/schema';
+
+export type { Likelihood, SafeSearchCategory, SafeSearchResult, SafeSearchThreshold } from '@backend/schema';
+
 export type PhotoStatus = 'uploading' | 'pending' | 'approved' | 'rejected' | 'removed';
 
 export interface Photo {
@@ -31,6 +35,8 @@ export interface Photo {
   reviewReason?: ReviewReason;
   /** Set once the stored strip was deleted — no longer restorable or viewable. */
   purgedAtMs?: number;
+  /** Cloud Vision's ratings, when the strip was sent while "Tự động duyệt" was on. */
+  safeSearch?: SafeSearchResult;
 }
 
 /** M01 remove dialog: Không phù hợp · Trùng / lỗi ảnh · Người gửi yêu cầu. */
@@ -63,6 +69,10 @@ export interface AppConfig {
   allowGallery?: boolean;
   /** "Giữ ảnh đã gỡ" in hours (1–168). */
   removedRetentionHours?: number;
+  /** "Tự động duyệt". */
+  autoApprove?: boolean;
+  /** "Ngưỡng SafeSearch". */
+  safeSearchThreshold?: SafeSearchThreshold;
   /** "Tốc độ trượt" px/s; null = the default 70 s per loop. */
   marqueePxPerSec?: number | null;
   /** "Hiện tên người gửi" on the big screen. */

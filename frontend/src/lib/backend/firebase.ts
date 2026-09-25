@@ -94,6 +94,7 @@ function toPhoto(p: ClientPhoto): Photo {
     showName: p.showName !== false,
     reviewReason: p.reviewReason,
     purgedAtMs: ms(p.purgedAt),
+    safeSearch: p.safeSearch,
   };
 }
 
@@ -108,6 +109,8 @@ function toConfig(c: ResolvedConfig | null): AppConfig | null {
     maxSubmitsPerUser: c.maxSubmitsPerUser,
     allowGallery: c.allowGallery,
     removedRetentionHours: c.removedRetentionHours,
+    autoApprove: c.autoApprove,
+    safeSearchThreshold: c.safeSearchThreshold,
     marqueePxPerSec: c.marqueePxPerSec,
     showNames: c.showNames,
     arrivalCard: c.arrivalCard,

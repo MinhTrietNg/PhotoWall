@@ -19,7 +19,8 @@ import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { FrameOption } from '@/features/frames/FrameOption';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
-import { enabledFrames, findFrame } from '@/features/frames/frameRegistry';
+import { useAppConfig } from '@/features/config/useAppConfig';
+import { enabledFrames } from '@/features/frames/frameRegistry';
 import { useFrames } from '@/features/frames/useFrames';
 import { track } from '@/lib/analytics';
 import { useBlobUrls } from '@/lib/useBlobUrls';
@@ -31,17 +32,21 @@ export function Finish() {
   const navigate = useNavigate();
   const { session, selectFrame, clearShots } = useSession();
   const { registry, error } = useFrames();
+  const config = useAppConfig();
   const [confirmReset, setConfirmReset] = useState(false);
 
-  const frames = useMemo(() => (registry ? enabledFrames(registry) : []), [registry]);
-  const selected = registry ? findFrame(registry, session.selectedFrameId) : undefined;
+  // Held back until the config is in, so a frame the Admin switched off never flashes up.
+  const frames = useMemo(
+    () => (registry && config !== undefined ? enabledFrames(registry, config?.frames) : []),
+    [registry, config],
+  );
+  const selected = frames.find((f) => f.id === session.selectedFrameId);
   const photos = useMemo(() => session.shots.map((s) => s?.blob ?? null), [session.shots]);
   const urls = useBlobUrls(photos);
 
-  // Auto-select: no choice made yet, or the chosen frame was disabled by Admin.
+  // Auto-select: no choice made yet, or the chosen frame was switched off by Admin.
   useEffect(() => {
-    if (frames.length === 0) return;
-    if (!selected || selected.enabled === false) selectFrame(frames[0].id);
+    if (frames.length > 0 && !selected) selectFrame(frames[0].id);
   }, [frames, selected, selectFrame]);
 
   if (shotCount(session) < SHOT_COUNT) return <Navigate to="/camera/1" replace />;

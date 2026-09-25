@@ -1,5 +1,19 @@
 /** Text formatting for the moderation table — DESIGN-D21. */
-import type { ModeratorAccount, Photo } from '@/lib/backend';
+import { AUTO_REVIEWER, LIKELIHOODS, SAFESEARCH_CATEGORIES } from '@backend/schema';
+import type { ModeratorAccount, Photo, SafeSearchResult } from '@/lib/backend';
+
+/**
+ * "SafeSearch: violence · LIKELY" — the design's reason chip, for the category
+ * rated highest, or null when nothing reached POSSIBLE. UNKNOWN counts: the
+ * function sends those to a person too.
+ */
+export function safeSearchFlag(result: SafeSearchResult | undefined): string | null {
+  if (!result) return null;
+  const rank = (c: (typeof SAFESEARCH_CATEGORIES)[number]) =>
+    result[c] === 'UNKNOWN' ? Infinity : LIKELIHOODS.indexOf(result[c]);
+  const top = [...SAFESEARCH_CATEGORIES].sort((a, b) => rank(b) - rank(a))[0];
+  return rank(top) >= LIKELIHOODS.indexOf('POSSIBLE') ? `SafeSearch: ${top} · ${result[top]}` : null;
+}
 
 export function formatClock(ms: number): string {
   return new Date(ms).toLocaleTimeString('vi-VN', { hour: '2-digit', minute: '2-digit' });
@@ -40,6 +54,7 @@ export function photoNumber(photo: Photo): string {
 /** "Lan" for lan@gdgoc.dev when the allowlist knows her, else the email's local part. */
 export function reviewerName(email: string | undefined, moderators: readonly ModeratorAccount[]): string {
   if (!email) return 'BTC';
+  if (email === AUTO_REVIEWER) return 'Tự động';
   const account = moderators.find((m) => m.email === email);
   return account?.name?.split(' ')[0] ?? email.split('@')[0];
 }

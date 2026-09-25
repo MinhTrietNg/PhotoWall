@@ -16,6 +16,7 @@ import { PartnerLogos } from '@/features/display/PartnerLogos';
 import { QrCard } from '@/features/display/QrCard';
 import { Wall } from '@/features/display/Wall';
 import { extraHeight, useReducedMotion, useStage } from '@/features/display/stage';
+import { useAnnouncedCount } from '@/features/display/useAnnouncedCount';
 import { useKioskReload } from '@/features/display/useKioskReload';
 import { useDisplayBackend, type DisplayConfig } from '@/lib/backend';
 import styles from './Display.module.css';
@@ -34,10 +35,9 @@ export function Display() {
   const stage = useStage();
   const reduced = useReducedMotion();
   const [config, setConfig] = useState<DisplayConfig | null>(null);
-  const [approvedCount, setApprovedCount] = useState<number | null>(null);
+  const [approvedCount, onAnnounce] = useAnnouncedCount(api);
 
   useEffect(() => api.watchConfig(setConfig), [api]);
-  useEffect(() => api.watchStats((s) => setApprovedCount(s.approvedCount)), [api]);
   useKioskReload(config?.reloadRequestedAtMs);
 
   const shown = config ?? FALLBACK_CONFIG;
@@ -68,7 +68,7 @@ export function Display() {
         </header>
 
         <main className={styles.body}>
-          <Wall config={shown} reduced={reduced} />
+          <Wall config={shown} reduced={reduced} onAnnounce={onAnnounce} />
           <aside className={styles.side}>
             <Counter value={approvedCount} />
             <QrCard url={shown.qrUrl} />

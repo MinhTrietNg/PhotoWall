@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate } from 'react-router-dom';
 import { Dialog } from '@/components/Dialog';
-import { useBackend } from '@/lib/backend';
+import { acceptingUploads, useAppConfig } from '@/features/config/useAppConfig';
 import { useSession } from '@/state/SessionContext';
 import { CameraPage } from '@/pages/CameraPage';
 import { Closed } from '@/pages/Closed';
@@ -50,12 +50,22 @@ export function App() {
 }
 
 function UploadsClosedGuard() {
-  const backend = useBackend();
+  const config = useAppConfig();
   const navigate = useNavigate();
   const { pathname } = useLocation();
-  const [open, setOpen] = useState<boolean | null>(null);
+  const [now, setNow] = useState(() => Date.now());
+  const open = config ? acceptingUploads(config, now) : null;
 
-  useEffect(() => backend.watchConfig((c) => setOpen(c?.uploadsOpen ?? null)), [backend]);
+  // "Tự động đóng lúc": wake up at that moment so a guest mid-flow is moved on
+  // then, not only when their send is refused.
+  const closesAtMs = config?.uploadsOpen ? config.closesAtMs : null;
+  useEffect(() => {
+    if (closesAtMs == null) return;
+    const wait = closesAtMs - Date.now();
+    if (wait <= 0) return;
+    const timer = setTimeout(() => setNow(Date.now()), Math.min(wait + 50, 2 ** 31 - 1));
+    return () => clearTimeout(timer);
+  }, [closesAtMs]);
 
   useEffect(() => {
     if (open !== false) return;

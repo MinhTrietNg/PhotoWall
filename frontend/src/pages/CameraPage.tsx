@@ -21,6 +21,7 @@ import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
 import { ShotTray } from '@/features/capture/ShotTray';
 import { useCameraPref } from '@/features/capture/cameraPrefs';
+import { useAppConfig } from '@/features/config/useAppConfig';
 import { setPendingShot } from '@/features/capture/pendingShot';
 import { ImageDecodeError, shotFromFile, useCamera } from '@/features/capture/useCamera';
 import { useSession } from '@/state/SessionContext';
@@ -48,6 +49,7 @@ export function CameraPage() {
   const [busy, setBusy] = useState(false);
   const [pickError, setPickError] = useState<string | null>(null);
   const fileRef = useRef<HTMLInputElement>(null);
+  const galleryAllowed = useAppConfig()?.allowGallery !== false;
   // Mirrors `busy` so grab() can guard against re-entry without taking `busy`
   // as a dependency — a stale closure there would wedge the shutter for good.
   const busyRef = useRef(false);
@@ -200,8 +202,13 @@ export function CameraPage() {
       </div>
 
       <div className={styles.controls}>
-        <div className={styles.control}>
-          <IconButton label="Chọn từ thư viện" tone="on-ink" size="l" onClick={openPicker}>
+        {/* "Cho phép chọn ảnh từ thư viện" off: the slot stays, so the shutter stays centred. */}
+        <div
+          className={styles.control}
+          style={galleryAllowed ? undefined : { visibility: 'hidden' }}
+          aria-hidden={galleryAllowed ? undefined : true}
+        >
+          <IconButton label="Chọn từ thư viện" tone="on-ink" size="l" onClick={openPicker} disabled={!galleryAllowed}>
             <Icon name="gallery" />
           </IconButton>
           <span className={styles.controlLabel}>Thư viện</span>

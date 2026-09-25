@@ -3,7 +3,7 @@
  *
  * Owns the approved-photo feed, the conveyor (see conveyor.ts for why it is not
  * a CSS loop), and the arrival sequence: dim the viewport, raise the yellow
- * card, hold 5 s, then fly the strip to the head of the track where it becomes
+ * card for 3 s in all, then fly the strip to the head of the track where it becomes
  * a MỚI tile. The tape never stops for any of it.
  *
  * With prefers-reduced-motion the conveyor gives way to the slideshow the
@@ -28,8 +28,10 @@ const WALL_MAX = 80;
  */
 const DEFAULT_PX_PER_SEC = 40;
 const RISE_MS = 700;
-const HOLD_MS = 5000;
 const FLY_MS = 600;
+/** The whole card, from rising to flying off, is on screen for 3 s. */
+const CARD_MS = 3000;
+const HOLD_MS = CARD_MS - RISE_MS - FLY_MS;
 const FADE_MS = 150;
 const PAGE_MS = 8000;
 /** Longest a new strip waits for its image before it is announced anyway. */
@@ -125,8 +127,19 @@ function WallState({ tone, title, body }: { tone: 'empty' | 'loading'; title: st
   );
 }
 
-export function Wall({ config, reduced }: { config: DisplayConfig; reduced: boolean }) {
+export function Wall({
+  config,
+  reduced,
+  onAnnounce,
+}: {
+  config: DisplayConfig;
+  reduced: boolean;
+  /** `count` new strips just showed themselves — a card rose, or tiles went in. Drives the counter. */
+  onAnnounce?: (count: number) => void;
+}) {
   const api = useDisplayBackend();
+  const onAnnounceRef = useRef(onAnnounce);
+  onAnnounceRef.current = onAnnounce;
   const viewportRef = useRef<HTMLDivElement>(null);
   const cardStripRef = useRef<HTMLDivElement>(null);
 
@@ -173,6 +186,7 @@ export function Wall({ config, reduced }: { config: DisplayConfig; reduced: bool
     // and the second must see this card as playing, not start another over it.
     live.current.card = next;
     setCard(next);
+    if (item) onAnnounceRef.current?.(itemPhotos(item).length);
   }, [queue]);
 
   // The marquee is as wide as the window lets it be (see stage.ts), so the
@@ -209,6 +223,7 @@ export function Wall({ config, reduced }: { config: DisplayConfig; reduced: bool
           for (const tile of tiles) appearing.current.add(tile.key);
           conveyor.reveal(tiles.map((t) => t.key));
         }
+        onAnnounceRef.current?.(arrivals.length);
       } else {
         queue.push(arrivals, playing?.item ?? null);
         if (!playing) startNext();

@@ -191,7 +191,7 @@ await requestDisplayReload(backend);   // "Làm mới màn lớn"
 | `displayReloadAt` | Làm mới màn lớn — big screen reload khi giá trị đổi | | FE |
 
 "Ai áp dụng" = **rules** nghĩa là backend chặn thật; **FE** nghĩa là giao diện phải tự đọc và làm theo.
-Không có: SafeSearch, tự động duyệt (cần server; M02 trong design cũng không còn mục này).
+Tự động duyệt: `updateConfig({ autoApprove, safeSearchThreshold })`. Cloud Function `autoApprove` (`functions/src/index.ts`, asia-southeast1) chạy khi ảnh chuyển `uploading → pending`: nếu `autoApprove` bật, gọi Cloud Vision SafeSearch; không mục nào (adult · violence · racy) đạt ngưỡng thì duyệt như "Duyệt" với `reviewedBy: 'auto'`, ngược lại để ở Chờ duyệt kèm `safeSearch` cho M01 hiện chip. Tắt thì function chỉ đọc config rồi thoát.
 
 ### Dữ liệu (M02, chỉ admin)
 

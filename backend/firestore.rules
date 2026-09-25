@@ -73,7 +73,8 @@ service cloud.firestore {
         let d = request.resource.data;
         return d.keys().hasOnly(['uploadsOpen', 'eventName', 'uploadsChangedAt', 'closesAt',
             'maxSubmitsPerUser', 'allowGallery', 'removedRetentionHours', 'marqueePxPerSec',
-            'showNames', 'arrivalCard', 'qrUrl', 'frames', 'displayReloadAt', 'deletionSchedule'])
+            'showNames', 'arrivalCard', 'qrUrl', 'frames', 'displayReloadAt', 'deletionSchedule',
+            'autoApprove', 'safeSearchThreshold'])
           && d.uploadsOpen is bool
           && d.eventName is string && d.eventName.size() <= 120
           && (d.get('closesAt', null) == null || d.closesAt is timestamp)
@@ -82,6 +83,8 @@ service cloud.firestore {
           && (!('allowGallery' in d) || d.allowGallery is bool)
           && (!('showNames' in d) || d.showNames is bool)
           && (!('arrivalCard' in d) || d.arrivalCard is bool)
+          && (!('autoApprove' in d) || d.autoApprove is bool)
+          && (!('safeSearchThreshold' in d) || d.safeSearchThreshold in ['POSSIBLE', 'LIKELY', 'VERY_LIKELY'])
           && (!('removedRetentionHours' in d)
               || (d.removedRetentionHours is int && d.removedRetentionHours >= 1 && d.removedRetentionHours <= 168))
           && (d.get('marqueePxPerSec', null) == null

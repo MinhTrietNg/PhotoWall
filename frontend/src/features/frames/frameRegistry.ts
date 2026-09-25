@@ -5,6 +5,7 @@
  * line, no code change" (Claude-Plan.md §19.7). That also means a typo in the
  * JSON silently produces a wrong export, so everything is validated on load.
  */
+import type { FrameSetting } from '@/lib/backend';
 import { CANVAS_H, CANVAS_W, type FrameRegistry, type FrameTemplate } from '@/types/frame';
 
 const FRAMES_BASE = '/frames';
@@ -68,9 +69,13 @@ export function loadFrames(): Promise<FrameRegistry> {
   return cache;
 }
 
-/** Frames the guest may choose. Admin-disabled frames are hidden, not greyed. */
-export function enabledFrames(registry: FrameRegistry): FrameTemplate[] {
-  return registry.frames.filter((f) => f.enabled !== false);
+/**
+ * Frames the guest may choose, in frames.json order (the order M02 lists them
+ * in). A frame the Admin switched off in M02 is hidden, not greyed.
+ */
+export function enabledFrames(registry: FrameRegistry, settings?: readonly FrameSetting[]): FrameTemplate[] {
+  const off = new Set((settings ?? []).filter((s) => s.enabled === false).map((s) => s.id));
+  return registry.frames.filter((f) => f.enabled !== false && !off.has(f.id));
 }
 
 export function findFrame(registry: FrameRegistry, id: string | null): FrameTemplate | undefined {

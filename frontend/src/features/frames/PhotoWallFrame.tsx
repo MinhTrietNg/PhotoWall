@@ -14,10 +14,10 @@
  * Slot percentages are DERIVED from the pixel rects so the DOM preview and the
  * canvas export can never drift apart.
  */
-import { useMemo, type CSSProperties } from 'react';
+import { useEffect, useMemo, useState, type CSSProperties, type RefObject } from 'react';
 import { useBlobUrls, type BlobLike } from '@/lib/useBlobUrls';
 import { useMeasuredWidth } from '@/lib/useMeasuredWidth';
-import { STRIP_ASPECT, slotRadiusAt, slotToPercent, type FrameTemplate } from '@/types/frame';
+import { CANVAS_H, CANVAS_W, STRIP_ASPECT, slotRadiusAt, slotToPercent, type FrameTemplate } from '@/types/frame';
 import { overlayUrl } from './frameRegistry';
 import styles from './PhotoWallFrame.module.css';
 
@@ -39,6 +39,26 @@ interface PhotoWallFrameProps {
   className?: string;
 }
 
+/** The content height of `ref`'s parent, tracked live; 0 until measured or when off. */
+function useParentHeight(ref: RefObject<HTMLElement | null>, on: boolean): number {
+  const [height, setHeight] = useState(0);
+  useEffect(() => {
+    const parent = ref.current?.parentElement;
+    if (!on || !parent) return;
+    const measure = () => {
+      const style = getComputedStyle(parent);
+      const next = parent.clientHeight - parseFloat(style.paddingTop) - parseFloat(style.paddingBottom);
+      setHeight((prev) => (Math.abs(prev - next) < 0.5 ? prev : next));
+    };
+    measure();
+    if (typeof ResizeObserver === 'undefined') return;
+    const ro = new ResizeObserver(measure);
+    ro.observe(parent);
+    return () => ro.disconnect();
+  }, [ref, on]);
+  return height;
+}
+
 export function PhotoWallFrame({
   frame,
   photos,
@@ -57,16 +77,20 @@ export function PhotoWallFrame({
   // than passed. The fixed case seeds it so the first paint already has the
   // right corner radius instead of a frame of square corners.
   const [ref, measured] = useMeasuredWidth<HTMLDivElement>();
+  const fitHeight = useParentHeight(ref, width === 'fit');
   const rendered = typeof width === 'number' ? width : measured;
 
   const radius = slotRadiusAt(frame.r, rendered);
   // The design draws the empty-slot number at 10px on a 40px-wide strip.
   const numberSize = Math.min(32, Math.max(6, Math.round(rendered * 0.25)));
 
+  // 'fit' is given its width in px from the parent's height. Leaving it to
+  // `height: 100%` + aspect-ratio inside a shrink-to-fit parent works in Chrome,
+  // but Safari resolves that width to 0 and the strip vanishes.
   const box: CSSProperties =
     typeof width === 'number'
       ? { width, aspectRatio: STRIP_ASPECT }
-      : { height: '100%', width: 'auto', maxWidth: '100%', aspectRatio: STRIP_ASPECT };
+      : { height: '100%', width: Math.floor((fitHeight * CANVAS_W) / CANVAS_H), flexShrink: 0 };
 
   return (
     <div

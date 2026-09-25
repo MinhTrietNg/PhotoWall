@@ -6,20 +6,18 @@
  * `updateConfig` by "Lưu"; the buttons inside a card — export, "Làm mới màn
  * lớn", the moderator list, the scheduled wipe — are actions and run at once.
  *
- * "Tự động duyệt" and "Ngưỡng SafeSearch" are drawn but have no backend: there
- * is no server to run SafeSearch, so every strip waits in "Chờ duyệt". They are
- * shown disabled rather than as switches that would do nothing
- * (Claude-Plan.md §20.5 #3, #8).
+ * "Tự động duyệt" and "Ngưỡng SafeSearch" drive the autoApprove Cloud Function
+ * (functions/src/index.ts): with it on, a strip SafeSearch does not rate at or
+ * above the threshold goes straight onto the wall.
  */
 import { useCallback, useEffect, useMemo, useState, type ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { CONFIG_DEFAULTS, LIMITS } from '@backend/schema';
+import { CONFIG_DEFAULTS, LIMITS, SAFESEARCH_THRESHOLDS, type SafeSearchThreshold } from '@backend/schema';
 import { Button } from '@/components/Button';
 import { Toggle } from '@/components/Controls';
 import { Dialog } from '@/components/Dialog';
 import { IconButton } from '@/components/IconButton';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
-import { overlayUrl } from '@/features/frames/frameRegistry';
 import { useFrames } from '@/features/frames/useFrames';
 import { ConsoleIcon, type ConsoleIconName } from '@/features/moderation/ConsoleIcon';
 import { useToast } from '@/features/moderation/useToast';
@@ -53,6 +51,8 @@ interface Draft {
   maxSubmitsPerUser: string;
   allowGallery: boolean;
   removedRetentionHours: string;
+  autoApprove: boolean;
+  safeSearchThreshold: SafeSearchThreshold;
   /** '' = the big screen's default pace. */
   marqueePxPerSec: string;
   showNames: boolean;
@@ -75,12 +75,15 @@ function nextOccurrence(hhmm: string, now = new Date()): number {
   return at.getTime();
 }
 
-/** config.frames in its saved order, then any frame the registry added since, all on by default. */
+/**
+ * Every frame in frames.json order — the order the guest sees too — on or off
+ * as config.frames says, on by default. Built fresh as { id, enabled }:
+ * Firestore may hand the maps back with their keys in another order, and
+ * toPatch compares frames as JSON, so the form would stay "unsaved" after a save.
+ */
 function frameOrder(saved: readonly FrameSetting[] | undefined, registry: readonly FrameTemplate[]): FrameSetting[] {
-  const known = new Set(registry.map((f) => f.id));
-  const kept = (saved ?? []).filter((f) => known.has(f.id));
-  const seen = new Set(kept.map((f) => f.id));
-  return [...kept, ...registry.filter((f) => !seen.has(f.id)).map((f) => ({ id: f.id, enabled: true }))];
+  const enabled = new Map((saved ?? []).map((f) => [f.id, f.enabled !== false]));
+  return registry.map((f) => ({ id: f.id, enabled: enabled.get(f.id) ?? true }));
 }
 
 function toDraft(c: AppConfig, registry: readonly FrameTemplate[]): Draft {
@@ -91,6 +94,8 @@ function toDraft(c: AppConfig, registry: readonly FrameTemplate[]): Draft {
     maxSubmitsPerUser: String(c.maxSubmitsPerUser ?? CONFIG_DEFAULTS.maxSubmitsPerUser),
     allowGallery: c.allowGallery ?? CONFIG_DEFAULTS.allowGallery,
     removedRetentionHours: String(c.removedRetentionHours ?? CONFIG_DEFAULTS.removedRetentionHours),
+    autoApprove: c.autoApprove ?? CONFIG_DEFAULTS.autoApprove,
+    safeSearchThreshold: c.safeSearchThreshold ?? CONFIG_DEFAULTS.safeSearchThreshold,
     marqueePxPerSec: c.marqueePxPerSec != null ? String(c.marqueePxPerSec) : '',
     showNames: c.showNames ?? CONFIG_DEFAULTS.showNames,
     arrivalCard: c.arrivalCard ?? CONFIG_DEFAULTS.arrivalCard,
@@ -133,6 +138,8 @@ function toPatch(d: Draft, base: Draft): ConfigPatch {
   if (d.maxSubmitsPerUser !== base.maxSubmitsPerUser) p.maxSubmitsPerUser = Number(d.maxSubmitsPerUser);
   if (d.allowGallery !== base.allowGallery) p.allowGallery = d.allowGallery;
   if (d.removedRetentionHours !== base.removedRetentionHours) p.removedRetentionHours = Number(d.removedRetentionHours);
+  if (d.autoApprove !== base.autoApprove) p.autoApprove = d.autoApprove;
+  if (d.safeSearchThreshold !== base.safeSearchThreshold) p.safeSearchThreshold = d.safeSearchThreshold;
   if (d.marqueePxPerSec !== base.marqueePxPerSec) p.marqueePxPerSec = d.marqueePxPerSec ? Number(d.marqueePxPerSec) : null;
   if (d.showNames !== base.showNames) p.showNames = d.showNames;
   if (d.arrivalCard !== base.arrivalCard) p.arrivalCard = d.arrivalCard;
@@ -340,8 +347,13 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
       setDraft((d) => (d ? normalize(d) : d));
       showToast('Đã lưu — thay đổi có hiệu lực ngay.');
     } catch (e) {
-      if (import.meta.env.DEV) console.error('[settings]', e);
-      showToast('Chưa lưu được — kiểm tra mạng rồi thử lại.');
+      // Logged in production too: a refused save is otherwise invisible.
+      console.error('[settings]', e);
+      showToast(
+        (e as { code?: string } | null)?.code === 'permission-denied'
+          ? 'Máy chủ từ chối lưu — rules trên server có thể chưa được cập nhật.'
+          : 'Chưa lưu được — kiểm tra mạng rồi thử lại.',
+      );
     } finally {
       setSaving(false);
     }
@@ -669,18 +681,24 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
             title="Tự động duyệt"
             admin
             desc="Ảnh không bị SafeSearch gắn cờ lên Wall ngay; tắt → mọi ảnh vào Chờ duyệt"
-            checked={false}
-            disabled
-            onChange={() => undefined}
+            checked={draft?.autoApprove ?? false}
+            disabled={off}
+            onChange={(v) => set('autoApprove', v)}
           />
           <FieldLine id="safesearch" title="Ngưỡng SafeSearch" suffix="adult · violence · racy">
-            <input
+            <select
               id="safesearch"
               className={styles.input}
-              placeholder="POSSIBLE"
-              disabled
-              title="Chưa có dịch vụ SafeSearch — mọi ảnh đều chờ người duyệt"
-            />
+              value={draft?.safeSearchThreshold ?? CONFIG_DEFAULTS.safeSearchThreshold}
+              disabled={off}
+              onChange={(e) => set('safeSearchThreshold', e.target.value as SafeSearchThreshold)}
+            >
+              {SAFESEARCH_THRESHOLDS.map((t) => (
+                <option key={t} value={t}>
+                  {t}
+                </option>
+              ))}
+            </select>
           </FieldLine>
           <FieldLine
             id="retention"
@@ -723,7 +741,7 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
           <SwitchLine
             title={'Card "Vừa lên Wall"'}
             admin
-            desc="Trượt từ dưới lên khi có ảnh mới, giữ 5 s"
+            desc="Trượt từ dưới lên khi có ảnh mới, hiện 3 s"
             checked={draft?.arrivalCard ?? true}
             disabled={off}
             onChange={(v) => set('arrivalCard', v)}
@@ -767,7 +785,6 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
             {(draft?.frames ?? frameOrder([], frames)).map((setting) => {
               const frame = frames.find((f) => f.id === setting.id);
               if (!frame) return null;
-              const number = frame.label.replace(/\D+/g, '') || frame.label;
               const last = setting.enabled && enabledCount === 1;
               return (
                 <label key={frame.id} className={styles.frameRow} title={last ? 'Phải còn ít nhất 1 khung đang bật' : undefined}>
@@ -775,17 +792,14 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
                     <PhotoWallFrame frame={frame} width={14} />
                   </span>
                   <span className={styles.frameText}>
-                    <span className={styles.frameName}>
-                      {number} · {frame.title}
-                    </span>
-                    <span className={styles.frameFile}>{overlayUrl(frame).split('/').pop()}</span>
+                    <span className={styles.frameName}>{frame.title}</span>
                   </span>
                   <Toggle
                     size="s"
                     checked={setting.enabled}
                     disabled={off || last}
                     onChange={(v) => toggleFrame(frame.id, v)}
-                    label={`Khung ${number} · ${frame.title}`}
+                    label={`Khung ${frame.title}`}
                   />
                 </label>
               );

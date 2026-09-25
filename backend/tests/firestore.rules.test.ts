@@ -404,7 +404,13 @@ describe('settings (config/app)', () => {
     const a = modBackend(env);
     await assertFails(updateConfig(a, { maxSubmitsPerUser: 50 }));
     await assertFails(updateConfig(a, { qrUrl: 'http://insecure.example' }));
-    await assertFails(updateConfig(a, { autoApprove: true } as never));
+    await assertFails(updateConfig(a, { autoApprove: 'yes' } as never));
+    await assertFails(updateConfig(a, { safeSearchThreshold: 'UNLIKELY' } as never));
+  });
+
+  it('an admin turns auto-approve on and sets the SafeSearch threshold', async () => {
+    await assertSucceeds(updateConfig(modBackend(env), { autoApprove: true, safeSearchThreshold: 'LIKELY' }));
+    await assertFails(updateConfig(modBackend(env, MOD2_EMAIL), { autoApprove: false }));
   });
 
   it('refuses flipping uploadsOpen without the server stamp', async () => {
