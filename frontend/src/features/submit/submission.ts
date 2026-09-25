@@ -7,6 +7,7 @@
  */
 interface Submission {
   blob: Blob;
+  thumb?: Blob;
   /** Set once the photo doc exists; undefined while composing. */
   photoId?: string;
   frameId: string;

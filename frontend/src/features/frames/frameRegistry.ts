@@ -81,7 +81,7 @@ export function overlayUrl(frame: FrameTemplate): string {
   return `${FRAMES_BASE}/${frame.overlay}`;
 }
 
-/** Browser-cache the overlay PNGs so switching frames is instant. */
+/** Browser-cache the overlays so switching frames is instant. */
 export function preloadOverlays(frames: FrameTemplate[]): void {
   for (const frame of frames) {
     const img = new Image();

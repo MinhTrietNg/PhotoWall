@@ -112,6 +112,8 @@ export class SubmitFailure extends Error {
 export interface SubmitInput {
   /** The composed 4-shot strip, JPEG, 1080 x 3400. */
   image: Blob;
+  /** The same strip at 480 wide, for the wall and the moderation rows. */
+  thumb?: Blob;
   displayName: string;
   frameVariant: string;
   /** S02 "Hiện tên trên màn hình lớn". */
@@ -200,6 +202,8 @@ export interface ModeratorApi {
 
   /** Download URL for a photo the caller may read (any status, moderators can read all). */
   photoUrl(photoId: string): Promise<string>;
+  /** The 480-wide copy of the same strip; the full one for strips sent before thumbs. */
+  thumbUrl(photoId: string): Promise<string>;
 
   watchConfig(cb: (config: AppConfig | null) => void): Unsubscribe;
   /** Admin only — the rules refuse moderators. */
@@ -252,6 +256,7 @@ export interface GuestApi {
   resumeSubmission(
     photoId: string,
     image: Blob,
+    thumb: Blob | undefined,
     onProgress?: (fraction: number | null) => void,
   ): Promise<void>;
 
@@ -307,4 +312,6 @@ export interface DisplayApi {
   watchStats(cb: (stats: { approvedCount: number }) => void): Unsubscribe;
   watchConfig(cb: (config: DisplayConfig) => void): Unsubscribe;
   photoUrl(photoId: string): Promise<string>;
+  /** The 480-wide copy; what the wall draws. */
+  thumbUrl(photoId: string): Promise<string>;
 }

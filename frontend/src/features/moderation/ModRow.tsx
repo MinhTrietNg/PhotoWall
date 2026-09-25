@@ -23,13 +23,19 @@ import styles from './ModTable.module.css';
 
 const THUMB_WIDTH = 44;
 
+/** Thumb URLs already resolved, so a row remounted by a tab switch shows its strip at once. */
+const known = new Map<string, string>();
+
 function useThumb(backend: ModeratorApi, photoId: string): string | null {
-  const [url, setUrl] = useState<string | null>(null);
+  const [url, setUrl] = useState<string | null>(() => known.get(photoId) ?? null);
   useEffect(() => {
     let alive = true;
-    setUrl(null);
-    backend.photoUrl(photoId).then(
-      (u) => alive && setUrl(u),
+    setUrl(known.get(photoId) ?? null);
+    backend.thumbUrl(photoId).then(
+      (u) => {
+        known.set(photoId, u);
+        if (alive) setUrl(u);
+      },
       () => undefined, // not uploaded (demo rows) or already purged — keep the frame tile
     );
     return () => {
@@ -52,7 +58,7 @@ export function StripThumb({
   return (
     <span className={styles.thumb}>
       {url ? (
-        <img src={url} alt="" style={{ width }} className={styles.thumbImg} />
+        <img src={url} alt="" style={{ width }} className={styles.thumbImg} loading="lazy" decoding="async" />
       ) : frame ? (
         // The uploaded JPEG already carries its frame; until it arrives (or if
         // it never will) the row shows that frame with its four slots empty.

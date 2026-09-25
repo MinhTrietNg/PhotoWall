@@ -201,7 +201,7 @@ Design: *"Xuất chỉ gồm ảnh đang hiển thị. Ảnh đã gỡ không ba
 |---|---|---|
 | Xuất danh sách tham gia (.csv) | `exportParticipantsCsv()` → chuỗi CSV (UTF-8 BOM, Excel đọc được tiếng Việt) | Lưu bằng `new Blob([csv], { type: 'text/csv' })` + `<a download>` |
 | Tải toàn bộ dải ảnh (.zip) | `listZipEntries()` → `[{ photoId, fileName }]` theo thứ tự khoảnh khắc; `fetchStripBlob(photoId)` lấy từng ảnh | Nén trên trình duyệt (vd thư viện `fflate`), **giữ nguyên `fileName`** |
-| Tạo video timelapse | — | Chạy trên máy admin: `cd backend && npm run timelapse -- photowall.zip` (cần FFmpeg). Dùng chính file ZIP ở trên |
+| Tạo video timelapse | `listZipEntries()` + `fetchStripBlob()`, ghép bằng `renderTimelapse()` (`features/moderation/timelapse.ts`) | Ghép ngay trên trình duyệt (canvas + MediaRecorder, MP4 hoặc WebM, 720 ngang, 8 dải/giây); giữ tab mở tới khi xong. Muốn bản chất lượng cao hơn: `cd backend && npm run timelapse -- photowall.zip` (cần FFmpeg) |
 | Xoá toàn bộ dữ liệu sau sự kiện | `scheduleDeletion(date)` → Admin khác `confirmDeletion()`; `cancelDeletion()` để huỷ | Xem dưới |
 
 **Lịch xoá dữ liệu ("Lên lịch 04.10 · cần 2 Admin xác nhận"):**

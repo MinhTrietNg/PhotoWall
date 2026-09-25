@@ -6,7 +6,7 @@
       "name": "Frame / F01 GDGoC",
       "label": "Khung 01",
       "title": "GDGoC · Build Together",
-      "overlay": "frame-f01-gdgoc.png",
+      "overlay": "frame-f01-gdgoc.webp",
       "slots": [
         [171, 338, 735, 549],
         [171, 948, 739, 572],
@@ -20,7 +20,7 @@
       "name": "Frame / F02 AWS",
       "label": "Khung 02",
       "title": "AWS · Build on AWS",
-      "overlay": "frame-f02-aws.png",
+      "overlay": "frame-f02-aws.webp",
       "slots": [
         [166, 459, 737, 523],
         [168, 1057, 743, 537],
@@ -34,7 +34,7 @@
       "name": "Frame / F03 ISF",
       "label": "Khung 03",
       "title": "ISF · Khoa CNTT",
-      "overlay": "frame-f03-isf.png",
+      "overlay": "frame-f03-isf.webp",
       "slots": [
         [182, 399, 709, 514],
         [182, 975, 710, 525],
@@ -48,7 +48,7 @@
       "name": "Frame / F04",
       "label": "Khung 04",
       "title": "Chờ artwork BTC",
-      "overlay": "frame-f04-tpl.png",
+      "overlay": "frame-f04-tpl.webp",
       "slots": [
         [74, 314, 932, 702],
         [74, 1034, 932, 702],

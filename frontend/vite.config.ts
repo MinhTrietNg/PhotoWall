@@ -10,7 +10,7 @@ import react from '@vitejs/plugin-react';
 export default defineConfig({
   plugins: [react()],
   // The bucket's CORS allowlist only opens this port in development.
-  server: { port: 5173, host: true },
+  server: { port: 5173, strictPort: true, host: true },
   resolve: {
     alias: {
       '@': resolve(import.meta.dirname, 'src'),

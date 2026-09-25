@@ -42,6 +42,7 @@ import {
   setEventName as clientSetEventName,
   setUploadsOpen as clientSetUploadsOpen,
   submitPhoto as clientSubmitPhoto,
+  thumbUrl as clientThumbUrl,
   updateConfig as clientUpdateConfig,
   watchApproved as clientWatchApproved,
   watchByStatus as clientWatchByStatus,
@@ -178,6 +179,7 @@ export function createFirebaseBackend(): GuestApi {
       try {
         return await clientSubmitPhoto(backend, {
           image: input.image,
+          thumb: input.thumb,
           displayName: input.displayName,
           frameVariant: input.frameVariant,
           showName: input.showName,
@@ -187,10 +189,10 @@ export function createFirebaseBackend(): GuestApi {
       }
     },
 
-    async resumeSubmission(photoId, image, onProgress) {
+    async resumeSubmission(photoId, image, thumb, onProgress) {
       onProgress?.(null);
       try {
-        await clientResumeSubmission(backend, photoId, image);
+        await clientResumeSubmission(backend, photoId, image, thumb);
       } catch (e) {
         throw asFailure(e);
       }
@@ -249,6 +251,7 @@ export function createFirebaseModeratorBackend(): ModeratorApi {
     purgeExpired: () => clientPurgeExpired(backend),
 
     photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
+    thumbUrl: (photoId) => clientThumbUrl(backend, photoId),
 
     watchConfig: (cb) => clientWatchConfig(backend, (c) => cb(toConfig(c))),
 
@@ -324,5 +327,6 @@ export function createFirebaseDisplayBackend(): DisplayApi {
     watchConfig: (cb) => clientWatchConfig(backend, (c) => cb(toDisplayConfig(c))),
 
     photoUrl: (photoId) => clientPhotoUrl(backend, photoId),
+    thumbUrl: (photoId) => clientThumbUrl(backend, photoId),
   };
 }

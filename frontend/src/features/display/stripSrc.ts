@@ -1,11 +1,10 @@
 /**
  * Strip images for the big screen, at the size the big screen shows them.
  *
- * A stored strip is a 1080x3400 JPEG. Decoded, that is 14.7 MB of pixels, and
- * the wall holds up to 80 of them — over a gigabyte, the memory risk Phase 9
- * names for an 8-hour run. Each strip is therefore decoded once, redrawn at
- * tile size for this screen's density, re-encoded small, and the full-size
- * bitmap dropped. The tile then decodes ~40 KB instead of ~600 KB.
+ * The wall loads each strip's 480-wide thumb (the full 1080x3400 only for
+ * strips sent before thumbs existed). Decoded, 80 of those is still ~230 MB for
+ * an 8-hour run, so each is decoded once, redrawn at tile size for this
+ * screen's density, re-encoded small, and the bitmap dropped.
  *
  * Anything that goes wrong on the way (a CORS miss, a decoder that refuses)
  * falls back to the original URL: a heavier wall beats an empty tile.
@@ -20,16 +19,18 @@ const DRAWN_W = 230;
 const QUALITY = 0.9;
 
 const cache = new Map<string, Promise<string>>();
-/** Only URLs made here are ours to revoke; photoUrl's are the backend's. */
+/** The same srcs once resolved, so a tile mounting later has its image on its first frame. */
+const ready = new Map<string, string>();
+/** Only URLs made here are ours to revoke; thumbUrl's are the backend's. */
 const owned = new Set<string>();
 
 async function shrink(url: string): Promise<string> {
   try {
     const density = Math.min(3, Math.max(1, window.devicePixelRatio * fitStage().scale));
-    const width = Math.min(CANVAS_W, Math.ceil(DRAWN_W * density));
+    const bitmap = await createImageBitmap(await (await fetch(url)).blob());
+    const width = Math.min(bitmap.width, CANVAS_W, Math.ceil(DRAWN_W * density));
     const height = Math.round((width * CANVAS_H) / CANVAS_W);
 
-    const bitmap = await createImageBitmap(await (await fetch(url)).blob());
     const canvas = document.createElement('canvas');
     canvas.width = width;
     canvas.height = height;
@@ -53,11 +54,31 @@ async function shrink(url: string): Promise<string> {
 function stripSrc(api: DisplayApi, photoId: string): Promise<string> {
   let src = cache.get(photoId);
   if (!src) {
-    src = api.photoUrl(photoId).then(shrink);
-    src.catch(() => cache.delete(photoId));
-    cache.set(photoId, src);
+    const pending = api.thumbUrl(photoId).then(shrink);
+    pending.then(
+      (url) => cache.get(photoId) === pending && ready.set(photoId, url),
+      () => cache.delete(photoId),
+    );
+    cache.set(photoId, pending);
+    src = pending;
   }
   return src;
+}
+
+async function decoded(url: string) {
+  const img = new Image();
+  img.src = url;
+  await img.decode();
+}
+
+/**
+ * Resolves once every strip is fetched and decoded, or after `timeoutMs`,
+ * whichever is first. A strip that fails is not waited on: it shows late or not
+ * at all, never holds the others back.
+ */
+export function prepareStrips(api: DisplayApi, ids: readonly string[], timeoutMs: number): Promise<void> {
+  const all = Promise.all(ids.map((id) => stripSrc(api, id).then(decoded).catch(() => undefined)));
+  return Promise.race([all.then(() => undefined), new Promise<void>((r) => setTimeout(r, timeoutMs))]);
 }
 
 /**
@@ -68,6 +89,7 @@ export function keepStrips(ids: ReadonlySet<string>) {
   for (const [id, src] of cache) {
     if (ids.has(id)) continue;
     cache.delete(id);
+    ready.delete(id);
     void src.then((url) => {
       if (owned.delete(url)) URL.revokeObjectURL(url);
     });
@@ -87,5 +109,5 @@ export function useStripSrc(api: DisplayApi, photoId: string): string | null {
       alive = false;
     };
   }, [api, photoId]);
-  return src?.id === photoId ? src.url : null;
+  return src?.id === photoId ? src.url : (ready.get(photoId) ?? null);
 }

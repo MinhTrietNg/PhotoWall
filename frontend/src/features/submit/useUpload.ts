@@ -61,14 +61,14 @@ export function useUpload() {
 
       try {
         setState({ ...INITIAL, phase: 'composing' });
-        const { blob } = await composeStrip(shots, frame);
-        setSubmission({ blob, frameId: frame.id, displayName });
+        const { blob, thumb } = await composeStrip(shots, frame);
+        setSubmission({ blob, thumb, frameId: frame.id, displayName });
 
         setState({ ...INITIAL, phase: 'uploading', progress: 0 });
         await backend.ensureGuest();
 
         const photoId = await backend.submitPhoto(
-          { image: blob, displayName, frameVariant: frame.id, showName: session.showName },
+          { image: blob, thumb, displayName, frameVariant: frame.id, showName: session.showName },
           (progress) => setState((s) => ({ ...s, progress })),
         );
         attachPhotoId(photoId);
@@ -99,7 +99,7 @@ export function useUpload() {
     const startedAt = performance.now();
     try {
       setState({ ...INITIAL, phase: 'uploading', progress: 0 });
-      await backend.resumeSubmission(submission.photoId, submission.blob, (progress) =>
+      await backend.resumeSubmission(submission.photoId, submission.blob, submission.thumb, (progress) =>
         setState((s) => ({ ...s, progress })),
       );
       track('pw_upload_ok', {

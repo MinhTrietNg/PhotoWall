@@ -23,6 +23,11 @@ import { overlayUrl } from '@/features/frames/frameRegistry';
 import { useFrames } from '@/features/frames/useFrames';
 import { ConsoleIcon, type ConsoleIconName } from '@/features/moderation/ConsoleIcon';
 import { useToast } from '@/features/moderation/useToast';
+import {
+  renderTimelapse,
+  TimelapseUnsupported,
+  type TimelapseProgress,
+} from '@/features/moderation/timelapse';
 import { buildZip, saveBlob } from '@/features/moderation/zip';
 import {
   useModeratorBackend,
@@ -286,6 +291,7 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
   const [newRole, setNewRole] = useState<ModeratorRole>('moderator');
   const [adding, setAdding] = useState(false);
   const [zipProgress, setZipProgress] = useState<{ done: number; total: number } | null>(null);
+  const [videoProgress, setVideoProgress] = useState<TimelapseProgress | null>(null);
   const [csvBusy, setCsvBusy] = useState(false);
   const [pending, setPending] = useState<Pending | null>(null);
   // Errors show on a field once it is edited, and on every field after a refused save.
@@ -368,16 +374,50 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
       setZipProgress({ done: 0, total: entries.length });
       const files = [];
       for (const [i, entry] of entries.entries()) {
-        const blob = await backend.fetchStripBlob(entry.photoId);
-        files.push({ name: entry.fileName, data: new Uint8Array(await blob.arrayBuffer()) });
+        try {
+          const blob = await backend.fetchStripBlob(entry.photoId);
+          files.push({ name: entry.fileName, data: new Uint8Array(await blob.arrayBuffer()) });
+        } catch (e) {
+          // One missing strip should not cost the other few hundred.
+          if (import.meta.env.DEV) console.error('[zip]', entry.fileName, e);
+        }
         setZipProgress({ done: i + 1, total: entries.length });
       }
+      if (files.length === 0) throw new Error('no strip could be downloaded');
       saveBlob(buildZip(files), 'photowall.zip');
+      if (files.length < entries.length) {
+        showToast(`Đã gói ${files.length}/${entries.length} dải ảnh — số còn lại chưa tải được.`);
+      }
     } catch (e) {
       if (import.meta.env.DEV) console.error('[zip]', e);
       showToast('Chưa tải được file .zip — thử lại nhé.');
     } finally {
       setZipProgress(null);
+    }
+  }
+
+  async function makeTimelapse() {
+    try {
+      const entries = await backend.listZipEntries();
+      if (entries.length === 0) {
+        showToast('Chưa có dải ảnh nào đang hiển thị để ghép video.');
+        return;
+      }
+      // File names lead with the moment number, so this is moment order.
+      const ids = [...entries].sort((a, b) => a.fileName.localeCompare(b.fileName)).map((e) => e.photoId);
+      setVideoProgress({ stage: 'fetch', done: 0, total: ids.length });
+      const { blob, ext, used } = await renderTimelapse(ids, backend.fetchStripBlob, setVideoProgress);
+      saveBlob(blob, `photowall-timelapse.${ext}`);
+      if (used < ids.length) showToast(`Video gồm ${used}/${ids.length} dải ảnh — số còn lại chưa tải được.`);
+    } catch (e) {
+      if (import.meta.env.DEV) console.error('[timelapse]', e);
+      showToast(
+        e instanceof TimelapseUnsupported
+          ? 'Trình duyệt này chưa quay được video — mở bằng Chrome bản mới nhé.'
+          : 'Chưa tạo được video — thử lại nhé.',
+      );
+    } finally {
+      setVideoProgress(null);
     }
   }
 
@@ -420,7 +460,7 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
     if (!p) return;
     try {
       if (p.kind === 'leave') navigate('/');
-      else if (p.kind === 'timelapse') void downloadZip();
+      else if (p.kind === 'timelapse') void makeTimelapse();
       else if (p.kind === 'remove-moderator') {
         await backend.deleteModerator(p.account.email);
         showToast(`Đã gỡ quyền của ${p.account.name ?? p.account.email}.`);
@@ -509,8 +549,8 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
       case 'timelapse':
         return {
           title: 'Tạo video timelapse',
-          body: 'Video được ghép trên máy có FFmpeg từ file .zip: tải file về, rồi chạy cd backend && npm run timelapse -- photowall.zip.',
-          confirm: 'Tải .zip',
+          body: 'Trình duyệt sẽ ghép các dải ảnh đang hiển thị thành video, 8 dải mỗi giây. Giữ tab này mở cho tới khi video tải về.',
+          confirm: 'Tạo video',
           icon: <ConsoleIcon name="movie" size={24} />,
           tone: 'default' as const,
         };
@@ -778,10 +818,15 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
               size="m"
               block
               className={styles.exportButton}
+              disabled={videoProgress !== null}
               iconStart={<ConsoleIcon name="movie" size={20} />}
               onClick={() => setPending({ kind: 'timelapse' })}
             >
-              Tạo video timelapse
+              {videoProgress
+                ? videoProgress.stage === 'fetch'
+                  ? `Đang tải ${videoProgress.done}/${videoProgress.total} dải ảnh…`
+                  : `Đang ghép video ${videoProgress.done}/${videoProgress.total}…`
+                : 'Tạo video timelapse'}
             </Button>
             <Button
               variant="secondary"
@@ -871,7 +916,7 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
         icon={dialog?.icon}
         tone={dialog?.tone}
         confirmLabel={dialog?.confirm ?? ''}
-        cancelLabel={pending?.kind === 'timelapse' ? 'Đóng' : 'Huỷ'}
+        cancelLabel="Huỷ"
         onCancel={closeDialog}
         onConfirm={() => void runPending()}
       >

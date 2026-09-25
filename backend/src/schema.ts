@@ -25,6 +25,7 @@ export const LIMITS = {
   /** Upper bound an admin may set for `maxSubmitsPerUser`. */
   maxSubmitsPerUserCeiling: 20,
   maxUploadBytes: 2 * 1024 * 1024,
+  maxThumbBytes: 300 * 1024,
   /** S02 "0/24". */
   displayNameMaxLength: 24,
   maxRetentionHours: 168,
@@ -37,6 +38,8 @@ export const paths = {
   photo: (photoId: string) => `photos/${photoId}`,
   moderator: (email: string) => `moderators/${email}`,
   photoObject: (photoId: string) => `photos/${photoId}/strip.jpg`,
+  /** The same strip at 480px wide, for the wall and the moderation rows. */
+  photoThumb: (photoId: string) => `photos/${photoId}/thumb.jpg`,
 };
 
 export interface FrameSetting {

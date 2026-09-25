@@ -3,10 +3,10 @@
  * check faces before pressing Duyệt. Same overlay contract as pw-dialog —
  * scrim, Esc or scrim closes, focus moves in and returns to the opener.
  */
-import { useEffect, useId, useRef } from 'react';
+import { useEffect, useId, useRef, useState } from 'react';
 import { IconButton } from '@/components/IconButton';
 import { PhotoWallFrame } from '@/features/frames/PhotoWallFrame';
-import type { Photo } from '@/lib/backend';
+import { useModeratorBackend, type Photo } from '@/lib/backend';
 import type { FrameTemplate } from '@/types/frame';
 import { ConsoleIcon } from './ConsoleIcon';
 import { rowMeta } from './format';
@@ -19,12 +19,27 @@ export function StripPreview({
   onClose,
 }: {
   photo: Photo;
+  /** The row's thumb, shown until the full strip arrives. */
   url: string | null;
   frame: FrameTemplate | undefined;
   onClose: () => void;
 }) {
   const panelRef = useRef<HTMLDivElement>(null);
   const titleId = useId();
+  const backend = useModeratorBackend();
+  // Faces are checked here, so this loads the full strip, not the row's thumb.
+  const [full, setFull] = useState<string | null>(null);
+  useEffect(() => {
+    let alive = true;
+    backend.photoUrl(photo.id).then(
+      (u) => alive && setFull(u),
+      () => undefined, // not uploaded (demo rows) or already purged
+    );
+    return () => {
+      alive = false;
+    };
+  }, [backend, photo.id]);
+  const src = full ?? url;
 
   useEffect(() => {
     const opener = document.activeElement as HTMLElement | null;
@@ -54,8 +69,8 @@ export function StripPreview({
         onClick={(e) => e.stopPropagation()}
       >
         <div className={styles.strip}>
-          {url ? (
-            <img src={url} alt={`Dải ảnh của ${photo.displayName}`} className={styles.img} />
+          {src ? (
+            <img src={src} alt={`Dải ảnh của ${photo.displayName}`} className={styles.img} />
           ) : frame ? (
             <PhotoWallFrame frame={frame} width="fit" />
           ) : null}

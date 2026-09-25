@@ -75,6 +75,8 @@ export class SubmitError extends Error {
 export interface SubmitInput {
   /** The composed 4-shot strip, JPEG. */
   image: Blob;
+  /** The same strip, small (JPEG). Omitted = readers fall back to the full strip. */
+  thumb?: Blob;
   displayName: string;
   /** Frame id, e.g. "f01-gdgoc". */
   frameVariant: FrameVariant;
@@ -85,7 +87,7 @@ export interface SubmitInput {
 /**
  * Submits a strip for moderation and returns its photo id.
  * 1. batch: photos/{id} (uploading) + users/{uid} rate-limit ledger
- * 2. upload photos/{id}/strip.jpg
+ * 2. upload photos/{id}/strip.jpg (+ thumb.jpg)
  * 3. mark pending
  */
 export async function submitPhoto(b: Backend, input: SubmitInput): Promise<string> {
@@ -93,6 +95,7 @@ export async function submitPhoto(b: Backend, input: SubmitInput): Promise<strin
   if (
     displayName.length < 1 || displayName.length > LIMITS.displayNameMaxLength
     || input.image.type !== 'image/jpeg' || input.image.size >= LIMITS.maxUploadBytes
+    || (input.thumb && (input.thumb.type !== 'image/jpeg' || input.thumb.size >= LIMITS.maxThumbBytes))
     || !FRAME_ID_PATTERN.test(input.frameVariant)
   ) {
     throw new SubmitError('invalid-input');
@@ -123,17 +126,24 @@ export async function submitPhoto(b: Backend, input: SubmitInput): Promise<strin
     throw new SubmitError('unknown', undefined, undefined, e);
   }
 
-  await resumeSubmission(b, photoId, input.image);
+  await resumeSubmission(b, photoId, input.image, input.thumb);
   return photoId;
 }
 
+const JPEG_METADATA = { contentType: 'image/jpeg', cacheControl: 'public, max-age=31536000' };
+
 /** Steps 2–3 alone; safe to retry while the photo is still `uploading`. */
-export async function resumeSubmission(b: Backend, photoId: string, image: Blob): Promise<void> {
+export async function resumeSubmission(
+  b: Backend,
+  photoId: string,
+  image: Blob,
+  thumb?: Blob,
+): Promise<void> {
   try {
-    await uploadBytes(ref(b.storage, paths.photoObject(photoId)), image, {
-      contentType: 'image/jpeg',
-      cacheControl: 'public, max-age=31536000',
-    });
+    await Promise.all([
+      uploadBytes(ref(b.storage, paths.photoObject(photoId)), image, JPEG_METADATA),
+      thumb && uploadBytes(ref(b.storage, paths.photoThumb(photoId)), thumb, JPEG_METADATA),
+    ]);
     await updateDoc(doc(b.db, paths.photo(photoId)), { status: 'pending', submittedAt: serverTimestamp() });
   } catch (e) {
     throw new SubmitError('upload-failed', photoId, undefined, e);
@@ -243,6 +253,22 @@ export function photoUrl(b: Backend, photoId: string): Promise<string> {
     url = getDownloadURL(ref(b.storage, paths.photoObject(photoId)));
     url.catch(() => urlCache.delete(photoId));
     urlCache.set(photoId, url);
+  }
+  return url;
+}
+
+const thumbCache = new Map<string, Promise<string>>();
+
+/** Download URL for the small strip; strips sent before thumbs existed get the full one. */
+export function thumbUrl(b: Backend, photoId: string): Promise<string> {
+  let url = thumbCache.get(photoId);
+  if (!url) {
+    url = getDownloadURL(ref(b.storage, paths.photoThumb(photoId))).catch((e) => {
+      if (errorCode(e) === 'storage/object-not-found') return photoUrl(b, photoId);
+      throw e;
+    });
+    url.catch(() => thumbCache.delete(photoId));
+    thumbCache.set(photoId, url);
   }
   return url;
 }
@@ -382,14 +408,17 @@ async function reviewOnce(b: Backend, photoId: string, t: Transition) {
   }
 }
 
-/** Deletes the stored strip so any leaked download URL stops working. */
+/** Deletes the stored strip and its thumb so any leaked download URL stops working. */
 async function deleteStrip(b: Backend, photoId: string) {
   urlCache.delete(photoId);
-  try {
-    await deleteObject(ref(b.storage, paths.photoObject(photoId)));
-  } catch (e) {
-    if (errorCode(e) !== 'storage/object-not-found') throw e;
-  }
+  thumbCache.delete(photoId);
+  await Promise.all([paths.photoObject(photoId), paths.photoThumb(photoId)].map(async (path) => {
+    try {
+      await deleteObject(ref(b.storage, path));
+    } catch (e) {
+      if (errorCode(e) !== 'storage/object-not-found') throw e;
+    }
+  }));
 }
 
 /** "Duyệt": pending → approved, assigns "Khoảnh khắc #N". */

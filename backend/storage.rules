@@ -32,12 +32,18 @@ service firebase.storage {
         firestore.get(/databases/(default)/documents/config/app).data.get('removedRetentionHours', 24), 'h');
     }
 
-    match /photos/{photoId}/strip.jpg {
+    // strip.jpg is the 1080x3400 strip; thumb.jpg the same strip at 480 wide.
+    match /photos/{photoId}/{file} {
+      function maxBytes() {
+        return file == 'thumb.jpg' ? 300 * 1024 : 2 * 1024 * 1024;
+      }
+
       function canUpload(photo) {
-        return request.auth != null
+        return file in ['strip.jpg', 'thumb.jpg']
+          && request.auth != null
           && photo.ownerUid == request.auth.uid
           && photo.status == 'uploading'
-          && request.resource.size < 2 * 1024 * 1024
+          && request.resource.size < maxBytes()
           && request.resource.contentType == 'image/jpeg';
       }
 

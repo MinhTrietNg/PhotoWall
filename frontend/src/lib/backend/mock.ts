@@ -136,11 +136,11 @@ export function createMockBackend(): GuestApi {
       store.submitCount++;
       emit();
 
-      await this.resumeSubmission(id, input.image, onProgress);
+      await this.resumeSubmission(id, input.image, input.thumb, onProgress);
       return id;
     },
 
-    async resumeSubmission(photoId, image, onProgress) {
+    async resumeSubmission(photoId, image, _thumb, onProgress) {
       const photo = store.photos.find((p) => p.id === photoId);
       if (!photo) throw new SubmitFailure('unknown', photoId);
 
@@ -418,6 +418,10 @@ export function createMockModeratorBackend(): ModeratorApi {
       const url = URL.createObjectURL(blob);
       store.urls.set(photoId, url);
       return url;
+    },
+
+    thumbUrl(photoId) {
+      return this.photoUrl(photoId);
     },
 
     watchConfig(cb) {
@@ -723,6 +727,10 @@ export function createMockDisplayBackend(): DisplayApi {
       const photo = d.approved.find((p) => p.id === photoId);
       if (!photo) throw new Error('not found');
       return demoStripUrl(photo);
+    },
+
+    thumbUrl(photoId) {
+      return this.photoUrl(photoId);
     },
   };
 }

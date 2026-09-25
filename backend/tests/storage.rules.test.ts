@@ -59,9 +59,36 @@ describe('uploading', () => {
     await assertFails(uploadBytes(ref(st(guest(env, 'alice')), paths.photoObject('p1')), small, { contentType: 'image/png' }));
   });
 
-  it('rejects any path outside photos/{id}/strip.jpg', async () => {
+  it('rejects any path outside photos/{id}/strip.jpg and thumb.jpg', async () => {
     await seedPhoto('uploading');
     await assertFails(uploadBytes(ref(st(guest(env, 'alice')), 'photos/p1/evil.jpg'), small, jpeg));
+  });
+});
+
+describe('thumb', () => {
+  it('lets the owner upload the thumb while the photo is uploading, not after', async () => {
+    await seedPhoto('uploading');
+    await assertSucceeds(uploadBytes(ref(st(guest(env, 'alice')), paths.photoThumb('p1')), small, jpeg));
+    await seedPhoto('pending');
+    await assertFails(uploadBytes(ref(st(guest(env, 'alice')), paths.photoThumb('p1')), small, jpeg));
+  });
+
+  it('rejects a thumb of 300 KB or more, and a non-owner', async () => {
+    await seedPhoto('uploading');
+    const big = new Uint8Array(LIMITS.maxThumbBytes);
+    await assertFails(uploadBytes(ref(st(guest(env, 'alice')), paths.photoThumb('p1')), big, jpeg));
+    await assertFails(uploadBytes(ref(st(guest(env, 'bob')), paths.photoThumb('p1')), small, jpeg));
+  });
+
+  it('is readable by others only once approved', async () => {
+    await seedPhoto('pending');
+    await env.withSecurityRulesDisabled(async (ctx) => {
+      await uploadBytes(ref(st(ctx), paths.photoThumb('p1')), small, jpeg);
+    });
+    await assertFails(getBytes(ref(st(guest(env, 'screen')), paths.photoThumb('p1'))));
+    await assertSucceeds(getBytes(ref(st(moderator(env)), paths.photoThumb('p1'))));
+    await seedPhoto('approved');
+    await assertSucceeds(getBytes(ref(st(guest(env, 'screen')), paths.photoThumb('p1'))));
   });
 });
 

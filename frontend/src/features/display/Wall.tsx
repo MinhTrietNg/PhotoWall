@@ -16,7 +16,7 @@ import { ArrivalCard, type CardPhase } from './ArrivalCard';
 import { ArrivalQueue, itemPhotos, type ArrivalItem } from './arrivalQueue';
 import { Conveyor, NEW_TAG_MS, Playlist, TILE_H, TILE_W } from './conveyor';
 import { StripTile } from './StripTile';
-import { keepStrips, useStripSrc } from './stripSrc';
+import { keepStrips, prepareStrips, useStripSrc } from './stripSrc';
 import styles from './Wall.module.css';
 
 /** Claude-Plan.md P9.7: the newest 80 approved strips, a bounded DOM for 8 hours. */
@@ -32,6 +32,8 @@ const HOLD_MS = 5000;
 const FLY_MS = 600;
 const FADE_MS = 150;
 const PAGE_MS = 8000;
+/** Longest a new strip waits for its image before it is announced anyway. */
+const PREPARE_MS = 4000;
 /** `.pw-track { top: 8px }`. */
 const TRACK_TOP = 8;
 
@@ -192,9 +194,31 @@ export function Wall({ config, reduced }: { config: DisplayConfig; reduced: bool
     let newest = -Infinity;
     let first = true;
     let prune: ReturnType<typeof setTimeout> | undefined;
+    let alive = true;
+    let onWall = new Set<string>();
+    /** Arrivals are announced in order, each batch once its strips are decoded. */
+    let announced = Promise.resolve();
+
+    const announce = (arrivals: Photo[]) => {
+      const { config: cfg, reduced: calm, card: playing } = live.current;
+      if (!cfg.arrivalCard) {
+        for (const p of arrivals) playlist.inFlight.delete(p.id);
+        if (calm) markFresh(arrivals.map((p) => p.id));
+        else {
+          const tiles = conveyor.insert([...arrivals].reverse(), performance.now(), 0);
+          for (const tile of tiles) appearing.current.add(tile.key);
+          conveyor.reveal(tiles.map((t) => t.key));
+        }
+      } else {
+        queue.push(arrivals, playing?.item ?? null);
+        if (!playing) startNext();
+      }
+      bump();
+    };
 
     const unsubscribe = api.watchApproved((update) => {
       const now = performance.now();
+      onWall = new Set(update.photos.map((p) => p.id));
       playlist.set(update.photos);
       setPhotos(update.photos);
 
@@ -217,27 +241,25 @@ export function Wall({ config, reduced }: { config: DisplayConfig; reduced: bool
       first = false;
 
       if (arrivals.length > 0) {
-        const { config: cfg, reduced: calm, card: playing } = live.current;
-        if (!cfg.arrivalCard) {
-          if (calm) markFresh(arrivals.map((p) => p.id));
-          else {
-            const tiles = conveyor.insert([...arrivals].reverse(), now, 0);
-            for (const tile of tiles) appearing.current.add(tile.key);
-            conveyor.reveal(tiles.map((t) => t.key));
-          }
-        } else {
-          for (const p of arrivals) playlist.inFlight.add(p.id);
-          queue.push(arrivals, playing?.item ?? null);
-          if (!playing) startNext();
-        }
+        // Held off the tape until announced. A card that rises blank reads as
+        // broken, so its strips are fetched and decoded first.
+        for (const p of arrivals) playlist.inFlight.add(p.id);
+        const ids = arrivals.map((p) => p.id);
+        announced = announced
+          .then(() => prepareStrips(api, ids, PREPARE_MS))
+          .then(() => {
+            const still = arrivals.filter((p) => onWall.has(p.id));
+            if (alive && still.length > 0) announce(still);
+          });
       }
       bump();
 
       clearTimeout(prune);
-      prune = setTimeout(() => keepStrips(new Set(update.photos.map((p) => p.id))), 1000);
+      prune = setTimeout(() => keepStrips(onWall), 1000);
     }, WALL_MAX);
 
     return () => {
+      alive = false;
       unsubscribe();
       clearTimeout(prune);
     };

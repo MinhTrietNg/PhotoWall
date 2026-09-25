@@ -16,6 +16,13 @@ const JPEG_QUALITY_FALLBACK = 0.75;
 const TARGET_BYTES = 600 * 1024;
 /** storage.rules requires strictly less than 2 MB. */
 const MAX_BYTES = 2 * 1024 * 1024;
+/**
+ * The small copy the wall and the moderation rows load: 230px tiles at up to
+ * 2x density, ~60–90 KB instead of ~600. storage.rules caps it under 300 KB.
+ */
+const THUMB_W = 480;
+const THUMB_QUALITY = 0.8;
+const THUMB_MAX_BYTES = 300 * 1024;
 
 class ComposeError extends Error {}
 
@@ -83,6 +90,8 @@ function toBlob(canvas: HTMLCanvasElement, quality: number): Promise<Blob> {
 
 interface ComposeResult {
   blob: Blob;
+  /** The same strip at THUMB_W; undefined if it came out too big to be allowed. */
+  thumb: Blob | undefined;
   width: number;
   height: number;
   quality: number;
@@ -141,5 +150,22 @@ export async function composeStrip(
     throw new ComposeError(`ảnh ghép ${Math.round(blob.size / 1024)} KB, vượt giới hạn 2 MB`);
   }
 
-  return { blob, width: CANVAS_W, height: CANVAS_H, quality };
+  return { blob, thumb: await makeThumb(canvas), width: CANVAS_W, height: CANVAS_H, quality };
+}
+
+/** Readers fall back to the full strip without one, so a failure here costs speed, not the strip. */
+async function makeThumb(source: HTMLCanvasElement): Promise<Blob | undefined> {
+  try {
+    const canvas = document.createElement('canvas');
+    canvas.width = THUMB_W;
+    canvas.height = Math.round((THUMB_W * CANVAS_H) / CANVAS_W);
+    const ctx = canvas.getContext('2d', { alpha: false });
+    if (!ctx) return undefined;
+    ctx.imageSmoothingQuality = 'high';
+    ctx.drawImage(source, 0, 0, canvas.width, canvas.height);
+    const thumb = await toBlob(canvas, THUMB_QUALITY);
+    return thumb.size < THUMB_MAX_BYTES ? thumb : undefined;
+  } catch {
+    return undefined;
+  }
 }
