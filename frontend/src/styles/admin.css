@@ -1,9 +1,10 @@
 /*
  * The moderation console's shell (M00 · M01 · M02).
  *
- * Board 06: "Kiểm duyệt cố định 1280, không mobile." It paints the flat cream
- * ground — the dotted pattern base.css draws beside the guest column from
- * 768px up is the phone flow's, not the console's.
+ * Board 06 draws the console at 1280; it also runs on iPads and phones, each
+ * page stepping down at 1180, 960 and 640 (see its CSS module). It paints the
+ * flat cream ground — the dotted pattern base.css draws beside the guest
+ * column from 768px up is the phone flow's, not the console's.
  */
 body {
   background: var(--pw-bg);
