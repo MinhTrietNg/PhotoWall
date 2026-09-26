@@ -65,3 +65,13 @@
     opacity: 1;
   }
 }
+
+@media (max-width: 639px) {
+  .scrim {
+    padding: var(--pw-space-4);
+  }
+
+  .strip {
+    height: min(760px, calc(100dvh - 160px));
+  }
+}
