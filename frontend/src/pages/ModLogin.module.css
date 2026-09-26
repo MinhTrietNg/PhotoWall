@@ -145,3 +145,39 @@
 .footer a {
   font-weight: 700;
 }
+
+/* ---------------------------------------------------------- responsive */
+
+/*
+ * Phones: 16 gutters and a 24 card padding, so the card keeps 280 of content
+ * at 360. The two shapes shrink with the screen and stay on their corners.
+ */
+@media (max-width: 639px) {
+  .page {
+    padding: var(--pw-space-4);
+  }
+
+  .card {
+    padding: var(--pw-space-6);
+  }
+
+  .circle {
+    top: -48px;
+    left: -48px;
+    width: 140px;
+    height: 140px;
+  }
+
+  .square {
+    right: var(--pw-space-6);
+    bottom: calc(-1 * var(--pw-space-7));
+    width: 100px;
+    height: 100px;
+    border-radius: var(--pw-radius-5);
+  }
+
+  .footer {
+    flex-wrap: wrap;
+    row-gap: var(--pw-space-2);
+  }
+}
