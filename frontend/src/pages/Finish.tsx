@@ -35,13 +35,14 @@ export function Finish() {
   const config = useAppConfig();
   const [confirmReset, setConfirmReset] = useState(false);
 
-  // Held back until the config is in, so a frame the Admin switched off never flashes up.
-  const frames = useMemo(
-    () => (registry && config !== undefined ? enabledFrames(registry, config?.frames) : []),
-    [registry, config],
-  );
+  // Not gated on the config: a slow or refused config read must not leave the
+  // guest with "0 mẫu" and no send button. A frame the Admin switched off can
+  // show for a moment; the auto-select below moves off it once the config lands.
+  const frames = useMemo(() => (registry ? enabledFrames(registry, config?.frames) : []), [registry, config]);
   const selected = frames.find((f) => f.id === session.selectedFrameId);
   const photos = useMemo(() => session.shots.map((s) => s?.blob ?? null), [session.shots]);
+  // One object URL per shot, shared by the strip, the four option thumbs and the
+  // retake grid, so the browser decodes each shot once instead of six times.
   const urls = useBlobUrls(photos);
 
   // Auto-select: no choice made yet, or the chosen frame was switched off by Admin.
@@ -92,7 +93,7 @@ export function Finish() {
           {selected ? (
             // key forces a remount per variant so the crossfade actually runs.
             <div key={selected.id} className={styles.fade}>
-              <PhotoWallFrame frame={selected} width="fit" photos={photos} />
+              <PhotoWallFrame frame={selected} width="fit" photos={urls} />
             </div>
           ) : (
             <div className={styles.skeleton} />
@@ -107,7 +108,7 @@ export function Finish() {
                 key={frame.id}
                 frame={frame}
                 selected={frame.id === session.selectedFrameId}
-                photos={photos}
+                photos={urls}
                 onSelect={selectFrame}
               />
             ))}

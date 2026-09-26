@@ -26,5 +26,10 @@ export function initBackend(opts: InitOptions = {}): Backend {
     provider: new ReCaptchaEnterpriseProvider(recaptchaSiteKey),
     isTokenAutoRefreshEnabled: true,
   });
-  return { auth: getAuth(app), db: getFirestore(app), storage: getStorage(app) };
+  const storage = getStorage(app);
+  // The SDK would keep retrying a stalled upload for 10 minutes behind "Vài
+  // giây thôi". Give up sooner so the guest gets "Gửi lại" while still at the booth.
+  storage.maxUploadRetryTime = 45_000;
+  storage.maxOperationRetryTime = 20_000;
+  return { auth: getAuth(app), db: getFirestore(app), storage };
 }

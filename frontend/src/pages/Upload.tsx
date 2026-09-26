@@ -60,9 +60,13 @@ export function Upload() {
     return <UploadFailed state={state} frame={frame} photos={photos} onRetry={retry} />;
   }
 
+  // Once the doc is written the upload cannot be cancelled: leaving here lets
+  // it finish unseen, and the next send is refused for 60 s or duplicated.
+  const uploading = state.phase === 'uploading';
+
   return (
     <Screen>
-      <TopBar title="Bước 3 / 3" backTo="/finish" />
+      <TopBar title="Bước 3 / 3" backTo={uploading ? undefined : '/finish'} />
       <Steps current={3} />
 
       <div className={styles.body}>
@@ -84,9 +88,11 @@ export function Upload() {
       </div>
 
       <div className={`screen__cta ${styles.cancelRow}`}>
-        <Button variant="text" onClick={() => navigate('/finish')}>
-          Huỷ
-        </Button>
+        {uploading ? null : (
+          <Button variant="text" onClick={() => navigate('/finish')}>
+            Huỷ
+          </Button>
+        )}
       </div>
     </Screen>
   );

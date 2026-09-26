@@ -4,8 +4,8 @@ import { connectAuthEmulator, signInAnonymously, type Auth } from 'firebase/auth
 import {
   collection, connectFirestoreEmulator, deleteDoc, deleteField, doc, getCountFromServer, getDoc,
   getDocs, increment, limit, onSnapshot, orderBy, query, runTransaction, serverTimestamp, setDoc,
-  startAfter, Timestamp, updateDoc, where, writeBatch, type Firestore, type QueryDocumentSnapshot,
-  type QuerySnapshot,
+  startAfter, Timestamp, updateDoc, where, writeBatch, type DocumentSnapshot, type Firestore,
+  type QueryDocumentSnapshot, type QuerySnapshot,
   type Unsubscribe,
 } from 'firebase/firestore';
 import {
@@ -22,6 +22,42 @@ export interface Backend {
   auth: Auth;
   db: Firestore;
   storage: FirebaseStorage;
+}
+
+/**
+ * onSnapshot that outlives an error. Firestore drops a listener whose stream
+ * is refused (a rules redeploy, App Check, an expired token) and never
+ * re-subscribes; a kiosk would then scroll yesterday's strips until its 6-hour
+ * reload with nobody noticing. This retries after a pause instead.
+ */
+function resilient<S>(
+  subscribe: (next: (s: S) => void, error: (e: Error) => void) => Unsubscribe,
+  next: (s: S) => void,
+): Unsubscribe {
+  let unsub: Unsubscribe = () => {};
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  let alive = true;
+  let delay = 5_000;
+  const start = () => {
+    unsub = subscribe(
+      (s) => {
+        delay = 5_000;
+        next(s);
+      },
+      (e) => {
+        console.error('[photowall] listener failed, retrying in', delay, 'ms', e);
+        if (!alive) return;
+        timer = setTimeout(start, delay);
+        delay = Math.min(delay * 2, 60_000);
+      },
+    );
+  };
+  start();
+  return () => {
+    alive = false;
+    clearTimeout(timer);
+    unsub();
+  };
 }
 
 export type Photo = PhotoDoc & { id: string };
@@ -176,7 +212,7 @@ export function watchMyPhotos(b: Backend, cb: (photos: Photo[]) => void): Unsubs
     where('ownerUid', '==', requireUser(b).uid),
     orderBy('createdAt', 'desc'),
   );
-  return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
+  return resilient<QuerySnapshot>((n, e) => onSnapshot(q, n, e), (s) => cb(s.docs.map(toPhoto)));
 }
 
 /**
@@ -201,7 +237,8 @@ export async function removeMyPhoto(b: Backend, photoId: string): Promise<void> 
 
 /** `config/app` with defaults filled in; null if the document does not exist. */
 export function watchConfig(b: Backend, cb: (config: ResolvedConfig | null) => void): Unsubscribe {
-  return onSnapshot(doc(b.db, paths.config), (s) => {
+  const ref = doc(b.db, paths.config);
+  return resilient<DocumentSnapshot>((n, e) => onSnapshot(ref, n, e), (s) => {
     const raw = s.data() as AppConfig | undefined;
     cb(raw ? resolveConfig(raw) : null);
   });
@@ -226,7 +263,7 @@ export function watchApproved(b: Backend, cb: (u: ApprovedUpdate) => void, max =
     limit(max),
   );
   let first = true;
-  return onSnapshot(q, (s) => {
+  return resilient<QuerySnapshot>((n, e) => onSnapshot(q, n, e), (s) => {
     const changes = s.docChanges();
     cb({
       photos: s.docs.map(toPhoto),
@@ -238,7 +275,8 @@ export function watchApproved(b: Backend, cb: (u: ApprovedUpdate) => void, max =
 }
 
 export function watchStats(b: Backend, cb: (stats: Required<PublicStats>) => void): Unsubscribe {
-  return onSnapshot(doc(b.db, paths.stats), (s) => {
+  const ref = doc(b.db, paths.stats);
+  return resilient<DocumentSnapshot>((n, e) => onSnapshot(ref, n, e), (s) => {
     const d = s.data() as PublicStats | undefined;
     cb({ approvedCount: d?.approvedCount ?? 0, momentSeq: d?.momentSeq ?? 0 });
   });
@@ -311,7 +349,7 @@ export async function isModerator(b: Backend): Promise<boolean> {
 /** Pending queue, oldest first. */
 export function watchPending(b: Backend, cb: (photos: Photo[]) => void): Unsubscribe {
   const q = query(collection(b.db, 'photos'), where('status', '==', 'pending'), orderBy('submittedAt'));
-  return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
+  return resilient<QuerySnapshot>((n, e) => onSnapshot(q, n, e), (s) => cb(s.docs.map(toPhoto)));
 }
 
 /**
@@ -328,7 +366,7 @@ export function watchByStatus(
     orderBy('reviewedAt', 'desc'),
     limit(max),
   );
-  return onSnapshot(q, (s) => cb(s.docs.map(toPhoto)));
+  return resilient<QuerySnapshot>((n, e) => onSnapshot(q, n, e), (s) => cb(s.docs.map(toPhoto)));
 }
 
 /**
@@ -540,7 +578,8 @@ export async function requestDisplayReload(b: Backend): Promise<void> {
 
 /** Everyone on the allowlist. Readable by any moderator. */
 export function watchModerators(b: Backend, cb: (list: Moderator[]) => void): Unsubscribe {
-  return onSnapshot(collection(b.db, 'moderators'), (s) => cb(s.docs.map((d) => ({
+  const q = collection(b.db, 'moderators');
+  return resilient<QuerySnapshot>((n, e) => onSnapshot(q, n, e), (s) => cb(s.docs.map((d) => ({
     ...(d.data() as ModeratorDoc),
     email: d.id,
     role: (d.data() as ModeratorDoc).role ?? 'moderator',

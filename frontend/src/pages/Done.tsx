@@ -58,6 +58,9 @@ export function Done() {
   if (!submission) return <Navigate to="/" replace />;
 
   const approved = status === 'approved';
+  // Taken down by a moderator (or SafeSearch kept it back and it was rejected):
+  // say so, or the guest waits on the hourglass and comes to the booth to ask.
+  const declined = status === 'rejected' || status === 'removed';
   const name = submission.displayName;
   const canShare = canShareStrip(submission.blob, name);
   const photoId = submission.photoId;
@@ -86,7 +89,7 @@ export function Done() {
 
       <div className={styles.copy}>
         <h1 className={`u ${styles.title} ${approved ? styles.titleOk : ''}`}>
-          {approved ? 'Bạn đã lên Wall!' : 'Đã nhận, đang duyệt'}
+          {approved ? 'Bạn đã lên Wall!' : declined ? 'Dải ảnh này không lên Wall' : 'Đã nhận, đang duyệt'}
         </h1>
 
         <p className={styles.text}>
@@ -94,6 +97,8 @@ export function Done() {
             <>
               Dải ảnh của <b>bạn</b> đang trượt trên màn hình lớn tại gian hàng.
             </>
+          ) : declined ? (
+            'Ban tổ chức đã không đưa dải ảnh này lên màn hình lớn. Bạn vẫn tải về được, hoặc chụp bộ khác nhé.'
           ) : (
             'Bạn hãy chờ trong giây lát, ban tổ chức đang duyệt ảnh của bạn.'
           )}

@@ -31,7 +31,8 @@ const FAN = [
 export function Welcome() {
   const { registry } = useFrames();
   const backend = useBackend();
-  const [approvedCount, setApprovedCount] = useState(128);
+  // null until stats arrive: a made-up number on a 9 am screenshot is worse than none.
+  const [approvedCount, setApprovedCount] = useState<number | null>(null);
 
   useEffect(() => backend.watchStats((s) => setApprovedCount(s.approvedCount)), [backend]);
 
@@ -58,10 +59,12 @@ export function Welcome() {
             <span className="u">&lt;/&gt;</span>
           </div>
           <div className={`${styles.float} ${styles.f2}`} />
-          <div className={`${styles.float} ${styles.f3}`}>
-            <Icon name="bolt" size={20} />
-            {approvedCount} trên Wall
-          </div>
+          {approvedCount !== null ? (
+            <div className={`${styles.float} ${styles.f3}`}>
+              <Icon name="bolt" size={20} />
+              {approvedCount} trên Wall
+            </div>
+          ) : null}
 
           <div className={`${styles.float} ${styles.f4}`}>
             {registry?.frames.length

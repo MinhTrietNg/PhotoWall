@@ -140,15 +140,28 @@ export function CameraPage() {
                 <Icon name="videocamOff" size={24} />
               </span>
               <p className={`u ${styles.deniedTitle}`}>Chưa bật được camera</p>
-              <p className={styles.deniedText}>Trình duyệt chưa cho phép truy cập camera.</p>
-              <Button
-                size="m"
-                className={styles.deniedAction}
-                iconStart={<Icon name="photoCamera" size={20} />}
-                onClick={camera.retry}
-              >
-                Cho phép camera
-              </Button>
+              {camera.error === 'unavailable' ? (
+                // No getUserMedia at all: an in-app browser (Zalo, Messenger). Asking
+                // again cannot help; the gallery button below still can.
+                <p className={styles.deniedText}>
+                  Trình duyệt này không hỗ trợ camera. Mở link bằng Safari hoặc Chrome, hoặc chọn ảnh từ Thư viện.
+                </p>
+              ) : (
+                <>
+                  <p className={styles.deniedText}>
+                    Trình duyệt chưa cho phép truy cập camera. Nếu bấm mà không thấy hỏi, mở biểu tượng ổ khoá
+                    cạnh địa chỉ trang → Quyền → Camera.
+                  </p>
+                  <Button
+                    size="m"
+                    className={styles.deniedAction}
+                    iconStart={<Icon name="photoCamera" size={20} />}
+                    onClick={camera.retry}
+                  >
+                    Cho phép camera
+                  </Button>
+                </>
+              )}
             </div>
           ) : (
             <>

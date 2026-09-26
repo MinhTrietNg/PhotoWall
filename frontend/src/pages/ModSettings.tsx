@@ -309,21 +309,27 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
   useEffect(() => backend.watchConfig(setConfig), [backend]);
   useEffect(() => backend.watchModerators(setModerators), [backend]);
 
-  // Seed the draft once both halves are known. Later live updates (the uploads
-  // pill on M01, another admin) don't clobber an edit in progress; "Huỷ thay
-  // đổi" re-syncs on purpose.
-  const base = useMemo(() => (config && registry ? toDraft(config, frames) : null), [config, registry, frames]);
+  // The draft is seeded once both halves are known, and `seed` remembers what
+  // it was seeded (or last saved / reset) from. "Dirty" is draft vs seed, not
+  // draft vs the live config: another admin's save must not turn this page's
+  // untouched fields dirty, or "Lưu" would quietly write them back over theirs.
+  // "Huỷ thay đổi" re-syncs to the live config on purpose.
+  const live = useMemo(() => (config && registry ? toDraft(config, frames) : null), [config, registry, frames]);
+  const [seed, setSeed] = useState<Draft | null>(null);
   useEffect(() => {
-    if (base) setDraft((d) => d ?? base);
-  }, [base]);
+    if (live && !seed) {
+      setSeed(live);
+      setDraft(live);
+    }
+  }, [live, seed]);
 
   const allErrors = draft ? validate(draft) : {};
   const hasErrors = Object.keys(allErrors).length > 0;
   const errors: Errors = {};
   for (const key of Object.keys(allErrors) as (keyof Draft)[]) {
-    if (showAllErrors || (draft && base && draft[key] !== base[key])) errors[key] = allErrors[key];
+    if (showAllErrors || (draft && seed && draft[key] !== seed[key])) errors[key] = allErrors[key];
   }
-  const patch = draft && base ? toPatch(draft, base) : {};
+  const patch = draft && seed ? toPatch(draft, seed) : {};
   const dirty = Object.keys(patch).length > 0;
 
   function set<K extends keyof Draft>(key: K, value: Draft[K]) {
@@ -343,8 +349,10 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
     setSaving(true);
     try {
       await backend.updateConfig(patch);
-      // Kept, not re-seeded: the live config catches up to it and it stops being dirty.
-      setDraft((d) => (d ? normalize(d) : d));
+      // What was just saved is the new baseline; the live config catches up to it.
+      const saved = draft ? normalize(draft) : draft;
+      setDraft(saved);
+      setSeed(saved);
       showToast('Đã lưu — thay đổi có hiệu lực ngay.');
     } catch (e) {
       // Logged in production too: a refused save is otherwise invisible.
@@ -616,7 +624,8 @@ export function ModSettings({ account }: { account: ModeratorAccount }) {
             size="m"
             disabled={saving}
             onClick={() => {
-              setDraft(base);
+              setDraft(live);
+              setSeed(live);
               setShowAllErrors(false);
             }}
           >

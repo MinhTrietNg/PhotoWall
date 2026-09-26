@@ -39,6 +39,9 @@ export function useModShortcuts({
       if (target && isTyping(target)) return;
       // Ctrl/⌘+R is the browser's reload, not "gỡ".
       if (e.ctrlKey || e.metaKey || e.altKey) return;
+      // A held key auto-repeats ~30×/s; the cursor moves on as rows leave, so a
+      // long press on A would approve several strips unseen.
+      if (e.repeat) return;
 
       const id = rowIds[cursor];
       if (e.key === 'ArrowDown') {

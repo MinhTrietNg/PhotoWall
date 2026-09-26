@@ -43,6 +43,9 @@ export function useUpload() {
     const failure =
       e instanceof SubmitFailure ? e : new SubmitFailure('unknown', undefined, undefined, e);
     track('pw_upload_fail', { reason: failure.code });
+    // The photo doc exists by the time the upload fails; "Gửi lại" must resume
+    // it, not create a second one (which the 60 s rate limit would refuse).
+    if (failure.code === 'upload-failed' && failure.photoId) attachPhotoId(failure.photoId);
     setState({
       phase: 'failed',
       progress: null,
