@@ -5,18 +5,22 @@
 import { StrictMode } from 'react';
 import { createRoot } from 'react-dom/client';
 import { Splash } from '@/components/Splash';
-import { DisplayBackendProvider } from '@/lib/backend';
-import { Display } from '@/pages/Display';
+import { DisplayBackendProvider, ModeratorBackendProvider } from '@/lib/backend';
 import '@/styles/tokens.css';
 import '@/styles/base.css';
+import { App } from './App';
 
 const root = document.getElementById('root');
 if (!root) throw new Error('#root not found');
 
 createRoot(root).render(
   <StrictMode>
-    <DisplayBackendProvider fallback={<Splash />}>
-      <Display />
-    </DisplayBackendProvider>
+    {/* Both providers share one Firebase app (initBackend is memoised), so the
+        wall reads Firestore as the signed-in moderator. */}
+    <ModeratorBackendProvider fallback={<Splash />}>
+      <DisplayBackendProvider fallback={<Splash />}>
+        <App />
+      </DisplayBackendProvider>
+    </ModeratorBackendProvider>
   </StrictMode>,
 );

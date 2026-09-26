@@ -315,7 +315,7 @@ export interface DisplayConfig {
   reloadRequestedAtMs: number | null;
 }
 
-/** The kiosk at /display/. Read-only, and signed out: approved strips are public. */
+/** The kiosk at /display/. Read-only; shown only behind the moderators' Google sign-in. */
 export interface DisplayApi {
   watchApproved(cb: (update: ApprovedUpdate) => void, max?: number): Unsubscribe;
   /** approvedCount = strips on the wall right now. */

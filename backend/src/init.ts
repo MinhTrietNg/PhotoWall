@@ -14,11 +14,18 @@ export interface InitOptions {
   emulators?: boolean;
 }
 
+// One Firebase app per page: the big screen mounts both the moderator backend
+// (for its Google sign-in) and the display backend, and initializeApp /
+// initializeAppCheck each throw when called twice for the same app.
+let cached: Backend | undefined;
+
 export function initBackend(opts: InitOptions = {}): Backend {
+  if (cached) return cached;
   if (opts.emulators) {
     const app = initializeApp({ ...firebaseConfig, projectId: 'demo-photowall', storageBucket: 'demo-photowall.appspot.com' });
     const b = { auth: getAuth(app), db: getFirestore(app), storage: getStorage(app) };
     connectEmulators(b);
+    cached = b;
     return b;
   }
   const app = initializeApp(firebaseConfig);
@@ -31,5 +38,6 @@ export function initBackend(opts: InitOptions = {}): Backend {
   // giây thôi". Give up sooner so the guest gets "Gửi lại" while still at the booth.
   storage.maxUploadRetryTime = 45_000;
   storage.maxOperationRetryTime = 20_000;
-  return { auth: getAuth(app), db: getFirestore(app), storage };
+  cached = { auth: getAuth(app), db: getFirestore(app), storage };
+  return cached;
 }

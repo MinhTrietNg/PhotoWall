@@ -11,10 +11,15 @@ import styles from './ModLogin.module.css';
 export function ModLogin({
   deniedEmail,
   onSignIn,
+  title = 'Kiểm duyệt Photo Wall',
+  body = 'Đăng nhập bằng tài khoản Google đã được GDGoC thêm vào danh sách kiểm duyệt. Khách tham gia không cần đăng nhập.',
 }: {
   /** Set when a Google account signed in but is not on the moderators allowlist. */
   deniedEmail?: string;
   onSignIn: () => Promise<void>;
+  /** The big screen reuses this gate with its own wording. */
+  title?: string;
+  body?: string;
 }) {
   const [signingIn, setSigningIn] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -42,15 +47,12 @@ export function ModLogin({
             <ConsoleIcon name="adminPanelSettings" size={24} />
           </span>
           <div>
-            <h1 className={`u ${styles.title}`}>Kiểm duyệt Photo Wall</h1>
+            <h1 className={`u ${styles.title}`}>{title}</h1>
             <p className={styles.sub}>Chỉ dành cho ban tổ chức</p>
           </div>
         </div>
 
-        <p className={styles.body}>
-          Đăng nhập bằng tài khoản Google đã được GDGoC thêm vào danh sách kiểm duyệt. Khách tham
-          gia không cần đăng nhập.
-        </p>
+        <p className={styles.body}>{body}</p>
 
         <Button
           block
