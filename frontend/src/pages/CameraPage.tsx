@@ -15,7 +15,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Button } from '@/components/Button';
-import { Icon, MirrorGlyph, SwitchCameraGlyph } from '@/components/Icon';
+import { Icon, SwitchCameraGlyph } from '@/components/Icon';
 import { IconButton } from '@/components/IconButton';
 import { Screen } from '@/components/Screen';
 import { TopBar } from '@/components/TopBar';
@@ -114,31 +114,18 @@ export function CameraPage() {
         // Out of the camera, home. The shots stay in the session and the name
         // is remembered, so "Bắt đầu chụp ảnh" picks up at the first empty slot.
         backTo="/"
+        // No mirror pill: the front camera is always shown mirrored, the rear
+        // one never (see useCamera).
         right={
-          <>
-            <button
-              type="button"
-              className={`pill tap-target ${styles.tool} ${
-                timerOn ? styles.toolOn : styles.toolOff
-              }`}
-              aria-pressed={timerOn}
-              onClick={() => setTimerOn(!timerOn)}
-            >
-              <Icon name="timer" size={16} />
-              {COUNTDOWN_FROM}s
-            </button>
-            <button
-              type="button"
-              className={`pill tap-target ${styles.tool} ${styles.toolIcon} ${
-                camera.mirrored ? styles.toolOn : styles.toolOff
-              }`}
-              aria-pressed={camera.mirrored}
-              aria-label="Lật gương"
-              onClick={() => camera.setMirrored(!camera.mirrored)}
-            >
-              <MirrorGlyph size={16} />
-            </button>
-          </>
+          <button
+            type="button"
+            className={`pill tap-target ${styles.tool} ${timerOn ? styles.toolOn : styles.toolOff}`}
+            aria-pressed={timerOn}
+            onClick={() => setTimerOn(!timerOn)}
+          >
+            <Icon name="timer" size={16} />
+            {COUNTDOWN_FROM}s
+          </button>
         }
       />
 

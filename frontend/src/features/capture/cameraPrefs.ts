@@ -1,10 +1,11 @@
 /**
- * The two toggles in the camera top bar — the 3s timer and the mirror —
+ * How the guest likes to shoot — the 3s timer and which camera they use —
  * remembered from one shot to the next. Claude-Plan.md §12.1.
  *
  * Each /camera/:n remounts the screen, so plain component state went back to
- * the design defaults on every shot: a guest who switched the timer off for
- * shot 1 found it counting down again on shot 2.
+ * the defaults on every shot: a guest who turned the timer on for shot 1
+ * found it off again on shot 2, and one who shot 1 on the rear camera was
+ * back on the front one.
  *
  * sessionStorage, not the capture session: these are how the guest likes to
  * shoot, not part of the strip, so they outlive "Chụp bộ khác" and a reload but
@@ -17,13 +18,13 @@ const STORAGE_KEY = 'photowall.camera-prefs';
 
 interface CameraPrefs {
   timerOn: boolean;
-  mirrored: boolean;
+  /** The rear camera; the front one otherwise. */
+  backCamera: boolean;
 }
 
 // The artboards draw the timer pressed; the organisers asked for it off by
 // default, so the shutter fires at once unless the guest asks for a countdown.
-// The mirror pill starts off, as drawn.
-const DEFAULTS: CameraPrefs = { timerOn: false, mirrored: false };
+const DEFAULTS: CameraPrefs = { timerOn: false, backCamera: false };
 
 function readPrefs(): CameraPrefs {
   try {
@@ -32,7 +33,7 @@ function readPrefs(): CameraPrefs {
     const stored = (raw ? JSON.parse(raw) : null) as Record<string, unknown> | null;
     return {
       timerOn: typeof stored?.timerOn === 'boolean' ? stored.timerOn : DEFAULTS.timerOn,
-      mirrored: typeof stored?.mirrored === 'boolean' ? stored.mirrored : DEFAULTS.mirrored,
+      backCamera: typeof stored?.backCamera === 'boolean' ? stored.backCamera : DEFAULTS.backCamera,
     };
   } catch {
     return DEFAULTS;

@@ -2,6 +2,10 @@
  * getUserMedia plumbing for the capture screen: facing mode, mirror, and a
  * single-frame grab. DESIGN-D06 / D08 / D15.
  *
+ * The mirror is not a control. The front camera is shown mirrored, the way a
+ * guest expects to see themselves, and the rear one as it is — decided from the
+ * track the browser actually opened, so it can never disagree with the lens.
+ *
  * Distinguishes "denied" from "unavailable" because the design has a dedicated
  * screen (E01) for the permission case with Safari-specific instructions.
  */
@@ -23,10 +27,10 @@ interface UseCameraResult {
   ready: boolean;
   error: CameraError;
   facing: CameraFacing;
+  /** True for a front camera: the preview and the saved shot are flipped. */
   mirrored: boolean;
   /** True when the device exposes more than one video input. */
   canSwitch: boolean;
-  setMirrored: (next: boolean) => void;
   switchCamera: () => void;
   retry: () => void;
   /** Grabs the current frame as a JPEG, applying the mirror if it is on. */
@@ -37,11 +41,10 @@ export function useCamera(): UseCameraResult {
   const videoRef = useRef<HTMLVideoElement | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
 
-  const [facing, setFacing] = useState<CameraFacing>('user');
-  // Off by default, as every camera artboard draws it (aria-pressed="false"):
-  // what the guest frames is then exactly what the strip will show. After
-  // that, whatever the guest last chose, carried over from the previous shot.
-  const [mirrored, setMirrored] = useCameraPref('mirrored');
+  // The camera the guest last chose, carried over from the previous shot.
+  const [backCamera, setBackCamera] = useCameraPref('backCamera');
+  const facing: CameraFacing = backCamera ? 'environment' : 'user';
+  const [mirrored, setMirrored] = useState(facing === 'user');
   const [ready, setReady] = useState(false);
   const [error, setError] = useState<CameraError>(null);
   const [canSwitch, setCanSwitch] = useState(false);
@@ -83,6 +86,11 @@ export function useCamera(): UseCameraResult {
           videoRef.current.srcObject = stream;
           await videoRef.current.play().catch(() => undefined);
         }
+        // Phones report which way the lens they opened faces; a laptop webcam
+        // reports nothing, and it faces the guest. Set together with `ready` so
+        // the flip lands on the same frame the new picture fades in on.
+        const opened = stream.getVideoTracks()[0]?.getSettings?.().facingMode;
+        setMirrored(opened ? opened === 'user' : facing === 'user');
         setReady(true);
 
         // Only offer "Đổi camera" when there is actually another one.
@@ -146,8 +154,7 @@ export function useCamera(): UseCameraResult {
     facing,
     mirrored,
     canSwitch,
-    setMirrored,
-    switchCamera: () => setFacing((f) => (f === 'user' ? 'environment' : 'user')),
+    switchCamera: () => setBackCamera(!backCamera),
     retry: () => setAttempt((n) => n + 1),
     capture,
   };

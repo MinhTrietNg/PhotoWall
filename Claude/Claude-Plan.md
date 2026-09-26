@@ -1766,7 +1766,8 @@ pw-app  (tokens at :root, router outlet, backend singleton)
 | `activeShotIndex` | `1..4` | URL (`/camera/:n`) | per navigation | router | S03, S04 |
 | `candidateShot` | `Blob \| null` | `page-camera` local | until accepted/discarded | shutter, timer, gallery | S04 |
 | `timerOn` | `boolean` (default `false` **[I]** — organisers' call; the artboards draw it on) | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | timer pill | S03 |
-| `mirrored` | `boolean` (default `false`) | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | mirror pill | S03 video transform |
+| `mirrored` | `boolean`, **derived** **[I]**: `true` for the front camera, `false` for the rear, read from the opened track's `facingMode` (no mirror pill) | `use-camera` | per stream | camera switch | S03 video transform + saved frame |
+| `backCamera` | `boolean` (default `false`) **[I]** | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | switch-camera | `getUserMedia` facingMode |
 | `facing` | `'user' \| 'environment'` | `page-camera` local | session | switch-camera | `getUserMedia` |
 | `cameraError` | `'denied' \| 'unavailable' \| null` | `page-camera` local | until resolved | `getUserMedia` rejection | E01 |
 | `selectedFrameId` | `FrameId` | `session` | session | S05 cards | S05, S06, compose, submit |
