@@ -47,7 +47,7 @@ export function EnterName() {
 
         <Field
           label="Tên của bạn"
-          placeholder="VD: Minh Triết"
+          placeholder="VD: Nguyễn Văn A"
           value={session.displayName}
           onChange={(e) => setName(e.target.value)}
           maxLength={NAME_MAX}
