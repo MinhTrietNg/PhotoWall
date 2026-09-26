@@ -1765,7 +1765,7 @@ pw-app  (tokens at :root, router outlet, backend singleton)
 | `shots` | `(Shot \| null)[4]` | `shot-store` | session; persisted in **IndexedDB** | S03 capture, S04 accept, gallery pick | S03 tray, S06 grid, all `pw-photowall-frame`, compose |
 | `activeShotIndex` | `1..4` | URL (`/camera/:n`) | per navigation | router | S03, S04 |
 | `candidateShot` | `Blob \| null` | `page-camera` local | until accepted/discarded | shutter, timer, gallery | S04 |
-| `timerOn` | `boolean` (default `false` **[I]** — organisers' call; the artboards draw it on) | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | timer pill | S03 |
+| `timerOn` | `boolean` (default `true`) | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | timer pill | S03 |
 | `mirrored` | `boolean`, **derived** **[I]**: `true` for the front camera, `false` for the rear, read from the opened track's `facingMode` (no mirror pill) | `use-camera` | per stream | camera switch | S03 video transform + saved frame |
 | `backCamera` | `boolean` (default `false`) **[I]** | `page-camera` local, persisted in **sessionStorage** | tab (carries to the next shot) | switch-camera | `getUserMedia` facingMode |
 | `facing` | `'user' \| 'environment'` | `page-camera` local | session | switch-camera | `getUserMedia` |

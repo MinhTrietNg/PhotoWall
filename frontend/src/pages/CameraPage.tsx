@@ -42,7 +42,7 @@ export function CameraPage() {
   const { session } = useSession();
   const camera = useCamera();
 
-  // Off by default, and remembered across shots: turned on for shot 1, it stays on.
+  // On by default, and remembered across shots: turned off for shot 1, it stays off.
   const [timerOn, setTimerOn] = useCameraPref('timerOn');
   const [countdown, setCountdown] = useState<number | null>(null);
   const [flash, setFlash] = useState(false);

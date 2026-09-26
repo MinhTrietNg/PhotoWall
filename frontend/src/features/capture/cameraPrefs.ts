@@ -22,9 +22,8 @@ interface CameraPrefs {
   backCamera: boolean;
 }
 
-// The artboards draw the timer pressed; the organisers asked for it off by
-// default, so the shutter fires at once unless the guest asks for a countdown.
-const DEFAULTS: CameraPrefs = { timerOn: false, backCamera: false };
+// As every camera artboard draws it: the timer pill pressed, the front camera.
+const DEFAULTS: CameraPrefs = { timerOn: true, backCamera: false };
 
 function readPrefs(): CameraPrefs {
   try {
