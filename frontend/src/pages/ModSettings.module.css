@@ -486,3 +486,156 @@ label.line {
 .dialogField .input {
   width: 100%;
 }
+
+/* ---------------------------------------------------------- responsive */
+
+/*
+ * Board 06 draws M02 at 1280 only. Narrower, the header wraps its actions under
+ * the title, the grid drops to one column once a card would fall under ~430,
+ * and on phones each setting puts its field under its label when both do not
+ * fit on one line.
+ */
+.header {
+  flex-wrap: wrap;
+  row-gap: var(--pw-space-3);
+}
+
+.headerText {
+  flex: 1 1 320px;
+  min-width: 0;
+}
+
+@media (max-width: 1179px) {
+  .page {
+    padding: var(--pw-space-5) var(--pw-space-6) var(--pw-space-7);
+  }
+}
+
+/* One column; the header stays on screen so Lưu is always one tap away. */
+@media (max-width: 899px) {
+  .grid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .header {
+    position: sticky;
+    top: 0;
+    z-index: 5;
+    margin: calc(-1 * var(--pw-space-5)) calc(-1 * var(--pw-space-6)) 0;
+    padding: var(--pw-space-4) var(--pw-space-6);
+    background: var(--pw-bg);
+    border-bottom: 2px solid var(--pw-line);
+  }
+}
+
+@media (max-width: 639px) {
+  .page {
+    padding: var(--pw-space-4) var(--pw-space-4) var(--pw-space-7);
+    gap: var(--pw-space-4);
+  }
+
+  .header {
+    margin: calc(-1 * var(--pw-space-4)) calc(-1 * var(--pw-space-4)) 0;
+    padding: var(--pw-space-3) var(--pw-space-4);
+  }
+
+  .headerText {
+    flex-basis: 100%;
+    gap: var(--pw-space-3);
+  }
+
+  .headerActions {
+    flex: 1 1 100%;
+  }
+
+  .headerActions > :global(.btn) {
+    flex: 1;
+  }
+
+  .card {
+    padding: var(--pw-space-4);
+  }
+
+  /* The label keeps at least 180; below that the field wraps to its own line. */
+  .line {
+    flex-wrap: wrap;
+    row-gap: var(--pw-space-2);
+  }
+
+  .lineText {
+    flex: 1 1 180px;
+  }
+
+  /* A long unit ("bộ ảnh / phiên · 1 bộ / phút") wraps under its field. */
+  .fieldGroup {
+    flex-shrink: 1;
+    flex-wrap: wrap;
+    min-width: 0;
+  }
+
+  .suffix {
+    white-space: normal;
+  }
+
+  .frameHead {
+    flex-wrap: wrap;
+    row-gap: var(--pw-space-2);
+  }
+
+  .frameGrid {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .buttonsRow {
+    flex-wrap: wrap;
+  }
+
+  .danger {
+    flex-wrap: wrap;
+  }
+
+  .dangerActions {
+    flex: 1 1 100%;
+    flex-wrap: wrap;
+  }
+
+  /* Avatar · name and email · remove, with the role pill under the name. */
+  .person {
+    display: grid;
+    grid-template-columns: 36px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'avatar text remove'
+      'avatar role remove';
+    column-gap: var(--pw-space-3);
+    row-gap: var(--pw-space-1);
+  }
+
+  .avatar {
+    grid-area: avatar;
+  }
+
+  .personText {
+    grid-area: text;
+  }
+
+  .role {
+    grid-area: role;
+    justify-self: start;
+  }
+
+  .removePerson {
+    grid-area: remove;
+  }
+
+  .addRow {
+    flex-wrap: wrap;
+  }
+
+  .addEmail {
+    flex: 1 1 100%;
+  }
+
+  .addRole {
+    flex: 1;
+  }
+}
