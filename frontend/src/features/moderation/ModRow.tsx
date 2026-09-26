@@ -174,7 +174,7 @@ export function ModRow({
         ) : null}
       </div>
 
-      <div>
+      <div className={styles.thumbCell}>
         <StripThumb url={url} frame={frame} />
       </div>
 

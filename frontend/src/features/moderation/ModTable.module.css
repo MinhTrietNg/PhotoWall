@@ -282,3 +282,138 @@
   font: var(--pw-type-body-s);
   color: var(--pw-ink-2);
 }
+
+/* ---------------------------------------------------------- responsive */
+
+/* The replacement for the column labels once rows stack; hidden at full width. */
+.headNarrow {
+  display: none;
+}
+
+/*
+ * 960–1179 (iPad landscape, a narrowed window): still one line per strip, the
+ * fixed columns trimmed so the 1fr columns keep room — 1024 wide leaves the
+ * name and the status about 220 each.
+ */
+@media (max-width: 1179px) {
+  .table {
+    --mod-grid: 44px 56px minmax(0, 1fr) 110px minmax(0, 240px) auto;
+  }
+
+  .head,
+  .row {
+    gap: var(--pw-space-3);
+  }
+}
+
+/*
+ * Under 960 (iPad portrait, phones) a strip is three lines beside its 44 thumb,
+ * which is 138 tall and fits them: name · time, status · reason, actions.
+ */
+@media (max-width: 959px) {
+  .table {
+    --mod-pad: var(--pw-space-3) var(--pw-space-4) var(--pw-space-3) 10px;
+  }
+
+  .head {
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding-block: var(--pw-space-4);
+  }
+
+  .head > span:not(.headNarrow) {
+    display: none;
+  }
+
+  .headNarrow {
+    display: block;
+    cursor: pointer;
+  }
+
+  span.headNarrow {
+    cursor: default;
+  }
+
+  .row {
+    grid-template-columns: 44px 48px minmax(0, 1fr) auto;
+    grid-template-areas:
+      'check thumb who    time'
+      'check thumb status status'
+      'check thumb act    act';
+    align-items: start;
+    row-gap: var(--pw-space-2);
+  }
+
+  .row > .checkCell {
+    grid-area: check;
+    align-self: center;
+  }
+
+  .thumbCell {
+    grid-area: thumb;
+  }
+
+  .who {
+    grid-area: who;
+  }
+
+  .time {
+    grid-area: time;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .status {
+    grid-area: status;
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+
+  .actions {
+    grid-area: act;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+}
+
+/*
+ * Phones: the page scrolls as a whole (see ModQueue.module.css), so the card
+ * clips rather than hides — `overflow: hidden` would make it the scroller the
+ * sticky bulk bar sticks to, and the bar would never reach the screen's edge.
+ */
+@media (max-width: 639px) {
+  .table {
+    --mod-pad: var(--pw-space-3) var(--pw-space-3) var(--pw-space-3) var(--pw-space-1);
+    flex: none;
+    overflow: clip;
+  }
+
+  /* 32 · 48 and 8 gaps leave the actions 246: zoom, Duyệt and Gỡ on one line. */
+  .head {
+    grid-template-columns: 32px minmax(0, 1fr);
+    column-gap: var(--pw-space-2);
+  }
+
+  .row {
+    grid-template-columns: 32px 48px minmax(0, 1fr) auto;
+    column-gap: var(--pw-space-2);
+  }
+
+  .body {
+    overflow: visible;
+  }
+
+  .helper {
+    padding-inline: var(--pw-space-4);
+  }
+}
+
+/* Under 390 (a 360 Android) the actions also take the thumb's column. */
+@media (max-width: 389px) {
+  .row {
+    grid-template-areas:
+      'check thumb who    time'
+      'check thumb status status'
+      'check act   act    act';
+  }
+}

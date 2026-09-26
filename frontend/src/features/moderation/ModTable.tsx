@@ -4,7 +4,7 @@
  * rows, and — while anything is selected — the ink bulk bar along its bottom.
  * Rows come pre-sorted and pre-filtered from the caller (ModQueue).
  */
-import { useEffect, useRef, type ReactNode } from 'react';
+import { useEffect, useId, useRef, type ReactNode } from 'react';
 import type { ModeratorAccount, ModeratorApi, ModTab, Photo } from '@/lib/backend';
 import type { FrameTemplate } from '@/types/frame';
 import { ConsoleIcon } from './ConsoleIcon';
@@ -60,6 +60,7 @@ export function ModTable({
   const selectable = tab !== 'removed';
   const count = rows.filter((p) => selected.has(p.id)).length;
   const allRef = useRef<HTMLInputElement>(null);
+  const allId = useId();
 
   useEffect(() => {
     if (allRef.current) allRef.current.indeterminate = count > 0 && count < rows.length;
@@ -72,6 +73,7 @@ export function ModTable({
           {selectable && rows.length > 0 ? (
             <input
               ref={allRef}
+              id={allId}
               type="checkbox"
               className={styles.checkbox}
               checked={count > 0 && count === rows.length}
@@ -85,6 +87,14 @@ export function ModTable({
         <span className="lbl">Thời gian</span>
         <span className="lbl">Trạng thái · lý do</span>
         <span className={`lbl ${styles.headActions}`}>Hành động</span>
+        {/* Below 960 the rows stack and the column labels go; this line replaces them. */}
+        {selectable && rows.length > 0 ? (
+          <label htmlFor={allId} className={`lbl ${styles.headNarrow}`}>
+            Chọn tất cả · {rows.length} dải ảnh
+          </label>
+        ) : (
+          <span className={`lbl ${styles.headNarrow}`}>{rows.length} dải ảnh</span>
+        )}
       </div>
 
       <p className={styles.helper}>
