@@ -152,9 +152,11 @@ export function CameraPage() {
             </div>
           ) : (
             <>
+              {/* Hidden until a stream plays, so a camera switch fades out and back
+                  in instead of cutting through a black frame and a sudden flip. */}
               <video
                 ref={camera.videoRef}
-                className={styles.video}
+                className={`${styles.video} ${camera.ready ? '' : styles.videoWaiting}`}
                 style={camera.mirrored ? { transform: 'scaleX(-1)' } : undefined}
                 playsInline
                 muted
@@ -228,7 +230,10 @@ export function CameraPage() {
                 size="l"
                 onClick={denied ? camera.retry : camera.switchCamera}
               >
-                <SwitchCameraGlyph />
+                {/* Half a turn per switch: the glyph answers the tap at once. */}
+                <span className={`${styles.switchGlyph} ${camera.facing === 'environment' ? styles.switchGlyphTurned : ''}`}>
+                  <SwitchCameraGlyph />
+                </span>
               </IconButton>
               <span className={styles.controlLabel}>Đổi camera</span>
             </>

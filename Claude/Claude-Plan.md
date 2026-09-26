@@ -1945,7 +1945,7 @@ Format: `Trigger → State change → UI response → Side effect → Failure be
 | **Toggle "Hiện tên"** | → `session.showName` → knob slides, track `#188038` ↔ `#DAD6CE` → — → — |
 | **Tick consent** | → `session.consentGiven` → CTA leaves the disabled style → — → unticking re-disables the CTA |
 | **Toggle the 3 s timer** | → `timerOn` → pill fills yellow / goes dark, `aria-pressed` flips → — → — |
-| **Toggle mirror** | → `mirrored` → `transform: scaleX(-1)` on the video **and on the captured frame** → — → — |
+| **Toggle mirror** | *Removed* **[I]**: the mirror follows the camera. Switching fades the video out and back in, and the flip lands with the new stream. Still `transform: scaleX(-1)` on the video **and on the captured frame** for the front camera. |
 | **Switch camera** | → `facing` → viewfinder re-mounts → `getUserMedia` with the new `facingMode` → if the device has one camera, hide the control **[I]** |
 | **Press the shutter** | → `candidateShot` → **white flash 120 ms** over the viewfinder, then navigate to S04 → grab a frame to a canvas at the native resolution → if the stream died, show E01 |
 | **3 s timer fires** | → same as the shutter → 64 px counting ring in the viewfinder, **10 ms haptic per tick** → — → — **[C]** |
