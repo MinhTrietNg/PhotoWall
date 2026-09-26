@@ -20,8 +20,10 @@ interface CameraPrefs {
   mirrored: boolean;
 }
 
-// As every camera artboard draws them: timer pill pressed, mirror pill not.
-const DEFAULTS: CameraPrefs = { timerOn: true, mirrored: false };
+// The artboards draw the timer pressed; the organisers asked for it off by
+// default, so the shutter fires at once unless the guest asks for a countdown.
+// The mirror pill starts off, as drawn.
+const DEFAULTS: CameraPrefs = { timerOn: false, mirrored: false };
 
 function readPrefs(): CameraPrefs {
   try {
