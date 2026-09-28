@@ -16,6 +16,16 @@
   <img alt="Cloud Vision" src="https://img.shields.io/badge/Cloud_Vision-SafeSearch-1C1B33?style=for-the-badge&logo=googlecloud&logoColor=34A853">
 </p>
 
+<p align="center">
+  <a href="#-ngày-2709--những-con-số">Con số</a> ·
+  <a href="#-hành-trình-của-khách">Luồng khách</a> ·
+  <a href="#-màn-hình-lớn">Màn hình lớn</a> ·
+  <a href="#-console-kiểm-duyệt">Kiểm duyệt</a> ·
+  <a href="#-bộ-khung-photobooth">Bộ khung</a> ·
+  <a href="#-kiến-trúc">Kiến trúc</a> ·
+  <a href="#-chạy-ở-máy-của-bạn">Chạy thử</a>
+</p>
+
 ---
 
 ## 📊 Ngày 27/09 — những con số
