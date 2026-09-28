@@ -121,3 +121,28 @@ Chạy ở `/admin`, đăng nhập Google, chỉ email có trong danh sách mớ
 - **Gỡ là mất khỏi màn lớn ngay**, nhưng file giữ 24 giờ để còn khôi phục.
 - **Sau sự kiện:** tải toàn bộ dải ảnh thành `.zip`, xuất CSV, và dựng **video timelapse ngay trong trình duyệt** bằng `MediaRecorder` (hoặc `npm run timelapse` với FFmpeg).
 
+---
+
+## 🖼️ Bộ khung photobooth
+
+Một component, một template. Mọi khung đều là canvas **1080 × 3400** với 4 ô ảnh.
+
+<p align="center">
+  <img src=".github/readme/frames-overview.png" alt="Bốn khung: F01 GDGoC Build Together, F02 AWS Build on AWS, F03 ISF Khoa CNTT, F04 Collab ISF x GDGoC x AWS" width="100%">
+</p>
+
+Thêm khung mới chỉ cần **1 file overlay** trong [frontend/public/frames/](frontend/public/frames/) và **1 dòng** trong [frames.json](frontend/public/frames/frames.json):
+
+```jsonc
+{
+  "id": "f01-gdgoc",                  // khớp /^f[0-9]{2}-[a-z0-9-]{1,30}$/ trong rules
+  "label": "Khung 01",
+  "title": "GDGoC · Build Together",
+  "overlay": "frame-f01-gdgoc.webp",  // PNG/WebP alpha 1080×3400, vẽ đè lên cùng
+  "slots": [[171, 338, 735, 549], /* … 4 ô [x, y, w, h] */],
+  "r": 36                             // bo góc ô ảnh
+}
+```
+
+Ảnh xuất ra là JPEG chất lượng 0.82 (dự phòng 0.75), mục tiêu ≤ 600 KB, trần cứng 2 MB. Kèm một thumbnail 480px cho màn lớn và console, khoảng 60–90 KB thay vì ~600 KB.
+
