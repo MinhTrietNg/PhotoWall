@@ -101,3 +101,23 @@ Màn 1920 × 1080 đặt tại gian hàng. Không polling: ảnh được duyệ
 - **Chỉ BTC mở được.** `/display` đứng sau cùng lớp đăng nhập Google với console. Chỉ tài khoản có trong danh sách kiểm duyệt mới thấy Wall; khách lỡ quét nhầm URL chỉ thấy màn đăng nhập. Phiên đăng nhập vẫn giữ qua các lần kiosk tự tải lại.
 - **Tự chăm sóc.** Listener Firestore tự nối lại khi luồng bị lỗi. Kiosk tự tải lại mỗi 6 giờ, và chỉ khi có mạng. Admin bấm *"Làm mới màn lớn"* là mọi màn đang mở cùng tải lại.
 
+---
+
+## 🛡️ Console kiểm duyệt
+
+Chạy ở `/admin`, đăng nhập Google, chỉ email có trong danh sách mới vào được.
+
+<p align="center">
+  <img src=".github/readme/m01-moderation.png" alt="M01 Console kiểm duyệt: danh sách chờ duyệt, nút Duyệt và Gỡ, chọn nhiều" width="100%">
+</p>
+
+| Vai trò | Ai | Được làm |
+|---|---|---|
+| `moderator` | Đoàn hội Khoa CNTT · AWS Student Builder Groups | Duyệt, gỡ, khôi phục ảnh; xem mọi tab |
+| `admin` | GDGoC | Tất cả quyền trên, cộng: mở/đóng nhận ảnh, giờ tự đóng, bật/tắt khung, thêm/gỡ người duyệt, xuất dữ liệu, lên lịch xoá |
+
+- **Phím tắt `A` / `R` / `↑↓`** để duyệt nhanh, cùng chọn nhiều để duyệt hoặc gỡ hàng loạt. Mục tiêu dưới 3 phút cho mỗi ảnh; quá 3 phút thì thời gian chờ chuyển đỏ.
+- **Tự động duyệt bằng Cloud Vision SafeSearch.** Hàm `autoApprove` chấm `adult · violence · racy`; dải nào chạm ngưỡng thì ở lại *Chờ duyệt* kèm điểm cho người duyệt xem.
+- **Gỡ là mất khỏi màn lớn ngay**, nhưng file giữ 24 giờ để còn khôi phục.
+- **Sau sự kiện:** tải toàn bộ dải ảnh thành `.zip`, xuất CSV, và dựng **video timelapse ngay trong trình duyệt** bằng `MediaRecorder` (hoặc `npm run timelapse` với FFmpeg).
+
