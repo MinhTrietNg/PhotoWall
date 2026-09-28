@@ -326,3 +326,30 @@ Các màn mobile, màn hình lớn và console trong README này lấy từ bộ
 <p align="center"><img src=".github/readme/banner-teaser.png" alt="Banner teaser Photo Wall 27.09 SGU's Day 2026" width="60%"></p>
 </details>
 
+---
+
+## 🤝 Đơn vị & đội ngũ
+
+<p align="center">
+  <img src="frontend/public/logos/logo-doan.png" height="56" alt="Đoàn Thanh niên">&nbsp;&nbsp;
+  <img src="frontend/public/logos/logo-sgu.png" height="56" alt="Đại học Sài Gòn">&nbsp;&nbsp;
+  <img src="frontend/public/logos/logo-hsv.png" height="56" alt="Hội Sinh viên">&nbsp;&nbsp;
+  <img src="frontend/public/logos/logo-isf-cntt.png" height="56" alt="ISF Khoa CNTT">&nbsp;&nbsp;
+  <img src=".github/readme/logo-gdgoc-sgu.png" height="40" alt="Google Developer Group On Campus · Saigon University">&nbsp;&nbsp;
+  <img src="frontend/public/logos/badge-aws.png" height="56" alt="AWS Student Builder Groups">
+</p>
+
+<p align="center">
+  <b>Đoàn hội Khoa Công nghệ Thông tin</b> × <b>Google Developer Group on Campus · Saigon University</b> × <b>AWS Student Builder Groups</b>
+</p>
+
+| | Phụ trách |
+|---|---|
+| **[Nguyễn Minh Triết](https://github.com/MinhTrietNg)** | Project Manager · Frontend: luồng khách, màn hình lớn, console kiểm duyệt, bộ khung |
+| **Nguyễn Hoàng Khả** | Backend: Firebase, security rules, tự duyệt SafeSearch, load test |
+| **Nguyễn Ngọc Thu Ngân** | Console admin |
+
+<p align="center">
+  <sub>Làm cho <b>SGU's Day 2026</b> · 27.09.2026 · Khoa CNTT, Đại học Sài Gòn</sub><br>
+  <sub>Chụp 4 tấm kiểu photobooth. Để lại một khoảnh khắc. 📸</sub>
+</p>
