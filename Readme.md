@@ -306,3 +306,23 @@ firebase deploy --project prod
 > [!IMPORTANT]
 > App Check chặn `localhost` trên project thật. Muốn thử với dữ liệu thật từ máy dev, đặt `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true` trước `initBackend()`, rồi thêm debug token in ra ở console vào *App Check → Manage debug tokens*.
 
+---
+
+## 🎨 Thiết kế
+
+Các màn mobile, màn hình lớn và console trong README này lấy từ bộ thiết kế UI/UX của dự án. Bộ khung được dựng từ đúng overlay và `frames.json` đang chạy. Phong cách chung: tối giản, nền kem ấm, viền mực 2px, bóng đổ cứng, bốn màu Google.
+
+| Nhóm | Nội dung |
+|---|---|
+| 01 · Design system | Token, control, pattern. Bản code nằm ở [tokens.css](frontend/src/styles/tokens.css) và [components/](frontend/src/components/) |
+| 02 · Mobile flow | 12 màn 390 × 844: S01–S07b và E01–E03 |
+| 03 · Màn lớn & console | D01–D02 màn hình lớn · M00 đăng nhập · M01 kiểm duyệt · M02 cài đặt sự kiện |
+| 04 · Khung | Đặc tả dải 1080 × 3400 và template `PhotoWallFrame` |
+| 05 · Bàn giao | Motion · responsive · a11y · phân quyền · phản biện logic |
+
+<details>
+<summary><b>Banner teaser trước sự kiện</b></summary>
+<br>
+<p align="center"><img src=".github/readme/banner-teaser.png" alt="Banner teaser Photo Wall 27.09 SGU's Day 2026" width="60%"></p>
+</details>
+
