@@ -1,4 +1,8 @@
 <p align="center">
+  <b>Tiếng Việt</b> · <a href="Readme.en.md">English</a> · <a href="Readme.zh-CN.md">简体中文</a>
+</p>
+
+<p align="center">
   <img src=".github/readme/hero.png" alt="Photo Wall · Đoàn hội Khoa CNTT × GDGoC SGU × AWS Student Builder Groups · SGU's Day 27.09.2026" width="100%">
 </p>
 
