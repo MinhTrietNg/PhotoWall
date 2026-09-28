@@ -79,3 +79,25 @@ Những thứ khách không thấy nhưng giữ cho luồng không vỡ:
 - **Xem trước đúng là ảnh sẽ tải về.** Bản xem trước trên DOM và canvas xuất JPEG đọc cùng toạ độ ô từ `frames.json`.
 - **Đăng nhập ẩn danh chỉ khi bấm Gửi.** Wifi trường cho hàng trăm máy dùng chung một IP, nên người mở trang rồi bỏ đi không được tốn một tài khoản.
 
+---
+
+## 🖥️ Màn hình lớn
+
+Màn 1920 × 1080 đặt tại gian hàng. Không polling: ảnh được duyệt xuất hiện trong khoảng một giây.
+
+<p align="center">
+  <img src=".github/readme/d02-big-screen-arrival.png" alt="D02 Màn hình lớn: thẻ Vừa lên Wall trượt từ dưới lên, bộ đếm 329 khoảnh khắc, mã QR" width="100%">
+  <br><sub><b>D02</b> · Một dải vừa được duyệt: thẻ <i>"Vừa lên Wall!"</i> trượt lên, bộ đếm nhảy +1.</sub>
+</p>
+
+<details>
+<summary><b>D01 · Trạng thái thường</b> (bấm để xem)</summary>
+<br>
+<p align="center"><img src=".github/readme/d01-big-screen.png" alt="D01 Màn hình lớn: dải ảnh trượt liên tục" width="100%"></p>
+</details>
+
+- **Băng chuyền, không phải marquee.** Kiểu `translateX(-50%)` quen thuộc sẽ giật cả hàng mỗi khi thêm hoặc gỡ một dải. [conveyor.ts](frontend/src/features/display/conveyor.ts) đặt các dải vào từng ô trên một băng chạy đều; dải mới chen vào bằng một cú dịch mềm.
+- **Hàng đợi thẻ có giới hạn.** Mỗi thẻ giữ màn 6,3 giây. Tối đa 3 thẻ chờ; nhiều hơn thì gộp thành một thẻ *"+N dải ảnh mới"*, nên duyệt dồn 10 ảnh không kéo dài thành một phút.
+- **Chỉ BTC mở được.** `/display` đứng sau cùng lớp đăng nhập Google với console. Chỉ tài khoản có trong danh sách kiểm duyệt mới thấy Wall; khách lỡ quét nhầm URL chỉ thấy màn đăng nhập. Phiên đăng nhập vẫn giữ qua các lần kiosk tự tải lại.
+- **Tự chăm sóc.** Listener Firestore tự nối lại khi luồng bị lỗi. Kiosk tự tải lại mỗi 6 giờ, và chỉ khi có mạng. Admin bấm *"Làm mới màn lớn"* là mọi màn đang mở cùng tải lại.
+
