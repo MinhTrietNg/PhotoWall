@@ -220,3 +220,31 @@ Frontend không bao giờ gọi `setDoc` hay `uploadBytes` trực tiếp. Mọi 
 | **Kiểm thử** | Vitest + `@firebase/rules-unit-testing` (100+ ca cho security rules) · e2e trên emulator · load test 800 điện thoại · `check:fit` bằng Playwright |
 | **Thiết kế** | 33 artboard: design system, 12 màn mobile, màn lớn, console, bộ khung, handoff |
 
+---
+
+## 📁 Cấu trúc repo
+
+```
+PhotoWall-GDGoCxAWS/
+├── frontend/                 Ba web app, một Hosting target
+│   ├── index.html            /          luồng khách trên điện thoại
+│   ├── display/index.html    /display/  màn hình lớn (kiosk)
+│   ├── admin/index.html      /admin/    console kiểm duyệt
+│   ├── public/frames/        overlay khung + frames.json
+│   ├── src/
+│   │   ├── pages/            từng màn: Welcome, CameraPage, ShotReview, Finish, Display, ModQueue…
+│   │   ├── features/         capture · frames · submit · display · moderation
+│   │   ├── components/       Button, Field, Steps, Dialog… theo design system
+│   │   └── lib/backend/      adapter: mock (chạy không cần Firebase) hoặc firebase
+│   └── tools/fit/            kiểm tra "không màn nào phải cuộn"
+├── backend/
+│   ├── src/client.ts         mọi thao tác đọc/ghi Firebase, dùng chung cho 3 app
+│   ├── src/schema.ts         hợp đồng dữ liệu, trùng khớp với rules
+│   ├── firestore.rules       ◄ đây mới là "backend"
+│   ├── storage.rules
+│   ├── tests/                kiểm thử rules trên emulator
+│   └── scripts/              seed · e2e · load-test · timelapse
+├── functions/                autoApprove + SafeSearch
+└── .github/readme/           ảnh minh hoạ cho README
+```
+
