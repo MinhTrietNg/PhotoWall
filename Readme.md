@@ -207,3 +207,16 @@ Những luật mà rules thực thi, không phải giao diện:
 
 Frontend không bao giờ gọi `setDoc` hay `uploadBytes` trực tiếp. Mọi thao tác đi qua [backend/src/client.ts](backend/src/client.ts), vì rules chỉ chấp nhận đúng thứ tự ghi mà các hàm đó thực hiện.
 
+---
+
+## 🧰 Công nghệ
+
+| Lớp | Dùng gì |
+|---|---|
+| **Frontend** | React 19 · Vite 7 · TypeScript · React Router 7 · CSS Modules · design token trong [tokens.css](frontend/src/styles/tokens.css) |
+| **Font** | Unbounded (display) · Be Vietnam Pro (body) |
+| **Backend** | Firebase Auth (ẩn danh + Google) · Firestore · Cloud Storage · App Check · Hosting |
+| **Server** | Cloud Functions v2 (Node 22) · Google Cloud Vision SafeSearch |
+| **Kiểm thử** | Vitest + `@firebase/rules-unit-testing` (100+ ca cho security rules) · e2e trên emulator · load test 800 điện thoại · `check:fit` bằng Playwright |
+| **Thiết kế** | 33 artboard: design system, 12 màn mobile, màn lớn, console, bộ khung, handoff |
+
