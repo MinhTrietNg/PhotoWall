@@ -40,3 +40,42 @@ Photo Wall chạy trọn ngày hội **SGU's Day 2026** tại không gian Khoa C
 > [!NOTE]
 > Toàn bộ sản phẩm, từ thiết kế đến bản chạy thật, được làm trong **5 ngày (22 → 26/09)** với **113 commit**, và lên sóng ngày 27/09.
 
+---
+
+## 📸 Hành trình của khách
+
+Mục tiêu thiết kế: **từ lúc quét QR đến lúc lên Wall, trung vị ≤ 45 giây.** Mỗi màn chỉ trả lời một câu hỏi: *tiếp theo mình làm gì?*
+
+<p align="center">
+  <img src=".github/readme/mobile-flow.png" alt="Luồng khách: S01 Welcome, S02 Nhập tên, S03 Chụp tấm n/4, S04 Kiểm tra tấm, lặp 4 lần, S05 Chọn khung và xem lại, S06 Đang gửi, S07 Đã lên Wall" width="100%">
+  <br><sub>Chụp từ chính app đang chạy (backend mock, camera giả), đi đúng thứ tự route trong <a href="frontend/src/apps/mobile/App.tsx">App.tsx</a>.</sub>
+</p>
+
+| Bước | Route | Khách làm gì | Chi tiết đáng chú ý |
+|:---:|---|---|---|
+| **S01** | `/` | Quét QR, bấm *Bắt đầu chụp ảnh* | Không cài app, không đăng nhập. |
+| **S02** | `/name` | Nhập tên (1–24 ký tự), đồng ý hiển thị | Tắt *"Hiện tên trên màn hình lớn"* thì Wall ghi "Tân sinh viên". |
+| **S03** | `/camera/:n` | Chụp tấm *n* / 4 | Hẹn giờ 3s bật sẵn. Đổi camera mờ dần, tự lật hình theo camera trước/sau. Chọn từ thư viện nếu BTC cho phép. |
+| **S04** | `/camera/:n/review` | Giữ tấm vừa chụp hoặc chụp lại | S03 ↔ S04 lặp đủ 4 tấm. |
+| **S05** | `/finish` | Chọn khung và xem lại cả dải, trên cùng một màn | Bấm thẻ để đổi khung ngay trên bản xem trước; chạm một ô để chụp lại riêng ô đó. |
+| **S06** | `/upload` | Chờ gửi | Ẩn *Huỷ* và *Quay lại* khi đang tải lên; quá 45 giây thì báo lỗi thay vì treo. |
+| **S07b → S07** | `/done` | Chờ duyệt, rồi *"Bạn đã lên Wall!"* | Cùng một màn tự chuyển khi BTC bấm *Duyệt*. Nhận số *Khoảnh khắc #N*, tải dải ảnh về, chia sẻ, hoặc tự gỡ. |
+
+Điện thoại cố ý **không có** màn xem Wall và màn "dải ảnh của tôi": Wall chỉ chiếu trên màn hình lớn, còn mọi thao tác với dải ảnh đã gửi nằm ngay ở `/done`.
+
+<p align="center">
+  <img src=".github/readme/mobile-states.png" alt="Trạng thái phụ: S03 đếm ngược 3 giây, S07b chờ duyệt, E01 chưa cho phép camera, E02 mất mạng gửi lại, E03 đã đóng nhận ảnh" width="100%">
+</p>
+
+- **E01 · Chưa cho phép camera:** hướng dẫn mở lại quyền camera, hoặc dùng *Thư viện* nếu BTC cho phép.
+- **E02 · Gửi chưa thành công:** 4 tấm vẫn còn; *Gửi lại* dùng đúng dải ảnh đang gửi dở.
+- **E03 · Đã đóng nhận ảnh:** khi BTC tạm dừng hoặc tới giờ tự đóng, khách đang chụp dở được chuyển sang `/closed` ngay lúc đó.
+
+Những thứ khách không thấy nhưng giữ cho luồng không vỡ:
+
+- **Không màn nào phải cuộn.** `npm run check:fit` mở Chrome với camera giả, đi trọn luồng ở **11 viewport** và đo từng màn, vượt ngân sách là đỏ.
+- **Ảnh không mất khi rời trang.** Các tấm đã chụp nằm trong IndexedDB; quay lại trong 30 phút sẽ được hỏi *"Tiếp tục bộ đang chụp?"*.
+- **Mạng rớt giữa chừng không tốn lượt.** Chỗ của ảnh đã được giữ; nút *Gửi lại* chỉ tải tiếp file.
+- **Xem trước đúng là ảnh sẽ tải về.** Bản xem trước trên DOM và canvas xuất JPEG đọc cùng toạ độ ô từ `frames.json`.
+- **Đăng nhập ẩn danh chỉ khi bấm Gửi.** Wifi trường cho hàng trăm máy dùng chung một IP, nên người mở trang rồi bỏ đi không được tốn một tài khoản.
+
