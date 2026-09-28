@@ -146,3 +146,64 @@ Thêm khung mới chỉ cần **1 file overlay** trong [frontend/public/frames/]
 
 Ảnh xuất ra là JPEG chất lượng 0.82 (dự phòng 0.75), mục tiêu ≤ 600 KB, trần cứng 2 MB. Kèm một thumbnail 480px cho màn lớn và console, khoảng 60–90 KB thay vì ~600 KB.
 
+---
+
+## 🏗️ Kiến trúc
+
+**Không có server nào do nhóm vận hành.** Mọi quy tắc (ai được gửi, gửi bao lâu một lần, ai được duyệt) nằm trong Firebase security rules. Server duy nhất là một Cloud Function làm việc mà trình duyệt không thể được tin: tự duyệt ảnh.
+
+```mermaid
+flowchart LR
+    subgraph guest["📱 Điện thoại khách"]
+        M["/ · luồng chụp<br>React + canvas"]
+    end
+    subgraph booth["🖥️ Gian hàng"]
+        D["/display · màn lớn<br>Google sign-in"]
+    end
+    subgraph org["💻 Ban tổ chức"]
+        A["/admin · kiểm duyệt<br>Google sign-in"]
+    end
+
+    subgraph fb["🔥 Firebase"]
+        H[("Hosting")]
+        AC{{"App Check"}}
+        FS[("Firestore<br>photos · config · stats")]
+        ST[("Storage<br>strip.jpg · thumb.jpg")]
+        R["firestore.rules<br>storage.rules"]
+        F["Cloud Function<br>autoApprove"]
+    end
+    V["Cloud Vision<br>SafeSearch"]
+
+    H --> M & D & A
+    M -- "ẩn danh, chỉ khi bấm Gửi" --> AC --> FS
+    M -- "JPEG < 2 MB" --> ST
+    R -. "chặn mọi ghi sai thứ tự" .- FS
+    R -.- ST
+    FS -- "uploading → pending" --> F
+    F <--> V
+    F -- "approved · reviewedBy: auto" --> FS
+    FS -- "onSnapshot ~1s" --> D
+    A -- "duyệt · gỡ · khôi phục" --> FS
+```
+
+Vòng đời một dải ảnh:
+
+```
+uploading ──► pending ──┬──► approved ──► removed   (BTC gỡ, hoặc khách tự gỡ)
+                        └──► rejected
+```
+
+Những luật mà rules thực thi, không phải giao diện:
+
+| Luật | Giá trị |
+|---|---|
+| Khoảng cách giữa hai lần gửi | 60 giây |
+| Số dải mỗi khách | 3 (admin chỉnh được, tối đa 20) |
+| Kích thước ảnh | < 2 MB (thumbnail < 300 KB), chỉ nhận JPEG |
+| Tên hiển thị | 1–24 ký tự sau khi `trim()` |
+| Giờ đóng nhận ảnh | `uploadsOpen` + `closesAt` |
+| Giữ ảnh đã gỡ | 24 giờ (tối đa 168) |
+| Request không có token App Check | Bị chặn |
+
+Frontend không bao giờ gọi `setDoc` hay `uploadBytes` trực tiếp. Mọi thao tác đi qua [backend/src/client.ts](backend/src/client.ts), vì rules chỉ chấp nhận đúng thứ tự ghi mà các hàm đó thực hiện.
+
