@@ -248,3 +248,61 @@ PhotoWall-GDGoCxAWS/
 └── .github/readme/           ảnh minh hoạ cho README
 ```
 
+---
+
+## 🚀 Chạy ở máy của bạn
+
+Cần **Node 22+**, **Firebase CLI** (`npm i -g firebase-tools`), và Chrome hoặc Edge nếu muốn chạy `check:fit`.
+
+### 1 · Chỉ giao diện, không cần Firebase
+
+Backend mock trong bộ nhớ là mặc định khi dev, đủ để đi trọn cả ba app.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Mở `http://localhost:5173/`, `/display/` và `/admin/`.
+
+### 2 · Với Firebase Emulator
+
+```bash
+# Terminal 1
+cd backend && npm install
+npm run emulators
+
+# Terminal 2: tạo cấu hình mẫu và cấp quyền duyệt cho email của bạn
+cd backend && npm run seed -- ban@gmail.com
+
+# Terminal 3
+cd frontend
+cp .env.example .env.local          # đặt VITE_BACKEND=firebase, VITE_EMULATORS=1
+npm run dev
+```
+
+Emulator UI ở `http://localhost:4000`. Đăng nhập Google trong emulator hiện popup giả; nhập đúng email đã seed là thành người duyệt.
+
+### 3 · Kiểm thử
+
+```bash
+cd backend
+npm test              # security rules của Firestore + Storage
+npm run e2e           # điện thoại, màn lớn và 2 người duyệt chạy thật trên emulator
+npm run load-test     # 800 điện thoại, 3 người duyệt, 1 màn lớn
+
+cd ../functions && npm test        # logic ngưỡng SafeSearch
+cd ../frontend  && npm run check:fit   # đo tràn màn ở 11 viewport
+```
+
+### 4 · Triển khai
+
+```bash
+npm --prefix frontend run build
+firebase deploy --project prod
+```
+
+> [!IMPORTANT]
+> App Check chặn `localhost` trên project thật. Muốn thử với dữ liệu thật từ máy dev, đặt `self.FIREBASE_APPCHECK_DEBUG_TOKEN = true` trước `initBackend()`, rồi thêm debug token in ra ở console vào *App Check → Manage debug tokens*.
+
